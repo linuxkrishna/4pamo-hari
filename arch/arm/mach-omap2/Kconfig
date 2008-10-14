@@ -123,6 +123,10 @@ config MACH_OMAP3_BEAGLE
 	bool "OMAP3 BEAGLE board"
 	depends on ARCH_OMAP3 && ARCH_OMAP34XX
 
+config MACH_OVERO
+	bool "Gumstix Overo board"
+	depends on ARCH_OMAP3 && ARCH_OMAP34XX
+
 config OMAP3_PM
        bool "Enable TI OMAP Power Management"
        depends on ARCH_OMAP3
@@ -252,10 +256,6 @@ config OMAP3ES2_VDD2_OPP3_L3_133MHZ
 	Select this option if you want to boot at VDD2 OPP3.
 
 endchoice
-
-config MACH_OVERO
-	bool "Gumstix Overo board"
-	depends on ARCH_OMAP3 && ARCH_OMAP34XX
 
 config OMAP_TICK_GPTIMER
 	int "GPTIMER used for system tick timer"
