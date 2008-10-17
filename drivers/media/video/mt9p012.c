@@ -1243,8 +1243,7 @@ int mt9p012sensor_set_exposure_time(u32 exp_time, struct v4l2_int_device *s,
 	struct i2c_client *client = sensor->i2c_client;
 	u32 coarse_int_time = 0;
 
-	if ((current_power_state == V4L2_POWER_ON) ||
-				(current_power_state == V4L2_POWER_RESUME)) {
+	if (current_power_state == V4L2_POWER_ON) {
 		if ((exp_time < min_exposure_time) ||
 				(exp_time > max_exposure_time)) {
 			dev_err(&client->dev, "Exposure time not within the "
@@ -1312,8 +1311,7 @@ int mt9p012sensor_set_gain(u16 gain, struct v4l2_int_device *s,
 	struct mt9p012_sensor *sensor = s->priv;
 	struct i2c_client *client = sensor->i2c_client;
 
-	if ((current_power_state == V4L2_POWER_ON) ||
-		(current_power_state == V4L2_POWER_RESUME)) {
+	if (current_power_state == V4L2_POWER_ON) {
 		if ((gain < MIN_GAIN) || (gain > MAX_GAIN)) {
 			dev_err(&client->dev, "Gain not within the legal"
 								" range\n");
@@ -2006,7 +2004,7 @@ static int ioctl_s_power(struct v4l2_int_device *s, enum v4l2_power on)
 		mt9p012_write_regs(c, stream_off_list,
 						I2C_STREAM_OFF_LIST_SIZE);
 
-	if ((on != V4L2_POWER_ON) && (on != V4L2_POWER_RESUME))
+	if (on != V4L2_POWER_ON)
 		isp_set_xclk(0, MT9P012_USE_XCLKA);
 	else
 		isp_set_xclk(xclk_current, MT9P012_USE_XCLKA);
@@ -2019,8 +2017,9 @@ static int ioctl_s_power(struct v4l2_int_device *s, enum v4l2_power on)
 		isp_set_xclk(0, MT9P012_USE_XCLKA);
 		return rval;
 	}
-	current_power_state = on;
-	if ((on == V4L2_POWER_RESUME) && (sensor->state == SENSOR_DETECTED))
+	if ((current_power_state == V4L2_POWER_STANDBY) &&
+					(on == V4L2_POWER_ON) &&
+					(sensor->state == SENSOR_DETECTED))
 		mt9p012_configure(s);
 
 	if ((on == V4L2_POWER_ON) && (sensor->state == SENSOR_NOT_DETECTED)) {
@@ -2037,6 +2036,7 @@ static int ioctl_s_power(struct v4l2_int_device *s, enum v4l2_power on)
 								sensor->ver);
 	}
 
+	current_power_state = on;
 	return 0;
 }
 
