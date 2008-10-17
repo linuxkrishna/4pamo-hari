@@ -1391,30 +1391,6 @@ static int ioctl_s_parm(struct v4l2_int_device *s,
 }
 
 /**
- * ioctl_g_ifparm - V4L2 sensor interface handler for vidioc_int_g_ifparm_num
- * @s: pointer to standard V4L2 device structure
- * @p: pointer to standard V4L2 vidioc_int_g_ifparm_num ioctl structure
- *
- * Gets slave interface parameters.
- * Calculates the required xclk value to support the requested
- * clock parameters in p.  This value is returned in the p
- * parameter.
- */
-static int ioctl_g_ifparm(struct v4l2_int_device *s, struct v4l2_ifparm *p)
-{
-	struct mt9p012_sensor *sensor = s->priv;
-	int rval;
-
-	rval = sensor->pdata->ifparm(p);
-	if (rval)
-		return rval;
-
-	p->u.bt656.clock_curr = xclk_current;
-
-	return 0;
-}
-
-/**
  * ioctl_g_priv - V4L2 sensor interface handler for vidioc_int_g_priv_num
  * @s: pointer to standard V4L2 device structure
  * @p: void pointer to hold sensor's private data address
@@ -1426,7 +1402,6 @@ static int ioctl_g_priv(struct v4l2_int_device *s, void *p)
 	struct mt9p012_sensor *sensor = s->priv;
 
 	return sensor->pdata->priv_data_set(p);
-
 }
 
 /**
@@ -1440,24 +1415,15 @@ static int ioctl_s_power(struct v4l2_int_device *s, enum v4l2_power on)
 {
 	struct mt9p012_sensor *sensor = s->priv;
 	struct i2c_client *c = sensor->i2c_client;
-	struct v4l2_ifparm p;
 	int rval;
 
-	rval = ioctl_g_ifparm(s, &p);
-	if (rval) {
-		dev_err(&c->dev, "Unable to get if params\n");
-		return rval;
-	}
-
-	if (((on == V4L2_POWER_OFF) || (on == V4L2_POWER_STANDBY))
-		&& (sensor->state == SENSOR_DETECTED))
+	if ((on == V4L2_POWER_STANDBY) && (sensor->state == SENSOR_DETECTED))
 		mt9p012_write_regs(c, stream_off_list);
-
 
 	if ((on != V4L2_POWER_ON) && (on != V4L2_POWER_RESUME))
 		isp_set_xclk(0, MT9P012_USE_XCLKA);
 	else
-		isp_set_xclk(p.u.bt656.clock_curr, MT9P012_USE_XCLKA);
+		isp_set_xclk(xclk_current, MT9P012_USE_XCLKA);
 
 
 	rval = sensor->pdata->power_set(on);
@@ -1588,10 +1554,12 @@ static int ioctl_enum_frameintervals(struct v4l2_int_device *s,
 
 	/* Do we already reached all discrete framesizes? */
 
-	if ((frmi->width == mt9p012_sizes[4].width) &&
-				(frmi->height == mt9p012_sizes[4].height)) {
-		/* FIXME: The only frameinterval supported by 5MP capture is
-		 * 1/11 fps
+	if (((frmi->width == mt9p012_sizes[4].width) &&
+				(frmi->height == mt9p012_sizes[4].height)) ||
+				((frmi->width == mt9p012_sizes[3].width) &&
+				(frmi->height == mt9p012_sizes[3].height))) {
+		/* FIXME: The only frameinterval supported by 5MP and 3MP
+		 * capture sizes is 1/11 fps
 		 */
 		if (frmi->index != 0)
 			return -EINVAL;
@@ -1622,8 +1590,6 @@ static struct v4l2_int_ioctl_desc mt9p012_ioctl_desc[] = {
 	  .func = (v4l2_int_ioctl_func *)ioctl_s_power },
 	{ .num = vidioc_int_g_priv_num,
 	  .func = (v4l2_int_ioctl_func *)ioctl_g_priv },
-	{ .num = vidioc_int_g_ifparm_num,
-	  .func = (v4l2_int_ioctl_func *)ioctl_g_ifparm },
 	{ .num = vidioc_int_init_num,
 	  .func = (v4l2_int_ioctl_func *)ioctl_init },
 	{ .num = vidioc_int_enum_fmt_cap_num,
