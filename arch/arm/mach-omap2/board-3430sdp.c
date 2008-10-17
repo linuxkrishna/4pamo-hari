@@ -611,6 +611,7 @@ static struct isp_interface_config mt9p012_if_config = {
 
 static int mt9p012_sensor_power_set(enum v4l2_power power)
 {
+	static enum v4l2_power previous_power = V4L2_POWER_OFF;
 	switch (power) {
 	case V4L2_POWER_OFF:
 		/* Power Down Sequence */
@@ -626,69 +627,72 @@ static int mt9p012_sensor_power_set(enum v4l2_power power)
 		omap_free_gpio(MT9P012_STANDBY_GPIO);
 		break;
 	case V4L2_POWER_ON:
-		/* Power Up Sequence */
-		isp_configure_interface(&mt9p012_if_config);
+		if (previous_power == V4L2_POWER_OFF) {
+			/* Power Up Sequence */
+			isp_configure_interface(&mt9p012_if_config);
 
-		/* Request and configure gpio pins */
-		if (omap_request_gpio(MT9P012_STANDBY_GPIO) != 0) {
-			printk(KERN_WARNING "Could not request GPIO %d for "
-					"AF D88\n", MT9P012_STANDBY_GPIO);
-			return -EIO;
-		}
+			/* Request and configure gpio pins */
+			if (omap_request_gpio(MT9P012_STANDBY_GPIO) != 0) {
+				printk(KERN_WARNING "Could not request GPIO %d"
+							" for MT9P012\n",
+							MT9P012_STANDBY_GPIO);
+				return -EIO;
+			}
 
-		/* Request and configure gpio pins */
-		if (omap_request_gpio(MT9P012_RESET_GPIO) != 0)
-			return -EIO;
+			/* Request and configure gpio pins */
+			if (omap_request_gpio(MT9P012_RESET_GPIO) != 0)
+				return -EIO;
 
-		/* set to output mode */
-		omap_set_gpio_direction(MT9P012_STANDBY_GPIO, 0);
-		/* set to output mode */
-		omap_set_gpio_direction(MT9P012_RESET_GPIO, 0);
+			/* set to output mode */
+			omap_set_gpio_direction(MT9P012_STANDBY_GPIO, 0);
+			/* set to output mode */
+			omap_set_gpio_direction(MT9P012_RESET_GPIO, 0);
 
-		/* STANDBY_GPIO is active HIGH for set LOW to release */
-		omap_set_gpio_dataout(MT9P012_STANDBY_GPIO, 1);
+			/* STANDBY_GPIO is active HIGH for set LOW to release */
+			omap_set_gpio_dataout(MT9P012_STANDBY_GPIO, 1);
 
-		/* nRESET is active LOW. set HIGH to release reset */
-		omap_set_gpio_dataout(MT9P012_RESET_GPIO, 1);
+			/* nRESET is active LOW. set HIGH to release reset */
+			omap_set_gpio_dataout(MT9P012_RESET_GPIO, 1);
 
-		/* turn on digital power */
-		enable_fpga_vio_1v8(1);
+			/* turn on digital power */
+			enable_fpga_vio_1v8(1);
 #ifdef CONFIG_TWL4030_CORE
-		/* turn on analog power */
-		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			/* turn on analog power */
+			twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 					VAUX_2_8_V, TWL4030_VAUX2_DEDICATED);
-		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 					VAUX_DEV_GRP_P1, TWL4030_VAUX2_DEV_GRP);
 #else
 #error "no power companion board defined!"
 #endif
+		}
 
+		/* out of standby */
 		omap_set_gpio_dataout(MT9P012_STANDBY_GPIO, 0);
-
 		udelay(1000);
 
-		/* have to put sensor to reset to guarantee detection */
-		omap_set_gpio_dataout(MT9P012_RESET_GPIO, 0);
+		if (previous_power == V4L2_POWER_OFF) {
+			/* have to put sensor to reset to guarantee detection */
+			omap_set_gpio_dataout(MT9P012_RESET_GPIO, 0);
 
-		udelay(1500);
+			udelay(1500);
 
-		/* nRESET is active LOW. set HIGH to release reset */
-		omap_set_gpio_dataout(MT9P012_RESET_GPIO, 1);
-		/* give sensor sometime to get out of the reset. Datasheet says
-		   2400 xclks. At 6 MHz, 400 usec are enough */
-		udelay(300);
+			/* nRESET is active LOW. set HIGH to release reset */
+			omap_set_gpio_dataout(MT9P012_RESET_GPIO, 1);
+			/* give sensor sometime to get out of the reset.
+			 * Datasheet says 2400 xclks. At 6 MHz, 400 usec is
+			 * enough
+			 */
+			udelay(300);
+		}
 		break;
 	case V4L2_POWER_STANDBY:
 		/* stand by */
 		omap_set_gpio_dataout(MT9P012_STANDBY_GPIO, 1);
 		break;
-	case V4L2_POWER_RESUME:
-		/* out of standby */
-		omap_set_gpio_dataout(MT9P012_STANDBY_GPIO, 0);
-		udelay(1000);
-		break;
 	}
-
+	/* Save powerstate to know what was before calling POWER_ON. */
+	previous_power = power;
 	return 0;
 }
 
