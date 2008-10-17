@@ -35,10 +35,6 @@
 #include <media/v4l2-ioctl.h>
 
 #include "omap34xxcam.h"
-#include "isp/isp.h"
-#include "isp/ispmmu.h"
-#include "isp/ispreg.h"
-#include "isp/ispccdc.h"
 #include "isp/isph3a.h"
 #include "isp/isp_af.h"
 
@@ -111,20 +107,22 @@ int omap34xxcam_update_vbq(struct videobuf_buffer *vb)
 {
 	struct omap34xxcam_fh *fh = camfh_saved;
 	struct omap34xxcam_videodev *vdev = fh->vdev;
-	struct isph3a_aewb_xtrastats xtrastats;
 	int rval = 0;
+	struct isph3a_aewb_xtrastats xtrastats;
+	struct isp_af_xtrastats af_xtrastats;
 
 	do_gettimeofday(&vb->ts);
 	vb->field_count = atomic_add_return(2, &fh->field_count);
 	vb->state = VIDEOBUF_DONE;
 
-	xtrastats.ts = vb->ts;
 	xtrastats.field_count = vb->field_count;
+	af_xtrastats.field_count = vb->field_count;
 
 	if (vdev->streaming)
 		rval = 1;
 
 	wake_up(&vb->done);
+	isp_af_setxtrastats(&af_xtrastats, AF_UPDATEXS_FIELDCOUNT);
 	isph3a_aewb_setxtrastats(&xtrastats);
 
 	return rval;
@@ -170,9 +168,9 @@ static void omap34xxcam_vbq_release(struct videobuf_queue *vbq,
 				    struct videobuf_buffer *vb)
 {
 	if (!vbq->streaming) {
-		isp_vbq_release(vbq, vb);
 		videobuf_dma_unmap(vbq, videobuf_to_dma(vb));
 		videobuf_dma_free(videobuf_to_dma(vb));
+		isp_vbq_release(vbq, vb);
 		vb->state = VIDEOBUF_NEEDS_INIT;
 	}
 	return;
@@ -694,6 +692,8 @@ static int vidioc_streamon(struct file *file, void *fh, enum v4l2_buf_type i)
 	}
 
 	cam->dma_notify = 1;
+	isph3a_notify(0);
+	isp_af_notify(0);
 	isp_sgdma_init();
 	rval = videobuf_streamon(&ofh->vbq);
 	if (rval) {
@@ -702,7 +702,7 @@ static int vidioc_streamon(struct file *file, void *fh, enum v4l2_buf_type i)
 	}
 
 
-	rval = omap34xxcam_slave_power_set(vdev, V4L2_POWER_RESUME);
+	rval = omap34xxcam_slave_power_set(vdev, V4L2_POWER_ON);
 	if (!rval)
 		vdev->streaming = file;
 	else
@@ -733,7 +733,8 @@ static int vidioc_streamoff(struct file *file, void *fh, enum v4l2_buf_type i)
 	int rval;
 
 	mutex_lock(&vdev->mutex);
-
+	isph3a_notify(1);
+	isp_af_notify(1);
 	if (vdev->streaming == file)
 		isp_stop();
 
@@ -1163,7 +1164,7 @@ static int vidioc_default(struct file *file, void *fh, int cmd, void *arg)
 			}
 		}
 		break;
-		case VIDIOC_PRIVATE_ISP_AF_CFG: {
+		case VIDIOC_PRIVATE_ISP_AF_REQ: {
 			/* Need to update lens first */
 			struct isp_af_data *data;
 			struct v4l2_control vc;
@@ -1193,10 +1194,6 @@ static int vidioc_default(struct file *file, void *fh, int cmd, void *arg)
 			}
 		}
 		break;
-		case VIDIOC_G_PRIV_MEM:
-			rval = vidioc_int_g_priv_mem(vdev->vdev_sensor,
-						(struct v4l2_priv_mem *)arg);
-			goto out;
 		}
 
 		rval = isp_handle_private(cmd, arg);
@@ -1316,7 +1313,6 @@ static int omap34xxcam_open(struct inode *inode, struct file *file)
 
 	if (atomic_inc_return(&vdev->users) == 1) {
 		isp_get();
-		isp_open();
 		if (omap34xxcam_slave_power_set(vdev, V4L2_POWER_ON))
 			goto out_slave_power_set_standby;
 		if (omap34xxcam_slave_power_set(vdev, V4L2_POWER_STANDBY))
@@ -1348,7 +1344,6 @@ static int omap34xxcam_open(struct inode *inode, struct file *file)
 
 out_slave_power_set_standby:
 	omap34xxcam_slave_power_set(vdev, V4L2_POWER_OFF);
-	isp_close();
 	isp_put();
 	atomic_dec(&vdev->users);
 	mutex_unlock(&vdev->mutex);
@@ -1384,6 +1379,8 @@ static int omap34xxcam_release(struct inode *inode, struct file *file)
 
 	mutex_lock(&vdev->mutex);
 	if (vdev->streaming == file) {
+		isph3a_notify(1);
+		isp_af_notify(1);
 		isp_stop();
 		videobuf_streamoff(&fh->vbq);
 		omap34xxcam_slave_power_set(vdev, V4L2_POWER_STANDBY);
@@ -1392,7 +1389,6 @@ static int omap34xxcam_release(struct inode *inode, struct file *file)
 
 	if (atomic_dec_return(&vdev->users) == 0) {
 		omap34xxcam_slave_power_set(vdev, V4L2_POWER_OFF);
-		isp_close();
 		isp_put();
 	}
 	mutex_unlock(&vdev->mutex);
@@ -1558,7 +1554,6 @@ static int omap34xxcam_device_register(struct v4l2_int_device *s)
 	vdev->slave_config[hwc.dev_type] = hwc;
 
 	isp_get();
-	isp_open();
 	rval = omap34xxcam_slave_power_set(vdev, V4L2_POWER_ON);
 	if (!rval && hwc.dev_type == OMAP34XXCAM_SLAVE_SENSOR) {
 		struct v4l2_format format;
@@ -1576,7 +1571,6 @@ static int omap34xxcam_device_register(struct v4l2_int_device *s)
 		vdev->want_timeperframe = a.parm.capture.timeperframe;
 	}
 	omap34xxcam_slave_power_set(vdev, V4L2_POWER_OFF);
-	isp_close();
 	isp_put();
 
 	if (rval)
