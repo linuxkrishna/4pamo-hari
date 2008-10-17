@@ -134,29 +134,37 @@ struct prev_cropsize {
  * @opened: State of the device.
  * @wfc: Wait for completion. Used for locking operations.
  * @prevwrap_mutex: Mutex for preview wrapper use.
- * @vbq_lock: Spinlock for videobuf queues.
+ * @inout_vbq_lock: Spinlock for in/out videobuf queues.
+ * @lsc_vbq_lock: Spinlock for LSC videobuf queues.
  * @vbq_ops: Videobuf queue operations
  * @isp_addr_read: Input/Output address
+ * @isp_addr_read: LSC address
  */
 struct prev_device {
 	struct prev_params *params;
 	unsigned char opened;
 	struct completion wfc;
-	struct mutex prevwrap_mutex; /* For generic internal use */
-	spinlock_t vbq_lock;	/* For videobuffer queue handling */
+	struct mutex prevwrap_mutex;
+	spinlock_t inout_vbq_lock; /* Spinlock for in/out videobuf queues. */
+	spinlock_t lsc_vbq_lock; /* Spinlock for LSC videobuf queues. */
 	struct videobuf_queue_ops vbq_ops;
 	dma_addr_t isp_addr_read;
+	dma_addr_t isp_addr_lsc;
 };
 
 /**
  * struct prev_fh - Per-filehandle data structure
- * @type: Used buffer type.
- * @vbq: Videobuffer queue.
+ * @inout_type: Used buffer type for I/O.
+ * @inout_vbq: I/O Videobuffer queue.
+ * @lsc_type: Used buffer type for LSC.
+ * @lsc_vbq: LSC Videobuffer queue.
  * @device: Pointer to device information structure.
  */
 struct prev_fh {
-	enum v4l2_buf_type type;
-	struct videobuf_queue vbq;
+	enum v4l2_buf_type inout_type;
+	struct videobuf_queue inout_vbq;
+	enum v4l2_buf_type lsc_type;
+	struct videobuf_queue lsc_vbq;
 	struct prev_device *device;
 };
 #endif
