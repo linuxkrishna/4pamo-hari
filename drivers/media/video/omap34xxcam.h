@@ -45,6 +45,29 @@
 struct omap34xxcam_device;
 struct omap34xxcam_videodev;
 
+struct omap34xxcam_hw_csi2_lanes_data {
+	unsigned polarity:1;
+	unsigned position:3;
+};
+
+struct omap34xxcam_hw_csi2_lanes {
+	struct omap34xxcam_hw_csi2_lanes_data data[4];
+	struct omap34xxcam_hw_csi2_lanes_data clock;
+};
+
+struct omap34xxcam_hw_csi2_phy {
+	u8 ths_term;
+	u8 ths_settle;
+	u8 tclk_term;
+	unsigned tclk_miss:1;
+	u8 tclk_settle;
+};
+
+struct omap34xxcam_hw_csi2 {
+	struct omap34xxcam_hw_csi2_lanes lanes;
+	struct omap34xxcam_hw_csi2_phy phy;
+};
+
 struct omap34xxcam_sensor_config {
 	int xclk;
 	int sensor_isp;
@@ -68,11 +91,15 @@ struct omap34xxcam_hw_config {
 	int dev_index; /* Index in omap34xxcam_sensors */
 	int dev_minor; /* Video device minor number */
 	int dev_type; /* OMAP34XXCAM_SLAVE_* */
+	int interface_type; /* Interface type */
 	union {
 		struct omap34xxcam_sensor_config sensor;
 		struct omap34xxcam_lens_config lens;
 		struct omap34xxcam_flash_config flash;
 	} u;
+	union {
+		struct omap34xxcam_hw_csi2 hw_csi2;
+	} csi2;
 };
 
 /**

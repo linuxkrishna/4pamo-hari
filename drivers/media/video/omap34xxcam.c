@@ -37,6 +37,7 @@
 #include "omap34xxcam.h"
 #include "isp/isph3a.h"
 #include "isp/isp_af.h"
+#include "isp/ispcsi2.h"
 
 #define OMAP34XXCAM_VERSION KERNEL_VERSION(0, 0, 0)
 
@@ -478,7 +479,8 @@ do_it_now:
 		 best_pix_in->width, best_pix_in->height,
 		 best_pix_out.width, best_pix_out.height);
 
-	return isp_try_fmt_cap(best_pix_in, wanted_pix_out); }
+	return isp_try_fmt_cap(best_pix_in, wanted_pix_out);
+}
 
 static int s_pix_parm(struct omap34xxcam_videodev *vdev,
 		      struct v4l2_pix_format *best_pix,
