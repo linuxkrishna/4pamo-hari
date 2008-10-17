@@ -26,27 +26,6 @@
 #define AF_TIMEOUT			((300 * HZ) / 1000)
 
 
-/* Range Constants */
-#define AF_IIRSH_MIN			0
-#define AF_IIRSH_MAX			4094
-#define AF_PAXEL_HORIZONTAL_COUNT_MIN	0
-#define AF_PAXEL_HORIZONTAL_COUNT_MAX	35
-#define AF_PAXEL_VERTICAL_COUNT_MIN	0
-#define AF_PAXEL_VERTICAL_COUNT_MAX	127
-#define AF_PAXEL_INCREMENT_MIN		0
-#define AF_PAXEL_INCREMENT_MAX		14
-#define AF_PAXEL_HEIGHT_MIN		0
-#define AF_PAXEL_HEIGHT_MAX		127
-#define AF_PAXEL_WIDTH_MIN		0
-#define AF_PAXEL_WIDTH_MAX		127
-#define AF_PAXEL_HZSTART_MIN		2
-#define AF_PAXEL_HZSTART_MAX		4094
-
-#define AF_PAXEL_VTSTART_MIN		0
-#define AF_PAXEL_VTSTART_MAX		4095
-#define AF_THRESHOLD_MAX		255
-#define AF_COEF_MAX			4095
-#define AF_PAXEL_SIZE			48
 
 /* Print Macros */
 /*list of error code */

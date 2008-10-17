@@ -419,43 +419,6 @@ static int isp_hist_set_params(struct isp_hist_config *user_cfg)
 }
 
 /**
- * isp_hist_mmap_buffer - Map buffer memory to user space.
- * @buffer: Pointer to buffer structure.
- * Helper function to mmap buffers to user space. Buffer passed need to
- * already have a valid physical address: buffer->phy_addr. It returns user
- * pointer as unsigned long in buffer->mmap_addr.
- *
- * Returns 0 on success buffer mapped.
- **/
-static int isp_hist_mmap_buffer(struct isp_hist_buffer *buffer)
-{
-	struct vm_area_struct vma;
-	struct mm_struct *mm = current->mm;
-	int size = PAGE_SIZE;
-	unsigned long addr = 0;
-	unsigned long pgoff = 0, flags = MAP_SHARED | MAP_ANONYMOUS;
-	unsigned long prot = PROT_READ | PROT_WRITE;
-	void *pos = (void *)buffer->virt_addr;
-
-	size = PAGE_ALIGN(size);
-
-	addr = get_unmapped_area(NULL, addr, size, pgoff, flags);
-	vma.vm_mm = mm;
-	vma.vm_start = addr;
-	vma.vm_end = addr + size;
-	vma.vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags);
-	vma.vm_pgoff = pgoff;
-	vma.vm_file = NULL;
-	vma.vm_page_prot = vm_get_page_prot(vma.vm_flags);
-
-	if (vm_insert_page(&vma, addr, vmalloc_to_page(pos)))
-		return -EAGAIN;
-
-	buffer->mmap_addr = vma.vm_start;
-	return 0;
-}
-
-/**
  * isp_hist_configure - API to configure HIST registers.
  * @histcfg: Pointer to user configuration structure.
  *
@@ -487,32 +450,6 @@ int isp_hist_configure(struct isp_hist_config *histcfg)
 		return ret;
 	}
 
-	if (hist_buff.virt_addr != 0) {
-		hist_buff.mmap_addr = 0;
-		ispmmu_unmap(hist_buff.ispmmu_addr);
-		dma_free_coherent(NULL, PAGE_SIZE, (void *)hist_buff.virt_addr,
-					(dma_addr_t)hist_buff.phy_addr);
-	}
-
-	hist_buff.virt_addr = (unsigned long)dma_alloc_coherent(NULL,
-						PAGE_SIZE, (dma_addr_t *)
-						&hist_buff.phy_addr,
-						GFP_KERNEL | GFP_DMA);
-	if (hist_buff.virt_addr == 0) {
-		printk(KERN_ERR "Can't acquire memory for ");
-		return -ENOMEM;
-	}
-
-	hist_buff.ispmmu_addr = ispmmu_map(hist_buff.phy_addr, PAGE_SIZE);
-
-	if (hist_buff.mmap_addr) {
-		hist_buff.mmap_addr = 0;
-		DPRINTK_ISPHIST("We have munmaped buffer 0x%lX\n",
-				hist_buff.virt_addr);
-	}
-
-	isp_hist_mmap_buffer(&hist_buff);
-
 	histstat.frame_cnt = 0;
 	histstat.completed = 0;
 	isp_hist_enable(1);
@@ -532,7 +469,8 @@ EXPORT_SYMBOL(isp_hist_configure);
  **/
 int isp_hist_request_statistics(struct isp_hist_data *histdata)
 {
-	int i;
+	int i, ret;
+	u32 curr;
 
 	if (omap_readl(ISPHIST_PCR) & ISPHIST_PCR_BUSY_MASK)
 		return -EBUSY;
@@ -542,11 +480,16 @@ int isp_hist_request_statistics(struct isp_hist_data *histdata)
 
 	omap_writel((omap_readl(ISPHIST_CNT)) | ISPHIST_CNT_CLR_EN,
 								ISPHIST_CNT);
-	histdata->hist_statistics_buf = (u32 *)hist_buff.mmap_addr;
 
 	for (i = 0; i < HIST_MEM_SIZE; i++) {
-		*(histdata->hist_statistics_buf + i) =
-						omap_readl(ISPHIST_DATA);
+		curr = omap_readl(ISPHIST_DATA);
+		ret = put_user(curr, (histdata->hist_statistics_buf + i));
+		if (ret) {
+			printk(KERN_ERR
+				"Failed copy_to_user for "
+				"HIST stats buff, %d\n",
+				ret);
+		}
 	}
 
 	omap_writel((omap_readl(ISPHIST_CNT)) & ~ISPHIST_CNT_CLR_EN,
@@ -577,12 +520,6 @@ void __exit isp_hist_cleanup(void)
 	isp_hist_enable(0);
 	mdelay(100);
 	isp_unset_callback(CBK_HIST_DONE);
-
-	if (hist_buff.ispmmu_addr) {
-		ispmmu_unmap(hist_buff.ispmmu_addr);
-		dma_free_coherent(NULL, PAGE_SIZE, (void *)hist_buff.virt_addr,
-					(dma_addr_t) hist_buff.phy_addr);
-	}
 
 	memset(&histstat, 0, sizeof(histstat));
 	memset(&hist_regs, 0, sizeof(hist_regs));

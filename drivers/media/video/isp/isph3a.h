@@ -35,25 +35,6 @@
 #define PRV_WBDGAIN_CHNG	(1 << 5)
 #define PRV_WBGAIN_CHNG		(1 << 6)
 
-/* Flags for update field */
-#define REQUEST_STATISTICS	(1 << 0)
-#define SET_COLOR_GAINS		(1 << 1)
-#define SET_DIGITAL_GAIN	(1 << 2)
-#define SET_EXPOSURE		(1 << 3)
-#define SET_ANALOG_GAIN		(1 << 4)
-
-#define MAX_SATURATION_LIM	1023
-#define MIN_WIN_H		2
-#define MAX_WIN_H		256
-#define MIN_WIN_W		6
-#define MAX_WIN_W		256
-#define MAX_WINVC		128
-#define MAX_WINHC		36
-#define MAX_WINSTART		4095
-#define MIN_SUB_INC		2
-#define MAX_SUB_INC		32
-
-
 /* ISPH3A REGISTERS bits */
 #define ISPH3A_PCR_AF_EN	(1 << 0)
 #define ISPH3A_PCR_AF_ALAW_EN	(1 << 1)
@@ -114,12 +95,10 @@
 
 /**
  * struct isph3a_aewb_xtrastats - Structure with extra statistics sent by cam.
- * @ts: Timestamp of returned framestats.
  * @field_count: Sequence number of returned framestats.
  * @isph3a_aewb_xtrastats: Pointer to next buffer with extra stats.
  */
 struct isph3a_aewb_xtrastats {
-	struct timeval ts;
 	unsigned long field_count;
 	struct isph3a_aewb_xtrastats *next;
 };
@@ -136,4 +115,5 @@ void isph3a_restore_context(void);
 
 void isph3a_update_wb(void);
 
+void isph3a_notify(int notify);
 #endif		/* OMAP_ISP_H3A_H */

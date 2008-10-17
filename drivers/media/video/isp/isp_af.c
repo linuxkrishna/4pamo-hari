@@ -73,6 +73,7 @@ struct isp_af_buffer {
  * @frame_req: Number of frame requested for statistics.
  * @af_buff: Array of statistics buffers to access.
  * @stats_buf_size: Statistics buffer size.
+ * @curr_cfg_buf_size: Current user configured stats buff size.
  * @min_buf_size: Minimum statisitics buffer size.
  * @frame_count: Frame Count.
  * @stats_wait: Wait primitive for locking/unlocking the stats request.
@@ -88,6 +89,7 @@ static struct isp_af_status {
 	struct isp_af_buffer af_buff[H3A_MAX_BUFF];
 	unsigned int stats_buf_size;
 	unsigned int min_buf_size;
+	unsigned int curr_cfg_buf_size;
 
 	u32 frame_count;
 	wait_queue_head_t stats_wait;
@@ -293,55 +295,6 @@ static void isp_af_link_buffers(void)
 	}
 }
 
-/*
- * Helper function to munmap kernel buffers from user space.
- */
-static int isp_af_munmap(struct isp_af_buffer *buffer)
-{
-	/* TO DO: munmap succesfully the kernel buffers, so they can be
-	   remmaped again */
-	buffer->mmap_addr = 0;
-	return 0;
-}
-
-/*
- * Helper function to mmap buffers to user space.
- * buffer passed need to already have a valid physical address: buffer->phy_addr
- * It returns user pointer as unsigned long in buffer->mmap_addr
- */
-static int isp_af_mmap_buffers(struct isp_af_buffer *buffer)
-{
-	struct vm_area_struct vma;
-	struct mm_struct *mm = current->mm;
-	int size = afstat.stats_buf_size;
-	unsigned long addr = 0;
-	unsigned long pgoff = 0, flags = MAP_SHARED | MAP_ANONYMOUS;
-	unsigned long prot = PROT_READ | PROT_WRITE;
-	void *pos = (void *)buffer->addr_align;
-
-	size = PAGE_ALIGN(size);
-
-	addr = get_unmapped_area(NULL, addr, size, pgoff, flags);
-	vma.vm_mm = mm;
-	vma.vm_start = addr;
-	vma.vm_end = addr + size;
-	vma.vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags);
-	vma.vm_pgoff = pgoff;
-	vma.vm_file = NULL;
-	vma.vm_page_prot = vm_get_page_prot(vma.vm_flags);
-
-	while (size > 0) {
-		if (vm_insert_page(&vma, addr, vmalloc_to_page(pos)))
-			return -EAGAIN;
-		addr += PAGE_SIZE;
-		pos += PAGE_SIZE;
-		size -= PAGE_SIZE;
-	}
-
-	buffer->mmap_addr = vma.vm_start;
-	return 0;
-}
-
 /* Function to perform hardware set up */
 int isp_af_configure(struct af_configuration *afconfig)
 {
@@ -354,7 +307,8 @@ int isp_af_configure(struct af_configuration *afconfig)
 		return -EINVAL;
 	}
 
-	af_dev_configptr->config = afconfig;
+	memcpy(af_dev_configptr->config, afconfig,
+					sizeof(struct af_configuration));
 	/* Get the value of PCR register */
 	busyaf = omap_readl(ISPH3A_PCR);
 
@@ -385,14 +339,14 @@ int isp_af_configure(struct af_configuration *afconfig)
 	    (af_dev_configptr->config->paxel_config.hz_cnt + 1) *
 	    (af_dev_configptr->config->paxel_config.vt_cnt + 1) * AF_PAXEL_SIZE;
 
+	afstat.curr_cfg_buf_size = buff_size;
 	/*Deallocate the previous buffers */
 	if (afstat.stats_buf_size && (buff_size	> afstat.stats_buf_size)) {
 		isp_af_enable(0);
 		for (i = 0; i < H3A_MAX_BUFF; i++) {
-			isp_af_munmap(&afstat.af_buff[i]);
 			ispmmu_unmap(afstat.af_buff[i].ispmmu_addr);
 			dma_free_coherent(NULL,
-				  afstat.min_buf_size + 64,
+				  afstat.min_buf_size,
 				  (void *)afstat.af_buff[i].virt_addr,
 				  (dma_addr_t)afstat.af_buff[i].phy_addr);
 			afstat.af_buff[i].virt_addr = 0;
@@ -432,12 +386,6 @@ int isp_af_configure(struct af_configuration *afconfig)
 		if (active_buff == NULL)
 			active_buff = &afstat.af_buff[0];
 		isp_af_set_address(active_buff->ispmmu_addr);
-	}
-	/* Always remap when calling Configure */
-	for (i = 0; i < H3A_MAX_BUFF; i++) {
-		if (afstat.af_buff[i].mmap_addr)
-			isp_af_munmap(&afstat.af_buff[i]);
-		isp_af_mmap_buffers(&afstat.af_buff[i]);
 	}
 
 	result = isp_af_register_setup(af_dev_configptr);
@@ -580,7 +528,7 @@ void isp_af_set_address(unsigned long address)
 
 static int isp_af_stats_available(struct isp_af_data *afdata)
 {
-	int i;
+	int i, ret;
 	unsigned long irqflags;
 
 	spin_lock_irqsave(&afstat.buffer_lock, irqflags);
@@ -592,8 +540,16 @@ static int isp_af_stats_available(struct isp_af_data *afdata)
 			spin_unlock_irqrestore(&afstat.buffer_lock, irqflags);
 			isp_af_update_req_buffer(&afstat.af_buff[i]);
 			afstat.af_buff[i].frame_num = 0;
-			afdata->af_statistics_buf = (void *)
-				afstat.af_buff[i].mmap_addr;
+			ret = copy_to_user(
+					(void *)afdata->af_statistics_buf,
+					(void *)afstat.af_buff[i].virt_addr,
+					afstat.curr_cfg_buf_size);
+			if (ret) {
+				printk(KERN_ERR
+					"Failed copy_to_user for "
+					"H3A stats buff, %d\n",
+					ret);
+			}
 			afdata->xtrastats.ts = afstat.af_buff[i].xtrastats.ts;
 			afdata->xtrastats.field_count =
 				afstat.af_buff[i].xtrastats.field_count;
@@ -603,7 +559,6 @@ static int isp_af_stats_available(struct isp_af_data *afdata)
 	spin_unlock_irqrestore(&afstat.buffer_lock, irqflags);
 	/* Stats unavailable */
 
-	afdata->af_statistics_buf = NULL;
 	return -1;
 }
 
@@ -634,7 +589,6 @@ int isp_af_request_statistics(struct isp_af_data *afdata)
 		printk(KERN_ERR "AF engine not enabled\n");
 		return -EINVAL;
 	}
-	afdata->af_statistics_buf = NULL;
 
 	if (afdata->update != 0) {
 		if (afdata->update & REQUEST_STATISTICS) {
@@ -660,13 +614,15 @@ int isp_af_request_statistics(struct isp_af_data *afdata)
 				else {
 					/* Frame unavailable */
 					frame_diff = MAX_FUTURE_FRAMES + 1;
-					afdata->af_statistics_buf = NULL;
 				}
 			}
 
 			if (frame_diff > MAX_FUTURE_FRAMES) {
-				printk(KERN_ERR "Invalid frame requested\n");
-			} else if (!camnotify) {
+				printk(KERN_ERR "Invalid frame requested"
+					", returning current frame stats\n");
+				afdata->frame_number = frame_cnt;
+			}
+			if (!camnotify) {
 				/* Block until frame in near future completes */
 				afstat.frame_req = afdata->frame_number;
 				afstat.stats_req = 1;
@@ -675,8 +631,10 @@ int isp_af_request_statistics(struct isp_af_data *afdata)
 				ret =
 				   wait_event_interruptible(afstat.stats_wait,
 						afstat.stats_done == 1);
-				if (ret < 0)
+				if (ret < 0) {
+					afdata->af_statistics_buf = NULL;
 					return ret;
+				}
 			DPRINTK_ISPH3A("ISP AF request status"
 						" interrupt raised\n");
 
@@ -686,9 +644,14 @@ int isp_af_request_statistics(struct isp_af_data *afdata)
 					printk(KERN_ERR "After waiting for"
 						" stats, stats not available!!"
 						"\n");
+					afdata->af_statistics_buf = NULL;
 				}
 			}
+		} else {
+			afdata->af_statistics_buf = NULL;
 		}
+	} else {
+		afdata->af_statistics_buf = NULL;
 	}
 
 out:
@@ -706,6 +669,9 @@ static void isp_af_isr(unsigned long status, isp_vbq_callback_ptr arg1,
 
 	if ((H3A_AF_DONE & status) != H3A_AF_DONE)
 		return;
+
+	/* timestamp stats buffer */
+	do_gettimeofday(&active_buff->xtrastats.ts);
 
 	/* Exchange buffers */
 	active_buff = active_buff->next;
@@ -797,7 +763,7 @@ void __exit isp_af_exit(void)
 		for (i = 0; i < H3A_MAX_BUFF; i++) {
 			ispmmu_unmap(afstat.af_buff[i].ispmmu_addr);
 			dma_free_coherent(NULL,
-				afstat.min_buf_size + 64,
+				afstat.min_buf_size,
 				(void *)afstat.af_buff[i].virt_addr,
 				(dma_addr_t)afstat.af_buff[i].phy_addr);
 		}
