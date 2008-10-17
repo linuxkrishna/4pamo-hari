@@ -25,7 +25,6 @@
 #include <linux/delay.h>
 #include <linux/types.h>
 #include <asm/mach-types.h>
-#include <mach/clock.h>
 #include <linux/io.h>
 #include <linux/scatterlist.h>
 #include <linux/uaccess.h>
@@ -34,6 +33,8 @@
 #include "ispreg.h"
 #include "ispccdc.h"
 #include "ispmmu.h"
+
+#define LSC_TABLE_INIT_SIZE	50052
 
 static u32 *fpc_table_add;
 static unsigned long fpc_table_add_m;
@@ -89,9 +90,7 @@ static unsigned long lsc_ispmmu_addr;
 static int lsc_initialized;
 static int size_mismatch;
 static u8 ccdc_use_lsc;
-static u8 ispccdc_lsc_tbl[] = {
-	#include "ispccd_lsc.dat"
-};
+static u8 ispccdc_lsc_tbl[LSC_TABLE_INIT_SIZE];
 
 /* Structure for saving/restoring CCDC module registers*/
 static struct isp_reg ispccdc_reg_list[] = {
@@ -183,12 +182,17 @@ int omap34xx_isp_ccdc_config(void *userspace_add)
 						sizeof(struct ispccdc_bclamp)))
 				goto copy_from_user_err;
 
+			ispccdc_enable_black_clamp(1);
+			ispccdc_config_black_clamp(bclamp_t);
+		} else
+			ispccdc_enable_black_clamp(1);
+	} else {
+		if ((ISP_ABS_CCDC_BLCLAMP & ccdc_struct->update) ==
+					ISP_ABS_CCDC_BLCLAMP) {
+			ispccdc_enable_black_clamp(0);
 			ispccdc_config_black_clamp(bclamp_t);
 		}
-		ispccdc_enable_black_clamp(1);
-	} else if ((ISP_ABS_CCDC_BLCLAMP & ccdc_struct->update) ==
-							ISP_ABS_CCDC_BLCLAMP)
-			ispccdc_enable_black_clamp(0);
+	}
 
 	if ((ISP_ABS_CCDC_BCOMP & ccdc_struct->update) == ISP_ABS_CCDC_BCOMP) {
 		if (copy_from_user(&blcomp_t, (struct ispccdc_blcomp *)
@@ -557,7 +561,7 @@ int ispccdc_config_datapath(enum ccdc_input input, enum ccdc_output output)
 		break;
 
 	case CCDC_OTHERS_VP_MEM:
-		syn_mode |= ISPCCDC_SYN_MODE_VP2SDR;
+		syn_mode &= ~ISPCCDC_SYN_MODE_VP2SDR;
 		syn_mode |= ISPCCDC_SYN_MODE_WEN;
 		syn_mode |= ISPCCDC_SYN_MODE_EXWEN;
 		omap_writel((omap_readl(ISPCCDC_CFG)) | ISPCCDC_CFG_WENLOG,
@@ -571,19 +575,6 @@ int ispccdc_config_datapath(enum ccdc_input input, enum ccdc_output output)
 		DPRINTK_ISPCCDC("ISP_ERR: Wrong CCDC Output");
 		return -EINVAL;
 	};
-
-	if (is_isplsc_activated()) {
-		if (input == CCDC_RAW) {
-			lsc_config.initial_x = 0;
-			lsc_config.initial_y = 0;
-			lsc_config.gain_mode_n = 0x6;
-			lsc_config.gain_mode_m = 0x6;
-			lsc_config.gain_format = 0x4;
-			lsc_config.offset = 0x60;
-			ispccdc_config_lsc(&lsc_config);
-			ispccdc_load_lsc((u32)sizeof(ispccdc_lsc_tbl));
-		}
-	}
 
 	omap_writel(syn_mode, ISPCCDC_SYN_MODE);
 
@@ -603,6 +594,11 @@ int ispccdc_config_datapath(enum ccdc_input input, enum ccdc_output output)
 		ispccdc_config_imgattr(colptn);
 		blkcfg.dcsubval = 42;
 		ispccdc_config_black_clamp(blkcfg);
+		if (is_isplsc_activated()) {
+			ispccdc_config_lsc(&lsc_config);
+			ispccdc_load_lsc((u32)sizeof(ispccdc_lsc_tbl));
+		}
+
 		break;
 	case CCDC_YUV_SYNC:
 		syncif.ccdc_mastermode = 0;
@@ -1046,13 +1042,11 @@ EXPORT_SYMBOL(ispccdc_config_imgattr);
 
 /**
  * ispccdc_config_shadow_registers - Programs the shadow registers for CCDC.
+ * Currently nothing to program in shadow, but kept for future use.
  **/
 void ispccdc_config_shadow_registers(void)
 {
-	if (ccdc_use_lsc && !ispccdc_obj.lsc_en && (ispccdc_obj.ccdc_inpfmt ==
-								CCDC_RAW))
-		ispccdc_enable_lsc(1);
-
+	return;
 }
 EXPORT_SYMBOL(ispccdc_config_shadow_registers);
 
@@ -1070,9 +1064,9 @@ EXPORT_SYMBOL(ispccdc_config_shadow_registers);
  **/
 int ispccdc_try_size(u32 input_w, u32 input_h, u32 *output_w, u32 *output_h)
 {
-	if (input_w < 2) {
+	if (input_w < 32 || input_h < 32) {
 		DPRINTK_ISPCCDC("ISP_ERR: CCDC cannot handle input width less"
-							" than 2 pixels\n");
+				" than 32 pixels or height less than 32\n");
 		return -EINVAL;
 	}
 
@@ -1086,8 +1080,9 @@ int ispccdc_try_size(u32 input_w, u32 input_h, u32 *output_w, u32 *output_h)
 	else
 		*output_h = input_h;
 
-	if ((!ispccdc_obj.refmt_en) && (ispccdc_obj.ccdc_outfmt !=
-							CCDC_OTHERS_MEM))
+	if ((!ispccdc_obj.refmt_en) && ((ispccdc_obj.ccdc_outfmt !=
+		CCDC_OTHERS_MEM) && ispccdc_obj.ccdc_outfmt !=
+					CCDC_OTHERS_VP_MEM))
 		*output_h -= 1;
 
 	if ((ispccdc_obj.ccdc_outfmt == CCDC_OTHERS_MEM) ||
@@ -1322,7 +1317,11 @@ EXPORT_SYMBOL(ispccdc_set_outaddr);
 void ispccdc_enable(u8 enable)
 {
 	if (enable) {
-		omap_writel(omap_readl(ISPCCDC_PCR) | (ISPCCDC_PCR_EN),
+		if (ccdc_use_lsc && !ispccdc_obj.lsc_en &&
+			(ispccdc_obj.ccdc_inpfmt == CCDC_RAW))
+			ispccdc_enable_lsc(1);
+
+			omap_writel(omap_readl(ISPCCDC_PCR) | (ISPCCDC_PCR_EN),
 								ISPCCDC_PCR);
 	} else {
 		omap_writel(omap_readl(ISPCCDC_PCR) & ~(ISPCCDC_PCR_EN),
@@ -1458,13 +1457,14 @@ int __init isp_ccdc_init(void)
 	mutex_init(&ispccdc_obj.mutexlock);
 
 	if (is_isplsc_activated()) {
+		memset(ispccdc_lsc_tbl, 0x40, LSC_TABLE_INIT_SIZE);
 		lsc_config.initial_x = 0;
 		lsc_config.initial_y = 0;
 		lsc_config.gain_mode_n = 0x6;
 		lsc_config.gain_mode_m = 0x6;
 		lsc_config.gain_format = 0x4;
 		lsc_config.offset = 0x60;
-		lsc_config.size = sizeof(ispccdc_lsc_tbl);
+		lsc_config.size = LSC_TABLE_INIT_SIZE;
 		ccdc_use_lsc = 1;
 	}
 
