@@ -696,7 +696,7 @@ void isp_power_settings(struct isp_sysc isp_sysconfig)
 		omap_writel(ISPMMU_AUTOIDLE | (ISPMMU_SIDLEMODE_SMARTIDLE <<
 						ISPMMU_SIDLEMODE_SHIFT),
 						ISPMMU_SYSCONFIG);
-		if (is_sil_rev_equal_to(OMAP3430_REV_ES1_0)) {
+		if (system_rev == OMAP3430_REV_ES1_0) {
 			omap_writel(ISPCSI1_AUTOIDLE |
 					(ISPCSI1_MIDLEMODE_SMARTSTANDBY <<
 					ISPCSI1_MIDLEMODE_SHIFT),
@@ -717,7 +717,7 @@ void isp_power_settings(struct isp_sysc isp_sysconfig)
 		omap_writel(ISPMMU_AUTOIDLE |
 			(ISPMMU_SIDLEMODE_NOIDLE << ISPMMU_SIDLEMODE_SHIFT),
 							ISPMMU_SYSCONFIG);
-		if (is_sil_rev_equal_to(OMAP3430_REV_ES1_0)) {
+		if (system_rev == OMAP3430_REV_ES1_0) {
 			omap_writel(ISPCSI1_AUTOIDLE |
 					(ISPCSI1_MIDLEMODE_FORCESTANDBY <<
 					ISPCSI1_MIDLEMODE_SHIFT),

@@ -211,7 +211,7 @@ static int init_l2_page_cache(void)
 					l2_page_cache_p, l2_page_cache,
 					L2P_TABLES_SIZE);
 
-	if (is_sil_rev_less_than(OMAP3430_REV_ES2_0))
+	if (system_rev < OMAP3430_REV_ES2_0)
 		l2_mapattr_obj.endianism = B_ENDIAN;
 	else
 		l2_mapattr_obj.endianism = L_ENDIAN;
@@ -616,7 +616,7 @@ int __init ispmmu_init(void)
 	DPRINTK_ISPMMU("TTB allocated at p = 0x%x, v = 0x%x, size = 0x%x\n",
 		ttb_p, (u32)ttb, ttb_aligned_size);
 
-	if (is_sil_rev_less_than(OMAP3430_REV_ES2_0))
+	if (system_rev < OMAP3430_REV_ES2_0)
 		l1_mapattr_obj.endianism = B_ENDIAN;
 	else
 		l1_mapattr_obj.endianism = L_ENDIAN;

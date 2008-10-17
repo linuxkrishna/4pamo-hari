@@ -1441,7 +1441,7 @@ int isppreview_try_size(u32 input_w, u32 input_h, u32 *output_w, u32 *output_h)
 				"width < 16 or height < 32 \n");
 		return -EINVAL;
 	}
-	if (is_sil_rev_equal_to(OMAP3430_REV_ES1_0))
+	if (system_rev == OMAP3430_REV_ES1_0)
 		max_out = ISPPRV_MAXOUTPUT_WIDTH;
 	else
 		max_out = ISPPRV_MAXOUTPUT_WIDTH_ES2;
@@ -1808,7 +1808,7 @@ int __init isp_preview_init(void)
 	ispprev_obj.prev_inuse = 0;
 	mutex_init(&ispprev_obj.ispprev_mutex);
 
-	if (is_sil_rev_equal_to(OMAP3430_REV_ES2_0)) {
+	if (system_rev > OMAP3430_REV_ES1_0) {
 		flr_wbal_coef0 = 0x23;
 		flr_wbal_coef1 = 0x20;
 		flr_wbal_coef2 = 0x20;
