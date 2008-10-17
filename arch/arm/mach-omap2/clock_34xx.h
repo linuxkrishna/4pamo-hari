@@ -937,8 +937,8 @@ static struct clk cam_mclk = {
 	.recalc = &omap3_clk_recalc,
 };
 
-static struct clk csi2_fck = {
-	.name = "csi2_fck",
+static struct clk csi2_96m_fck = {
+	.name = "csi2_96m_fck",
 	.prcmid = PRCM_CSI2,
 	.parent = &func_96m_ck,
 	.flags = CLOCK_IN_OMAP343X | F_CLK | POWER_ON_REQUIRED,
@@ -1490,7 +1490,7 @@ static struct clk *onchip_clks[] = {
 	&dss_ick,
 	&cam_mclk,
 	&cam_ick,
-	&csi2_fck,
+	&csi2_96m_fck,
 	&gpt1_fck,
 	&gpt1_ick,
 	&sync_32k_fck,
