@@ -48,6 +48,7 @@
 #include "isp_af.h"
 #include "isppreview.h"
 #include "ispresizer.h"
+#include "ispcsi2.h"
 
 #if ISP_WORKAROUND
 void *buff_addr;
@@ -171,6 +172,7 @@ static struct isp {
 	int ref_count;
 	struct clk *cam_ick;
 	struct clk *cam_mclk;
+	struct clk *csi2_fck;
 } isp_obj;
 
 struct isp_sgdma ispsg;
@@ -526,6 +528,14 @@ int isp_unset_callback(enum isp_callback_type type)
 					~(IRQ0ENABLE_CCDC_LSC_DONE_IRQ |
 					IRQ0ENABLE_CCDC_LSC_PREF_COMP_IRQ |
 					IRQ0ENABLE_CCDC_LSC_PREF_ERR_IRQ),
+					ISP_IRQ0ENABLE);
+		break;
+	case CBK_CSIA:
+		isp_csi2_irq_set(0);
+		break;
+	case CBK_CSIB:
+		omap_writel(IRQ0ENABLE_CSIB_IRQ, ISP_IRQ0STATUS);
+		omap_writel(omap_readl(ISP_IRQ0ENABLE)|IRQ0ENABLE_CSIB_IRQ,
 					ISP_IRQ0ENABLE);
 		break;
 	default:
@@ -892,6 +902,29 @@ int isp_configure_interface(struct isp_interface_config *config)
 		ispctrl_val |= (config->u.par.par_bridge
 						<< ISPCTRL_PAR_BRIDGE_SHIFT);
 		break;
+	case ISP_CSIA:
+		ispctrl_val |= ISPCTRL_PAR_SER_CLK_SEL_CSIA;
+		ispctrl_val &= ~ISPCTRL_PAR_BRIDGE_BENDIAN;
+		ispctrl_val |= (0x03 << ISPCTRL_PAR_BRIDGE_SHIFT);
+
+		isp_csi2_ctx_config_format(0, config->u.csi.format);
+		isp_csi2_ctx_update(0, false);
+
+		if (config->u.csi.crc)
+			isp_csi2_ctrl_config_ecc_enable(true);
+
+		isp_csi2_ctrl_config_vp_out_ctrl(config->u.csi.vpclk);
+		isp_csi2_ctrl_config_vp_only_enable(true);
+		isp_csi2_ctrl_config_vp_clk_enable(true);
+		isp_csi2_ctrl_update(false);
+
+		isp_csi2_irq_complexio1_set(1);
+		isp_csi2_irq_status_set(1);
+		isp_csi2_irq_set(1);
+
+		isp_csi2_enable(1);
+		mdelay(3);
+		break;
 	case ISP_CSIB:
 		ispctrl_val |= ISPCTRL_PAR_SER_CLK_SEL_CSIB;
 		r = isp_init_csi(config);
@@ -915,9 +948,30 @@ int isp_configure_interface(struct isp_interface_config *config)
 						ISPCCDC_VDINT_1_SHIFT),
 						ISPCCDC_VDINT);
 
+	/* Set sensor specific fields in CCDC and Previewer module.*/
+	isppreview_set_skip(config->prev_sph, config->prev_slv);
+	ispccdc_set_wenlog(config->wenlog);
+
 	return 0;
 }
 EXPORT_SYMBOL(isp_configure_interface);
+
+/**
+ * isp_configure_interface_bridge - Configure CCDC i/f bridge.
+ *
+ * Sets the bit field that controls the 8 to 16-bit bridge at
+ * the input to CCDC.
+ **/
+int isp_configure_interface_bridge(u32 par_bridge)
+{
+	u32 ispctrl_val = omap_readl(ISP_CTRL);
+
+	ispctrl_val &= ~ISPCTRL_PAR_BRIDGE_BENDIAN;
+	ispctrl_val |= (par_bridge << ISPCTRL_PAR_BRIDGE_SHIFT);
+	omap_writel(ispctrl_val, ISP_CTRL);
+	return 0;
+}
+EXPORT_SYMBOL(isp_configure_interface_bridge);
 
 /**
  * isp_CCDC_VD01_enable - Enables VD0 and VD1 IRQs.
@@ -1048,6 +1102,11 @@ static irqreturn_t omap34xx_isp_isr(int irq, void *ispirq_disp)
 		is_irqhandled = 1;
 	}
 
+	if ((irqstatus & CSIA) == CSIA) {
+		isp_csi2_isr();
+		is_irqhandled = 1;
+	}
+
 	if (irqstatus & LSC_PRE_ERR) {
 		printk(KERN_ERR "isp_sr: LSC_PRE_ERR \n");
 		omap_writel(irqstatus, ISP_IRQ0STATUS);
@@ -1081,24 +1140,6 @@ struct device_driver camera_drv = {
 struct device camera_dev = {
 	.driver = &camera_drv,
 };
-
-/**
- * isp_set_pipeline - Set bit mask for submodules enabled within the ISP.
- * @soc_type: Sensor to use: 1 - Smart sensor, 0 - Raw sensor.
- *
- * Sets Previewer and Resizer in the bit mask only if its a Raw sensor.
- **/
-void isp_set_pipeline(int soc_type)
-{
-	ispmodule_obj.isp_pipeline |= OMAP_ISP_CCDC;
-
-	if (!soc_type)
-		ispmodule_obj.isp_pipeline |= (OMAP_ISP_PREVIEW |
-							OMAP_ISP_RESIZER);
-
-	return;
-}
-EXPORT_SYMBOL(isp_set_pipeline);
 
 /**
  * omapisp_unset_callback - Unsets all the callbacks associated with ISP module
@@ -2238,6 +2279,13 @@ int isp_get(void)
 			ret_err = PTR_ERR(isp_obj.cam_mclk);
 			goto out_clk_get_mclk;
 		}
+		isp_obj.csi2_fck = clk_get(&camera_dev, "csi2_96m_fck");
+		if (IS_ERR(isp_obj.csi2_fck)) {
+			DPRINTK_ISPCTRL("ISP_ERR: clk_get for csi2_fclk"
+								" failed\n");
+			ret_err = PTR_ERR(isp_obj.csi2_fck);
+			goto out_clk_get_csi2_fclk;
+		}
 		ret_err = clk_enable(isp_obj.cam_ick);
 		if (ret_err) {
 			DPRINTK_ISPCTRL("ISP_ERR: clk_en for ick failed\n");
@@ -2247,6 +2295,12 @@ int isp_get(void)
 		if (ret_err) {
 			DPRINTK_ISPCTRL("ISP_ERR: clk_en for mclk failed\n");
 			goto out_clk_enable_mclk;
+		}
+		ret_err = clk_enable(isp_obj.csi2_fck);
+		if (ret_err) {
+			DPRINTK_ISPCTRL("ISP_ERR: clk_en for csi2_fclk"
+								" failed\n");
+			goto out_clk_enable_csi2_fclk;
 		}
 		if (off_mode == 1)
 			isp_restore_ctx();
@@ -2258,9 +2312,13 @@ int isp_get(void)
 	DPRINTK_ISPCTRL("isp_get: new %d\n", isp_obj.ref_count);
 	return isp_obj.ref_count;
 
+out_clk_enable_csi2_fclk:
+	clk_disable(isp_obj.cam_mclk);
 out_clk_enable_mclk:
 	clk_disable(isp_obj.cam_ick);
 out_clk_enable_ick:
+	clk_put(isp_obj.csi2_fck);
+out_clk_get_csi2_fclk:
 	clk_put(isp_obj.cam_mclk);
 out_clk_get_mclk:
 	clk_put(isp_obj.cam_ick);
@@ -2289,8 +2347,10 @@ int isp_put(void)
 			ispmodule_obj.isp_pipeline = 0;
 			clk_disable(isp_obj.cam_ick);
 			clk_disable(isp_obj.cam_mclk);
+			clk_disable(isp_obj.csi2_fck);
 			clk_put(isp_obj.cam_ick);
 			clk_put(isp_obj.cam_mclk);
+			clk_put(isp_obj.csi2_fck);
 			memset(&ispcroprect, 0, sizeof(ispcroprect));
 			memset(&cur_rect, 0, sizeof(cur_rect));
 #if ISP_WORKAROUND

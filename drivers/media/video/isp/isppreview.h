@@ -353,4 +353,6 @@ int omap34xx_isp_preview_config(void *userspace_add);
 
 int omap34xx_isp_tables_update(struct isptables_update *isptables_struct);
 
+void isppreview_set_skip(u32 h, u32 v);
+
 #endif/* OMAP_ISP_PREVIEW_H */

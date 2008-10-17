@@ -82,6 +82,7 @@ static struct isp_ccdc {
 	u8 obclamp_en;
 	u8 lsc_en;
 	struct mutex mutexlock; /* For checking/modifying ccdc_inuse */
+	u32 wenlog;
 } ispccdc_obj;
 
 static struct ispccdc_lsc_config lsc_config;
@@ -314,6 +315,16 @@ copy_from_user_err:
 	return -EINVAL ;
 }
 EXPORT_SYMBOL(omap34xx_isp_ccdc_config);
+
+/**
+ * Set the value to be used for CCDC_CFG.WENLOG.
+ *  w - Value of wenlog.
+ */
+void ispccdc_set_wenlog(u32 wenlog)
+{
+	ispccdc_obj.wenlog = wenlog;
+}
+EXPORT_SYMBOL(ispccdc_set_wenlog);
 
 /**
  * ispccdc_request - Reserves the CCDC module.
@@ -560,17 +571,22 @@ int ispccdc_config_datapath(enum ccdc_input input, enum ccdc_output output)
 		syn_mode &= ~ISPCCDC_SYN_MODE_VP2SDR;
 		syn_mode &= ~ISPCCDC_SYN_MODE_SDR2RSZ;
 		syn_mode |= ISPCCDC_SYN_MODE_WEN;
-		syn_mode |= ISPCCDC_SYN_MODE_EXWEN;
-		omap_writel((omap_readl(ISPCCDC_CFG)) | ISPCCDC_CFG_WENLOG,
+		syn_mode &= ~ISPCCDC_SYN_MODE_EXWEN;
+		omap_writel((omap_readl(ISPCCDC_CFG)) & ~ISPCCDC_CFG_WENLOG,
 								ISPCCDC_CFG);
+		vpcfg.bitshift_sel = BIT11_2;
+		vpcfg.freq_sel = PIXCLKBY2;
+		ispccdc_config_vp(vpcfg);
+		ispccdc_enable_vp(0);
 		break;
 
 	case CCDC_OTHERS_VP_MEM:
 		syn_mode &= ~ISPCCDC_SYN_MODE_VP2SDR;
+		syn_mode &= ~ISPCCDC_SYN_MODE_SDR2RSZ;
 		syn_mode |= ISPCCDC_SYN_MODE_WEN;
 		syn_mode |= ISPCCDC_SYN_MODE_EXWEN;
-		omap_writel((omap_readl(ISPCCDC_CFG)) | ISPCCDC_CFG_WENLOG,
-								ISPCCDC_CFG);
+		omap_writel((omap_readl(ISPCCDC_CFG) & ~ISPCCDC_CFG_WENLOG) |
+					ispccdc_obj.wenlog, ISPCCDC_CFG);
 		vpcfg.bitshift_sel = BIT9_0;
 		vpcfg.freq_sel = PIXCLKBY2;
 		ispccdc_config_vp(vpcfg);
@@ -1209,16 +1225,24 @@ int ispccdc_config_size(u32 input_w, u32 input_h, u32 output_w, u32 output_h)
 					ISPCCDC_VDINT_1_SHIFT), ISPCCDC_VDINT);
 
 	} else if (ispccdc_obj.ccdc_outfmt == CCDC_OTHERS_MEM) {
+		omap_writel(0, ISPCCDC_VP_OUT);
 		if (cpu_is_omap3410()) {
 			omap_writel(0 << ISPCCDC_HORZ_INFO_SPH_SHIFT |
 						((ispccdc_obj.ccdcout_w - 1) <<
 						ISPCCDC_HORZ_INFO_NPH_SHIFT),
 						ISPCCDC_HORZ_INFO);
 		} else {
-			omap_writel(1 << ISPCCDC_HORZ_INFO_SPH_SHIFT |
-						((ispccdc_obj.ccdcout_w - 1) <<
-						ISPCCDC_HORZ_INFO_NPH_SHIFT),
+			if (ispccdc_obj.ccdc_inpfmt == CCDC_RAW) {
+				omap_writel(1 << ISPCCDC_HORZ_INFO_SPH_SHIFT
+						| ((ispccdc_obj.ccdcout_w - 1)
+						<< ISPCCDC_HORZ_INFO_NPH_SHIFT),
 						ISPCCDC_HORZ_INFO);
+			} else {
+				omap_writel(0 << ISPCCDC_HORZ_INFO_SPH_SHIFT
+						| ((ispccdc_obj.ccdcout_w - 1)
+						<< ISPCCDC_HORZ_INFO_NPH_SHIFT),
+						ISPCCDC_HORZ_INFO);
+			}
 		}
 		omap_writel(0 << ISPCCDC_VERT_START_SLV0_SHIFT,
 							ISPCCDC_VERT_START);
@@ -1227,7 +1251,7 @@ int ispccdc_config_size(u32 input_w, u32 input_h, u32 output_w, u32 output_h)
 						ISPCCDC_VERT_LINES);
 
 		ispccdc_config_outlineoffset(ispccdc_obj.ccdcout_w * 2, 0, 0);
-		omap_writel((((ispccdc_obj.ccdcout_h - 1) &
+		omap_writel((((ispccdc_obj.ccdcout_h - 2) &
 					ISPCCDC_VDINT_0_MASK) <<
 					ISPCCDC_VDINT_0_SHIFT) |
 					((50 & ISPCCDC_VDINT_1_MASK) <<

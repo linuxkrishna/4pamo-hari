@@ -209,4 +209,6 @@ void ispccdc_print_status(void);
 
 int omap34xx_isp_ccdc_config(void *userspace_add);
 
+void ispccdc_set_wenlog(u32 wenlog);
+
 #endif		/* OMAP_ISP_CCDC_H */
