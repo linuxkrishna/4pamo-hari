@@ -36,24 +36,6 @@
 /* Our ISP specific controls */
 #define V4L2_CID_PRIVATE_ISP_COLOR_FX		(V4L2_CID_PRIVATE_BASE + 0)
 
-/* ISP Private IOCTLs */
-#define VIDIOC_PRIVATE_ISP_CCDC_CFG	\
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 1, struct ispccdc_update_config)
-#define VIDIOC_PRIVATE_ISP_PRV_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 2, struct ispprv_update_config)
-#define VIDIOC_PRIVATE_ISP_AEWB_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 4, struct isph3a_aewb_config)
-#define VIDIOC_PRIVATE_ISP_AEWB_REQ \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 5, struct isph3a_aewb_data)
-#define VIDIOC_PRIVATE_ISP_HIST_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 6, struct isp_hist_config)
-#define VIDIOC_PRIVATE_ISP_HIST_REQ \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 7, struct isp_hist_data)
-#define VIDIOC_PRIVATE_ISP_AF_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 8, struct af_configuration)
-#define VIDIOC_PRIVATE_ISP_AF_REQ \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 9, struct isp_af_data)
-
 #define ISP_TOK_TERM		0xFFFFFFFF	/*
 						 * terminating token for ISP
 						 * modules reg list
@@ -231,9 +213,7 @@ struct isp_sysc {
 	char idle_mode;
 };
 
-void isp_open(void);
-
-void isp_close(void);
+void isp_release_resources(void);
 
 void isp_start(void);
 
