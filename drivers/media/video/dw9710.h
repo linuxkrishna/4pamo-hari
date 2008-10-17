@@ -37,7 +37,7 @@
 #define LENS_NOT_DETECTED	0
 
 /* Focus control values */
-#define DEF_LENS_POSN		0x7F
+#define DEF_LENS_POSN		0	/* 0x7F */
 #define LENS_POSN_STEP		1
 
 
@@ -51,11 +51,9 @@ struct dw9710_platform_data {
 	int (*priv_data_set)(void *);
 };
 
-void dw9710_enable(int power);
 /*
  * Sets the specified focus value [0(far) - 100(near)]
  */
 int dw9710_af_setfocus(u16 posn);
 int dw9710_af_getfocus(u16 *value);
-int dw9710_af_getfocus_cached(u16 *value);
 #endif /* End of of CAMAF_DW9710_H */

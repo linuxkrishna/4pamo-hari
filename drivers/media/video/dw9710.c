@@ -40,6 +40,7 @@ struct dw9710_device {
 	u16 current_lens_posn;
 	u16 saved_lens_posn;
 	int state;
+	int power_state;
 };
 
 static const struct i2c_device_id dw9710_id[] = {
@@ -60,6 +61,7 @@ static struct i2c_driver dw9710_i2c_driver = {
 
 static struct dw9710_device dw9710 = {
 	.state = LENS_NOT_DETECTED,
+	.current_lens_posn = DEF_LENS_POSN,
 };
 
 static struct vcontrol {
@@ -81,7 +83,6 @@ static struct vcontrol {
 };
 
 static struct i2c_driver dw9710_i2c_driver;
-static int camera_enabled;
 
 /**
  * find_vctrl - Finds the requested ID in the video control structure array
@@ -180,16 +181,6 @@ again:
 }
 
 /**
- * dw9710_enable - Sets flag to confirm if camera is turned on.
- * @power: Status of camera power. 1 - On, 2 - Off.
- **/
-void dw9710_enable(int power)
-{
-	camera_enabled = power;
-}
-EXPORT_SYMBOL(dw9710_enable);
-
-/**
  * dw9710_detect - Detects DW9710 Coil driver device.
  * @client: Pointer to structure of I2C client.
  *
@@ -203,8 +194,6 @@ static int dw9710_detect(struct i2c_client *client)
 	u16 wposn = 0, rposn = 0;
 	u16 posn = 0x05;
 
-	if (!camera_enabled)
-		return -1;
 	wposn = (CAMAF_DW9710_POWERDN(CAMAF_DW9710_ENABLE) |
 						CAMAF_DW9710_DATA(posn));
 
@@ -247,12 +236,15 @@ int dw9710_af_setfocus(u16 posn)
 	u16 cur_focus_value = 0;
 	int ret = -EINVAL;
 
-	if (!camera_enabled)
-		return ret;
-
 	if (posn > MAX_FOCUS_POS) {
 		printk(KERN_ERR "Bad posn params 0x%x \n", posn);
 		return ret;
+	}
+
+	if ((af_dev->power_state == V4L2_POWER_OFF) ||
+		(af_dev->power_state == V4L2_POWER_STANDBY)) {
+		af_dev->current_lens_posn = posn;
+		return 0;
 	}
 
 	ret = camaf_reg_read(client, &cur_focus_value);
@@ -263,7 +255,7 @@ int dw9710_af_setfocus(u16 posn)
 	}
 
 	if (CAMAF_DW9710_DATA_R(cur_focus_value) == posn) {
-		printk(KERN_DEBUG "Device already in requested focal point");
+		printk(KERN_DEBUG "Device already in requested focal point\n");
 		return ret;
 	}
 
@@ -293,7 +285,8 @@ int dw9710_af_getfocus(u16 *value)
 	struct dw9710_device *af_dev = &dw9710;
 	struct i2c_client *client = af_dev->i2c_client;
 
-	if (!camera_enabled)
+	if ((af_dev->power_state == V4L2_POWER_OFF) ||
+	   (af_dev->power_state == V4L2_POWER_STANDBY))
 		return ret;
 
 	ret = camaf_reg_read(client, &posn);
@@ -307,21 +300,6 @@ int dw9710_af_getfocus(u16 *value)
 	return ret;
 }
 EXPORT_SYMBOL(dw9710_af_getfocus);
-
-/**
- * dw9710_af_getfocus_cached - Gets the focus value from internal variable.
- * @value: Pointer to u16 variable which will contain the focus value.
- *
- * Returns 0 if successful, or -EINVAL if camera is off.
- **/
-int dw9710_af_getfocus_cached(u16 *value)
-{
-	if (!camera_enabled)
-		return -EINVAL;
-	*value = dw9710.current_lens_posn;
-	return 0;
-}
-EXPORT_SYMBOL(dw9710_af_getfocus_cached);
 
 /**
  * ioctl_queryctrl - V4L2 lens interface handler for VIDIOC_QUERYCTRL ioctl
@@ -442,7 +420,8 @@ static int ioctl_s_power(struct v4l2_int_device *s, enum v4l2_power on)
 	int rval;
 
 	rval = lens->pdata->power_set(on);
-	camera_enabled = on;
+
+	lens->power_state = on;
 
 	if ((on == V4L2_POWER_ON) && (lens->state == LENS_NOT_DETECTED)) {
 		rval = dw9710_detect(c);
@@ -457,6 +436,10 @@ static int ioctl_s_power(struct v4l2_int_device *s, enum v4l2_power on)
 		lens->state = LENS_DETECTED;
 		pr_info(DRIVER_NAME " lens HW detected\n");
 	}
+
+	if ((on == V4L2_POWER_RESUME) && (lens->state == LENS_DETECTED))
+		dw9710_af_setfocus(lens->current_lens_posn);
+
 	return 0;
 }
 
@@ -556,8 +539,6 @@ static int __exit dw9710_remove(struct i2c_client *client)
 static int __init dw9710_init(void)
 {
 	int err = -EINVAL;
-
-	camera_enabled = 0;
 
 	err = i2c_add_driver(&dw9710_i2c_driver);
 	if (err)
