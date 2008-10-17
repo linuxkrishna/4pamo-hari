@@ -65,12 +65,11 @@ static struct isp_reg ispprev_reg_list[] = {
 	{ISPPRV_CNT_BRT, 0x0000},
 	{ISPPRV_CSUP, 0x0000},
 	{ISPPRV_SETUP_YC, 0x0000},
-	{ISPPRV_SET_TBL_ADDR, 0x0000},
-	{ISPPRV_SET_TBL_DATA, 0x0000},
 	{ISPPRV_CDC_THR0, 0x0000},
 	{ISPPRV_CDC_THR1, 0x0000},
 	{ISPPRV_CDC_THR2, 0x0000},
 	{ISPPRV_CDC_THR3, 0x0000},
+	{ISPPRV_PCR, 0x0000},
 	{ISP_TOK_TERM, 0x0000}
 };
 
@@ -1437,6 +1436,11 @@ int isppreview_try_size(u32 input_w, u32 input_h, u32 *output_w, u32 *output_h)
 	ispprev_obj.previn_w = input_w;
 	ispprev_obj.previn_h = input_h;
 
+	if (input_w < 32 || input_h < 32) {
+		printk(KERN_ERR "ISP_ERR : preview does not support "
+				"width < 16 or height < 32 \n");
+		return -EINVAL;
+	}
 	if (is_sil_rev_equal_to(OMAP3430_REV_ES1_0))
 		max_out = ISPPRV_MAXOUTPUT_WIDTH;
 	else

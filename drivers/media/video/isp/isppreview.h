@@ -91,8 +91,8 @@ enum preview_ycpos_mode {
 
 enum preview_color_effect {
 	PREV_DEFAULT_COLOR = 0,
-	PREV_BW_COLOR = 1,
-	PREV_SEPIA_COLOR = 2
+	PREV_SEPIA_COLOR = 1,
+	PREV_BW_COLOR = 2
 };
 
 
