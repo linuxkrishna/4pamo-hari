@@ -65,8 +65,6 @@ static struct isp_reg ispmmu_reg_list[] = {
 	{ISPMMU_LD_TLB, 0x0000},
 	{ISPMMU_CAM, 0x0000},
 	{ISPMMU_RAM, 0x0000},
-	{ISPMMU_GFLUSH, 0x0000},
-	{ISPMMU_FLUSH_ENTRY, 0x0000},
 	{ISP_TOK_TERM, 0x0000}
 };
 
