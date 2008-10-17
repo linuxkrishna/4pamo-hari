@@ -421,8 +421,6 @@ static int ioctl_s_power(struct v4l2_int_device *s, enum v4l2_power on)
 
 	rval = lens->pdata->power_set(on);
 
-	lens->power_state = on;
-
 	if ((on == V4L2_POWER_ON) && (lens->state == LENS_NOT_DETECTED)) {
 		rval = dw9710_detect(c);
 		if (rval < 0) {
@@ -437,9 +435,11 @@ static int ioctl_s_power(struct v4l2_int_device *s, enum v4l2_power on)
 		pr_info(DRIVER_NAME " lens HW detected\n");
 	}
 
-	if ((on == V4L2_POWER_RESUME) && (lens->state == LENS_DETECTED))
+	if ((lens->power_state == V4L2_POWER_STANDBY) && (on == V4L2_POWER_ON)
+					&& (lens->state == LENS_DETECTED))
 		dw9710_af_setfocus(lens->current_lens_posn);
 
+	lens->power_state = on;
 	return 0;
 }
 
