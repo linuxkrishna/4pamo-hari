@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.27-rc9-omap1
-# Wed Oct  8 19:52:56 2008
+# Linux kernel version: 2.6.27-omap1
+# Wed Oct 15 19:20:48 2008
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -219,8 +219,8 @@ CONFIG_ARCH_OMAP3430=y
 CONFIG_MACH_OMAP_3430SDP=y
 # CONFIG_MACH_OMAP3EVM is not set
 # CONFIG_MACH_OMAP3_BEAGLE is not set
-# CONFIG_OMAP3_PM is not set
 # CONFIG_MACH_OVERO is not set
+# CONFIG_OMAP3_PM is not set
 CONFIG_OMAP_TICK_GPTIMER=1
 
 #
@@ -868,6 +868,10 @@ CONFIG_GPIOLIB=y
 CONFIG_GPIO_TWL4030=y
 
 #
+# PCI GPIO expanders:
+#
+
+#
 # SPI GPIO expanders:
 #
 # CONFIG_GPIO_MAX7301 is not set
@@ -966,7 +970,64 @@ CONFIG_VIDEOBUF_GEN=y
 CONFIG_VIDEOBUF_DMA_SG=y
 CONFIG_VIDEO_CAPTURE_DRIVERS=y
 # CONFIG_VIDEO_ADV_DEBUG is not set
-CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+# CONFIG_VIDEO_HELPER_CHIPS_AUTO is not set
+
+#
+# Encoders/decoders and other helper chips
+#
+
+#
+# Audio decoders
+#
+# CONFIG_VIDEO_TVAUDIO is not set
+# CONFIG_VIDEO_TDA7432 is not set
+# CONFIG_VIDEO_TDA9840 is not set
+# CONFIG_VIDEO_TDA9875 is not set
+# CONFIG_VIDEO_TEA6415C is not set
+# CONFIG_VIDEO_TEA6420 is not set
+# CONFIG_VIDEO_MSP3400 is not set
+# CONFIG_VIDEO_CS5345 is not set
+# CONFIG_VIDEO_CS53L32A is not set
+# CONFIG_VIDEO_M52790 is not set
+# CONFIG_VIDEO_TLV320AIC23B is not set
+# CONFIG_VIDEO_WM8775 is not set
+# CONFIG_VIDEO_WM8739 is not set
+# CONFIG_VIDEO_VP27SMPX is not set
+
+#
+# Video decoders
+#
+# CONFIG_VIDEO_OV7670 is not set
+# CONFIG_VIDEO_TCM825X is not set
+# CONFIG_VIDEO_OV9640 is not set
+CONFIG_VIDEO_MT9P012=y
+CONFIG_VIDEO_DW9710=y
+CONFIG_VIDEO_OV3640=y
+CONFIG_VIDEO_OV3640_CSI2=y
+# CONFIG_VIDEO_SAA711X is not set
+# CONFIG_VIDEO_SAA717X is not set
+# CONFIG_VIDEO_TVP5150 is not set
+
+#
+# Video and audio decoders
+#
+# CONFIG_VIDEO_CX25840 is not set
+
+#
+# MPEG video encoders
+#
+# CONFIG_VIDEO_CX2341X is not set
+
+#
+# Video encoders
+#
+# CONFIG_VIDEO_SAA7127 is not set
+
+#
+# Video improvement chips
+#
+# CONFIG_VIDEO_UPD64031A is not set
+# CONFIG_VIDEO_UPD64083 is not set
 # CONFIG_VIDEO_VIVI is not set
 # CONFIG_VIDEO_SAA5246A is not set
 # CONFIG_VIDEO_SAA5249 is not set
@@ -977,9 +1038,9 @@ CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
 CONFIG_VIDEO_OMAP24XX_VIDEOLIB=y
 CONFIG_VIDEO_OMAP24XX_VIDEOOUT=y
 CONFIG_VIDEO_OMAP24XX_TVOUT=y
-# CONFIG_VIDEO_OMAP3 is not set
-# CONFIG_VIDEO_OMAP34XX_ISP_PREVIEWER is not set
-# CONFIG_VIDEO_OMAP34XX_ISP_RESIZER is not set
+CONFIG_VIDEO_OMAP3=y
+CONFIG_VIDEO_OMAP34XX_ISP_PREVIEWER=y
+CONFIG_VIDEO_OMAP34XX_ISP_RESIZER=y
 # CONFIG_VIDEO_OMAP2 is not set
 # CONFIG_V4L_USB_DRIVERS is not set
 # CONFIG_SOC_CAMERA is not set
