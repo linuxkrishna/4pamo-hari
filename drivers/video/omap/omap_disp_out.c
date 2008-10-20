@@ -195,6 +195,8 @@ struct res_handle * tv_rhandle = NULL;
 static struct spi_device *wvgalcd_spi;
 #endif
 
+int automatic_link;
+
 #ifdef CONFIG_OMAP2_LCD
 static int dvi_in_use; /* dvi output flag */
 static int lcd_in_use;
@@ -981,6 +983,7 @@ lcd_suspend(struct platform_device *odev, pm_message_t state)
        mdelay(40);
 #endif
 	omap2_dss_rgb_disable();
+	automatic_link = 0;
 	
 	return 0;
 }
@@ -1862,20 +1865,44 @@ static void disable_tv_detect(void){
 	omap2_disp_put_all_clks();
 }
 
-static ssize_t
-tv_state_show(struct device *dev, struct device_attribute *attr, char *buf) {
+ssize_t
+set_output_device(const char *buffer, int layer) {
+	ssize_t ret;
+	if (strncmp(buffer, "lcd", 3) == 0)
+		ret = write_layer_out("lcd", 3, layer);
+	else  if (strncmp(buffer, "tv", 2) == 0)
+		ret = write_layer_out("tv", 2, layer);
+	else
+		ret = -EINVAL;
+	return  ret;
+}
+EXPORT_SYMBOL(set_output_device);
+
+int
+get_tv_state(void){
 	int tv_state;
+
 	enable_tv_detect();
 	msleep(TV_DETECT_DELAY);
 	tv_state = omap_get_gpio_datain(TV_INT_GPIO);
 	disable_tv_detect();
-	return  sprintf(buf, "%d\n", tv_state);
+	return tv_state;
+}
+EXPORT_SYMBOL(get_tv_state);
+
+static ssize_t
+tv_state_show(struct device *dev, struct device_attribute *attr, char *buf) {
+	return  sprintf(buf, "%d\n", get_tv_state());
 }
 
 static ssize_t
 tv_state_store(struct device *dev, struct device_attribute *attr,
 		const char *buffer, size_t count) {
-	return 0;
+	if (strncmp(buffer, "1", 1) == 0)
+		automatic_link = 1;
+	else if (strncmp(buffer, "0", 1) == 0)
+		automatic_link = 0;
+	return count;
 }
 #endif
 

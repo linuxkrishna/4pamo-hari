@@ -102,6 +102,7 @@ struct omap24xxvout_fh {
 	struct videobuf_queue vbq;
 };
 
+
 #ifdef CONFIG_ARCH_OMAP34XX
 
 
@@ -173,5 +174,10 @@ struct omap3_aux_disp_fh {
 	struct videobuf_queue vbq;
 };
 #endif
+
+	/* TV detection autoswitching support */
+	extern int automatic_link;
+	extern int get_tv_state(void);
+	extern ssize_t set_output_device(const char *buffer, int);
 
 #endif	/* ifndef OMAP24XXVOUTDEF_H */

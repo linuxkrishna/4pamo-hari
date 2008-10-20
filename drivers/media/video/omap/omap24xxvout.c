@@ -134,6 +134,7 @@ static int rotation_support = -1;
 #define SMS_RGB_PIXSIZE		2
 #define SMS_YUYV_PIXSIZE	4
 #define VRFB_TX_TIMEOUT		1000
+#define AUTO_VIDEO_LINK		2
 
 #ifdef CONFIG_FB_OMAP_720P_STREAMING
 #define VID_MAX_WIDTH		HD_720P_WIDTH  /* Largest width */
@@ -142,6 +143,8 @@ static int rotation_support = -1;
 #define VID_MAX_WIDTH		WVGA_SQUARE_WIDTH /* Largest width */
 #define VID_MAX_HEIGHT		WVGA_SQUARE_HEIGHT_R90 /* Largest height */
 #endif
+
+static int prev_output_dev = -1;
 
 static struct omap24xxvout_device *saved_v1out, *saved_v2out;
 
@@ -156,6 +159,7 @@ static struct omap24xxvout_device *saved_v1out, *saved_v2out;
  */
 
 static int vout_linked;
+int tv_state;
 static spinlock_t vout_link_lock;
 
 static struct videobuf_queue_ops dummy_vbq_ops;
@@ -313,6 +317,112 @@ omap24xxvout_sync (struct omap24xxvout_device *dest,
 	if (src->streaming)
 		omap2_disp_config_vlayer (dest->vid, &dest->pix, &dest->crop, &dest->win,
 			dest->rotation, dest->mirror);
+}
+
+void omap24xxvout_set_link(struct omap24xxvout_device *vout, int link_status)
+{
+
+	int *link = &link_status;
+	spin_lock(&vout_link_lock);
+	if ((*link == 0) && (vout_linked == vout->vid))
+		vout_linked = -1;
+
+	omap2_disp_get_dss();
+
+	if ((*link == 1) && (vout_linked == -1 || vout_linked == vout->vid)) {
+		vout_linked = 2;
+		if (vout_linked == OMAP2_VIDEO2) {
+			/* sync V2 to V1 for img and crop */
+			omap24xxvout_sync(saved_v2out, saved_v1out);
+		} else {
+			/* sync V1 to V2 */
+			omap24xxvout_sync(saved_v1out, saved_v2out);
+		}
+	}
+
+	omap2_disp_put_dss();
+	spin_unlock(&vout_link_lock);
+}
+
+
+int omap24xxvout_streaming_link(struct omap24xxvout_device *vout,
+		struct omap24xxvout_fh *fh) {
+	if (vout->streaming)
+		return -EBUSY;
+
+	vout->streaming = fh;
+	omap2_disp_get_dss();
+
+	omap2_disp_config_vlayer(vout->vid, &vout->pix,
+			&vout->crop, &vout->win, vout->rotation,
+			vout->mirror);
+	omap2_disp_put_dss();
+	return 0;
+}
+
+
+int omap24xxvout_tv_link(void){
+
+	struct omap24xxvout_device *vout = NULL;
+	struct omap24xxvout_fh *fh;
+
+	vout = saved_v2out;
+
+	if (vout == NULL)
+		return -ENODEV;
+
+	/* for now, we only support single open */
+	if (vout->opened)
+		return -EBUSY;
+
+	vout->opened += 1;
+	if (!omap2_disp_request_layer(vout->vid)) {
+		vout->opened -= 1;
+		return -ENODEV;
+	}
+
+	omap2_disp_get_dss();
+
+	/* allocate per-filehandle data */
+	fh = kmalloc(sizeof(*fh), GFP_KERNEL);
+	if (NULL == fh) {
+		omap2_disp_release_layer(vout->vid);
+		omap2_disp_put_dss();
+		vout->opened -= 1;
+		return -ENOMEM;
+	}
+
+	omap2_disp_put_dss();
+
+	omap24xxvout_set_link(vout, 1);
+	omap24xxvout_streaming_link(vout, fh);
+	return 0;
+}
+
+static  int
+omap24xxvout_tv_link_release(void) {
+	struct omap24xxvout_device *vout = saved_v2out;
+
+	omap2_disp_get_dss();
+	vout->streaming = NULL;
+	omap2_disp_disable_layer(vout->vid);
+
+	if ((vout_linked != -1) && (vout->vid != vout_linked))
+		omap2_disp_disable_layer((vout->vid ==
+			OMAP2_VIDEO1) ? OMAP2_VIDEO2 : OMAP2_VIDEO1);
+
+	omap2_disp_release_layer(vout->vid);
+	omap2_disp_put_dss();
+	vout->opened -= 1;
+
+	/* need to remove the link when the either slave or master is gone */
+	spin_lock(&vout_link_lock);
+	omap24xxvout_set_link(vout, 0);
+	if (vout_linked != -1)
+		vout_linked = -1;
+
+	spin_unlock(&vout_link_lock);
+	return 0;
 }
 
 static int
@@ -1017,10 +1127,25 @@ omap24xxvout_do_ioctl (struct inode *inode, struct file *file,
 		int k;
 		if (vout->streaming)
 			return -EBUSY;
-		/* 
-		 * If rotation mode is selected then allocate a 
-		 *  dummy or hidden buffer to map the SMS virtual space 
+
+		if (automatic_link && vout->vid == 1) {
+			tv_state = get_tv_state();
+			if (tv_state) {
+				prev_output_dev =
+					omap2_disp_get_output_dev(
+							AUTO_VIDEO_LINK);
+				if (prev_output_dev != OMAP2_OUTPUT_TV)
+					set_output_device("tv",
+						AUTO_VIDEO_LINK);
+					omap24xxvout_tv_link();
+			}
+		}
+
+		/*
+		 * If rotation mode is selected then allocate a
+		 *  dummy or hidden buffer to map the SMS virtual space
 		 */
+
 		if (vout->vid != vout_linked){
 			if (vout->rotation >= 0){
 				
@@ -1121,6 +1246,14 @@ omap24xxvout_do_ioctl (struct inode *inode, struct file *file,
 		 * only allow the file handler that started streaming to
 		 * stop streaming
 		 */
+
+		if (automatic_link && tv_state && vout->vid == 1) {
+			omap24xxvout_tv_link_release();
+			if (prev_output_dev == OMAP2_OUTPUT_LCD) {
+				set_output_device("lcd", AUTO_VIDEO_LINK);
+				prev_output_dev = -1;
+			}
+		}
 
 		if (vout->streaming == fh){
 			omap2_disp_disable_layer (vout->vid);
@@ -2273,6 +2406,7 @@ omap24xxvout_init (void)
 	omap2_disp_save_initstate(OMAP2_VIDEO2);
 	omap2_disp_put_dss();
 
+	tv_state = 0;
 	vout_linked = -1;
 	spin_lock_init (&vout_link_lock);
 	return 0;
