@@ -849,6 +849,9 @@ void omap2_disp_set_gfx_fifo_high_threshold(int thrs);
 extern void omap2_disp_put_all_clks(void);
 extern void omap2_disp_get_all_clks(void);
 
+/* TV detection*/
+void omap2_enable_tv_detect(void);
+void omap2_disable_tv_detect(void);
 /*------------------ end of exposed values and APIs -------------------------*/
 
 #endif /* __ASM_ARCH_OMAP2_DISP_H */

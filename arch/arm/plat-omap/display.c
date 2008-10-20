@@ -3847,6 +3847,26 @@ int omap2_disp_lpr_disable(void)
 }
 #endif /* CONFIG_ARCH_OMAP34XX */
 
+/**
+ * omap2_enable_tv_detect - Enables TVDET pulse generation
+ */
+void omap2_enable_tv_detect(void){
+	/* TVDET Active High Setting */
+	venc_reg_merge(VENC_GEN_CTRL, 0x1 << 16, 0x1 << 16);
+	/* Enable TVDET pulse generation */
+	venc_reg_merge(VENC_GEN_CTRL, 0x1, 0x1);
+}
+EXPORT_SYMBOL(omap2_enable_tv_detect);
+
+/**
+ * omap2_disable_tv_detect - Disables TVDET pulse generation
+ */
+void omap2_disable_tv_detect(void){
+	/* Disable TVDET pulse generation */
+	venc_reg_merge(VENC_GEN_CTRL, 0x0, 0x1);
+}
+EXPORT_SYMBOL(omap2_disable_tv_detect);
+
 /* Start before devices */
 subsys_initcall(omap2_disp_init);      
 

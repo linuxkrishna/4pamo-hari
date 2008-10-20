@@ -139,6 +139,9 @@
 #endif
 #endif
 
+#define TV_INT_GPIO			33
+#define TV_DETECT_DELAY			40 /*Delay for TV detection logic*/
+
 #define CONFIG_OMAP2_LCD
 #define ENABLE_VDAC_DEDICATED		0x03
 #define ENABLE_VDAC_DEV_GRP             0x20	     
@@ -1147,6 +1150,9 @@ tv_init(void)
 	printk(KERN_DEBUG DRIVER
 	       "TV %dx%d interlaced\n", H4_TV_XRES, H4_TV_YRES);
 
+	omap_request_gpio(TV_INT_GPIO);
+	omap_set_gpio_direction(TV_INT_GPIO, 1);
+
 #if 0 /* To be added back once SRF is in place */
 	resource_request(tv_rhandle,T2_VDAC_1V80);
 	resource_release(tv_rhandle);
@@ -1164,6 +1170,7 @@ tv_exit(void)
 	omap2_disp_disable_output_dev(OMAP2_OUTPUT_TV);
 	power_tv(TV_OFF);
 	omap2_disp_put_all_clks();
+	omap_free_gpio(TV_INT_GPIO);
 	tv_in_use = 0;
 	return 0;
 }
@@ -1822,6 +1829,54 @@ tv_standard_store(struct device *dev, struct device_attribute *attr, const char 
 	return count;
 	
 }
+
+static void enable_tv_detect(void){
+	omap2_disp_get_all_clks();
+	if (!tv_in_use) {
+		omap2_disp_set_tvref(TVREF_ON);
+#ifdef CONFIG_OMAP3_PM
+		resource_request(tv_rhandle, T2_VDAC_1V80);
+#else
+		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			ENABLE_VDAC_DEDICATED, TWL4030_VDAC_DEDICATED);
+		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			ENABLE_VDAC_DEV_GRP, TWL4030_VDAC_DEV_GRP);
+#endif
+	}
+	omap2_enable_tv_detect();
+}
+
+static void disable_tv_detect(void){
+	omap2_disable_tv_detect();
+	if (!tv_in_use) {
+		omap2_disp_set_tvref(TVREF_OFF);
+#ifdef CONFIG_OMAP3_PM
+	resource_release(tv_rhandle);
+#else
+	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00,
+		TWL4030_VDAC_DEDICATED);
+	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00,
+		TWL4030_VDAC_DEV_GRP);
+#endif
+       }
+	omap2_disp_put_all_clks();
+}
+
+static ssize_t
+tv_state_show(struct device *dev, struct device_attribute *attr, char *buf) {
+	int tv_state;
+	enable_tv_detect();
+	msleep(TV_DETECT_DELAY);
+	tv_state = omap_get_gpio_datain(TV_INT_GPIO);
+	disable_tv_detect();
+	return  sprintf(buf, "%d\n", tv_state);
+}
+
+static ssize_t
+tv_state_store(struct device *dev, struct device_attribute *attr,
+		const char *buffer, size_t count) {
+	return 0;
+}
 #endif
 
 #define DECLARE_ATTR(_name,_mode,_show,_store)                  \
@@ -1855,6 +1910,7 @@ static struct device_attribute bl_device_attributes[] = {
 #endif
 	#ifdef CONFIG_OMAP2_TV
 	DECLARE_ATTR(tv_standard,    0644, tv_standard_show, tv_standard_store),
+	DECLARE_ATTR(tv_state,   S_IRWXUGO, tv_state_show, tv_state_store),
 	#endif
 };
 
