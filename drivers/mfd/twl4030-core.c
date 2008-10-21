@@ -882,9 +882,6 @@ twl4030_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	/* setup clock framework */
 	clocks_init();
 
-	/* PIH interrupt may be fired before handlers are registered */
-	status = add_children(pdata);
-
 	/* Maybe init the T2 Interrupt subsystem */
 	if (client->irq
 			&& pdata->irq_base
@@ -894,6 +891,7 @@ twl4030_probe(struct i2c_client *client, const struct i2c_device_id *id)
 			goto fail;
 	}
 
+	status = add_children(pdata);
 fail:
 	if (status < 0)
 		twl4030_remove(client);
