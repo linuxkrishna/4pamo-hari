@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.27-omap1
-# Wed Oct 15 19:20:48 2008
+# Fri Oct 17 13:41:54 2008
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1285,7 +1285,7 @@ CONFIG_USB_GADGET_SELECTED=y
 # CONFIG_USB_GADGET_AT91 is not set
 # CONFIG_USB_GADGET_DUMMY_HCD is not set
 CONFIG_USB_GADGET_DUALSPEED=y
-CONFIG_USB_ZERO=y
+CONFIG_USB_ZERO=m
 # CONFIG_USB_ZERO_HNPTEST is not set
 # CONFIG_USB_ETH is not set
 # CONFIG_USB_GADGETFS is not set

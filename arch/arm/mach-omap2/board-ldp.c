@@ -760,8 +760,7 @@ static struct i2c_board_info __initdata ldp_i2c_boardinfo_2[] = {
 
 static int __init omap_i2c_init(void)
 {
-	/* FIXME-TI: may need  i2c-freq = 100 */
-	omap_register_i2c_bus(1, 100, ldp_i2c_boardinfo,
+	omap_register_i2c_bus(1, 2600, ldp_i2c_boardinfo,
 			ARRAY_SIZE(ldp_i2c_boardinfo));
 	omap_register_i2c_bus(2, 100, ldp_i2c_boardinfo_2,
 			ARRAY_SIZE(ldp_i2c_boardinfo_2));

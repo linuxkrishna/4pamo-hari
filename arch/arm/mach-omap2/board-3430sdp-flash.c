@@ -93,6 +93,7 @@ struct gpmc_cs_config fpga_gpmc_setting[] = {
 struct gpmc_freq_config freq_config[NO_GPMC_FREQ_SUPPORTED];
 #endif
 
+#define NAND_BLOCK_SIZE		SZ_128K
 
 static struct mtd_partition sdp_nor_partitions[] = {
 	/* bootloader (U-Boot, etc) in first sector */

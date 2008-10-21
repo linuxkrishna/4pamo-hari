@@ -124,10 +124,10 @@
 
 #if defined(CONFIG_ARCH_OMAP3430)
 #if defined(CONFIG_MACH_OMAP_LDP)
-#define LCD_PANEL_ENABLE_GPIO 		15
+#define LCD_PANEL_ENABLE_GPIO 		(15 + OMAP_MAX_GPIO_LINES)
 #define LCD_PANEL_RESET_GPIO		55
 #define LCD_PANEL_QVGA_GPIO		56
-#define LCD_PANEL_BACKLIGHT_GPIO 	7
+#define LCD_PANEL_BACKLIGHT_GPIO 	(7 + OMAP_MAX_GPIO_LINES)
 #define DVI_OUTPUT_GPIO		8
 #define DVI_POWER_ON_GPIO		167
 #elif defined(CONFIG_OMAP3430_ES2)
@@ -166,12 +166,7 @@ fb_out_store(struct device *dev, struct device_attribute *attr,
 
 extern int fb_out_layer;
 extern int omap24xxfb_set_output_layer(int layer);
-/*
-extern int twl4030_request_gpio(int gpio);
-extern int twl4030_free_gpio(int gpio);
-extern int twl4030_set_gpio_dataout(int gpio, int enable);
-extern int twl4030_set_gpio_direction(int gpio, int is_input);
-*/
+
 #ifdef CONFIG_FB_OMAP_720P_STREAMING
 extern int config_dsipll_lclk(int lck, int sysclk, int syclk2, int mode);
 #endif
@@ -342,7 +337,7 @@ lcd_panel_enable(struct work_struct *work)
 	/* power to the RGB lines from T2 is issued separately in
 	 * omap2_dss-rgb_enable */
 #elif defined(CONFIG_MACH_OMAP_LDP)
-	twl4030_set_gpio_dataout(LCD_PANEL_ENABLE_GPIO, 1);
+	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 1);
 #endif
 }
 void
@@ -400,7 +395,7 @@ lcd_panel_disable(struct work_struct *work)
 	omap_set_gpio_dataout(LCD_PANEL_ENABLE_GPIO, 0);
 	/* power to the RGB lines is disabled in omap2_dss_rgb_disable */
 #elif defined(CONFIG_MACH_OMAP_LDP)
-	twl4030_set_gpio_dataout(LCD_PANEL_ENABLE_GPIO, 0);
+	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 0);
 #endif
 }
 
@@ -459,7 +454,7 @@ lcd_backlight_on(struct work_struct *work)
 	omap_set_gpio_dataout(LCD_PANEL_BACKLIGHT_GPIO, 1);
 	lcd_backlight_state = LCD_ON;
 #elif defined(CONFIG_MACH_OMAP_LDP)
-	twl4030_set_gpio_dataout(LCD_PANEL_BACKLIGHT_GPIO, 1);
+	gpio_direction_output(LCD_PANEL_BACKLIGHT_GPIO, 1);
 	lcd_backlight_state = LCD_ON;
 #endif
 }
@@ -492,7 +487,7 @@ lcd_backlight_off(struct work_struct *work)
 	omap_set_gpio_dataout(LCD_PANEL_BACKLIGHT_GPIO, 0);
 	lcd_backlight_state = LCD_OFF;
 #elif defined(CONFIG_MACH_OMAP_LDP)
-	twl4030_set_gpio_dataout(LCD_PANEL_BACKLIGHT_GPIO, 0);
+	gpio_direction_output(LCD_PANEL_BACKLIGHT_GPIO, 0);
 	lcd_backlight_state = LCD_OFF;
 #endif
 }
@@ -768,8 +763,8 @@ int omap_lcd_init(struct omap_lcd_info *info)
 	omap_request_gpio(LCD_PANEL_QVGA_GPIO);
 	omap_request_gpio(DVI_OUTPUT_GPIO);
 	omap_request_gpio(DVI_POWER_ON_GPIO);
-	twl4030_request_gpio(LCD_PANEL_ENABLE_GPIO);  /* LCD panel */
-	twl4030_request_gpio(LCD_PANEL_BACKLIGHT_GPIO); /* LCD backlight */
+	gpio_request(LCD_PANEL_ENABLE_GPIO, "lcd-panel");  /* LCD panel */
+	gpio_request(LCD_PANEL_BACKLIGHT_GPIO, "lcd-bklit"); /* LCD backlight */
 
 #ifdef CONFIG_FB_OMAP_720P_STREAMING
 	omap_set_gpio_direction(DVI_POWER_ON_GPIO, 0);
@@ -779,8 +774,8 @@ int omap_lcd_init(struct omap_lcd_info *info)
 #else
 	omap_set_gpio_direction(LCD_PANEL_QVGA_GPIO, 0);
 	omap_set_gpio_direction(LCD_PANEL_RESET_GPIO, 0);
-	twl4030_set_gpio_direction(LCD_PANEL_ENABLE_GPIO, 0); /* output */
-	twl4030_set_gpio_direction(LCD_PANEL_BACKLIGHT_GPIO, 0); /* output */
+	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 0); /* output */
+	gpio_direction_output(LCD_PANEL_BACKLIGHT_GPIO, 0); /* output */
 
 #ifdef CONFIG_FB_OMAP_LCD_VGA
 	omap_set_gpio_dataout(LCD_PANEL_QVGA_GPIO, 0);
@@ -902,8 +897,8 @@ lcd_exit(void)
 #elif defined(CONFIG_MACH_OMAP_LDP)
 	omap_free_gpio(LCD_PANEL_RESET_GPIO);
 	omap_free_gpio(LCD_PANEL_QVGA_GPIO);
-	twl4030_free_gpio(LCD_PANEL_ENABLE_GPIO);  /* LCD panel */
-	twl4030_free_gpio(LCD_PANEL_BACKLIGHT_GPIO);  /* LCD backlight */
+	gpio_free(LCD_PANEL_ENABLE_GPIO);  /* LCD panel */
+	gpio_free(LCD_PANEL_BACKLIGHT_GPIO);  /* LCD backlight */
 #endif
 
 	lcd_in_use = 0;
@@ -1999,6 +1994,7 @@ remove_sysfs_files(void)
 static int __init
 omap2_dispout_init(void)
 {
+
 	if (create_sysfs_files() < 0) {
 		printk(KERN_ERR DRIVER
 		       "Could not create sysfs files for display control\n");
@@ -2070,7 +2066,6 @@ omap2_dispout_init(void)
 #endif
 
 		return 0;
-
 }
 device_initcall(omap2_dispout_init);
 

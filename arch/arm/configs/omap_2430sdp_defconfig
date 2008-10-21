@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.27-rc3-omap1
-# Mon Sep  1 20:00:57 2008
+# Linux kernel version: 2.6.27-omap1
+# Fri Oct 17 13:59:37 2008
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -266,6 +266,7 @@ CONFIG_PREEMPT=y
 CONFIG_HZ=100
 CONFIG_AEABI=y
 CONFIG_OABI_COMPAT=y
+CONFIG_ARCH_FLATMEM_HAS_HOLES=y
 # CONFIG_ARCH_DISCONTIGMEM_ENABLE is not set
 CONFIG_SELECT_MEMORY_MODEL=y
 CONFIG_FLATMEM_MANUAL=y
@@ -297,14 +298,6 @@ CONFIG_CMDLINE="root=/dev/ram0 rw console=ttyS0,115200n8 initrd=0x80600000,8M ra
 # CPU Frequency scaling
 #
 # CONFIG_CPU_FREQ is not set
-
-#
-# CPUIdle
-#
-
-#
-# CPU idle PM support
-#
 
 #
 # Floating point emulation
@@ -764,8 +757,6 @@ CONFIG_I2C_OMAP=y
 # CONFIG_TPS65010 is not set
 # CONFIG_SENSORS_TLV320AIC23 is not set
 # CONFIG_GPIOEXPANDER_OMAP is not set
-CONFIG_TWL4030_CORE=y
-CONFIG_TWL4030_GPIO=y
 # CONFIG_TWL4030_MADC is not set
 # CONFIG_TWL4030_USB is not set
 # CONFIG_TWL4030_PWRBUTTON is not set
@@ -848,8 +839,10 @@ CONFIG_SSB_POSSIBLE=y
 #
 # CONFIG_MFD_CORE is not set
 # CONFIG_MFD_SM501 is not set
+# CONFIG_MFD_ASIC3 is not set
 # CONFIG_HTC_EGPIO is not set
 # CONFIG_HTC_PASIC3 is not set
+CONFIG_TWL4030_CORE=y
 # CONFIG_MFD_TMIO is not set
 # CONFIG_MFD_T7L66XB is not set
 # CONFIG_MFD_TC6387XB is not set
@@ -963,6 +956,7 @@ CONFIG_USB_SUSPEND=y
 CONFIG_USB_OTG=y
 CONFIG_USB_OTG_WHITELIST=y
 # CONFIG_USB_OTG_BLACKLIST_HUB is not set
+CONFIG_USB_MON=y
 
 #
 # USB Host Controller Drivers
@@ -986,9 +980,8 @@ CONFIG_USB_GADGET_MUSB_HDRC=y
 CONFIG_USB_MUSB_HDRC_HCD=y
 # CONFIG_MUSB_PIO_ONLY is not set
 CONFIG_USB_INVENTRA_DMA=y
-# CONFIG_MUSB_USE_SYSTEM_DMA_RX is not set
 # CONFIG_USB_TI_CPPI_DMA is not set
-CONFIG_USB_MUSB_LOGLEVEL=0
+# CONFIG_USB_MUSB_DEBUG is not set
 
 #
 # USB Device Class drivers
@@ -1025,7 +1018,6 @@ CONFIG_USB_STORAGE=m
 #
 # CONFIG_USB_MDC800 is not set
 # CONFIG_USB_MICROTEK is not set
-CONFIG_USB_MON=y
 
 #
 # USB port drivers
@@ -1038,7 +1030,6 @@ CONFIG_USB_MON=y
 # CONFIG_USB_EMI62 is not set
 # CONFIG_USB_EMI26 is not set
 # CONFIG_USB_ADUTUX is not set
-# CONFIG_USB_AUERSWALD is not set
 # CONFIG_USB_RIO500 is not set
 # CONFIG_USB_LEGOTOWER is not set
 # CONFIG_USB_LCD is not set
@@ -1114,7 +1105,6 @@ CONFIG_RTC_LIB=y
 # CONFIG_REGULATOR_VIRTUAL_CONSUMER is not set
 # CONFIG_REGULATOR_BQ24022 is not set
 # CONFIG_UIO is not set
-# CONFIG_MPU_BRIDGE is not set
 
 #
 # CBUS support
@@ -1448,7 +1438,7 @@ CONFIG_BITREVERSE=y
 # CONFIG_GENERIC_FIND_NEXT_BIT is not set
 CONFIG_CRC_CCITT=y
 # CONFIG_CRC16 is not set
-CONFIG_CRC_T10DIF=m
+# CONFIG_CRC_T10DIF is not set
 # CONFIG_CRC_ITU_T is not set
 CONFIG_CRC32=y
 # CONFIG_CRC7 is not set
