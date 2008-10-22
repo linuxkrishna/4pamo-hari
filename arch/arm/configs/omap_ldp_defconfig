@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.27-omap1
-# Fri Oct 17 17:56:45 2008
+# Wed Oct 22 11:29:19 2008
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -664,9 +664,9 @@ CONFIG_KEYBOARD_ATKBD=y
 # CONFIG_KEYBOARD_XTKBD is not set
 # CONFIG_KEYBOARD_NEWTON is not set
 # CONFIG_KEYBOARD_STOWAWAY is not set
-# CONFIG_KEYBOARD_TWL4030 is not set
+CONFIG_KEYBOARD_TWL4030=y
 # CONFIG_KEYBOARD_LM8323 is not set
-# CONFIG_KEYBOARD_GPIO is not set
+CONFIG_KEYBOARD_GPIO=y
 # CONFIG_INPUT_MOUSE is not set
 # CONFIG_INPUT_JOYSTICK is not set
 # CONFIG_INPUT_TABLET is not set
@@ -904,7 +904,6 @@ CONFIG_VIDEO_V4L2_COMMON=y
 CONFIG_VIDEO_V4L1_COMPAT=y
 # CONFIG_DVB_CORE is not set
 CONFIG_VIDEO_MEDIA=y
-
 
 #
 # Multimedia drivers
