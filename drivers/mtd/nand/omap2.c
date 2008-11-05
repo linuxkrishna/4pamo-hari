@@ -111,10 +111,6 @@
 static const char *part_probes[] = { "cmdlinepart", NULL };
 #endif
 
-#ifndef MTD_NAND_OMAP_HWECC
-#define MTD_NAND_OMAP_HWECC   0
-#endif
-
 struct omap_nand_info {
 	struct nand_hw_control		controller;
 	struct omap_nand_platform_data	*pdata;

@@ -75,14 +75,12 @@ config MTD_NAND_OMAP2
           Support for NAND flash on Texas Instruments OMAP2 and OMAP3 platforms.
 
 config MTD_NAND_OMAP_HWECC
-         int "The ECC computation logic (0 = software ecc, 1 = hardware ecc)"
+	bool "The ECC computation logic (y = hardware ecc, n = software ecc)"
          depends on MTD_NAND && MTD_NAND_OMAP2
-         default "0"
+         default y
          help
            The ECC compuatation for the data to be written/read can be either by
            software or omap has Hw ecc engine which calculates it.
-           MTD_NAND_OMAP_HWECC = 1 which enables the hw ecc
-           MTD_NAND_OMAP_HWECC = 0, enables software ecc
 
 config MTD_NAND_OMAP
 	tristate "NAND Flash device on OMAP H3/H2/P2 boards"
