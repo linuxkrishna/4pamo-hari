@@ -682,6 +682,7 @@ smc_pxa_dma_outsl(struct smc911x_local *lp, u_long physaddr,
 #define CHIP_9117	0x117
 #define CHIP_9118	0x118
 #define CHIP_9211	0x9211
+#define CHIP_9221	0x9221
 
 struct chip_id {
 	u16 id;
@@ -694,6 +695,7 @@ static const struct chip_id chip_ids[] =  {
 	{ CHIP_9117, "LAN9117" },
 	{ CHIP_9118, "LAN9118" },
 	{ CHIP_9211, "LAN9211" },
+	{ CHIP_9221, "LAN9221" },
 	{ 0, NULL },
 };
 
