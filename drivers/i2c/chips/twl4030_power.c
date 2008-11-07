@@ -452,7 +452,7 @@ union triton_pmb_message{
 static int config_sleep_wake_sequence(void)
 {
 
-#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	#define A2S_I 2
 	#define S2A_I 3
 #else
@@ -466,7 +466,7 @@ static int config_sleep_wake_sequence(void)
 	int e = 0, i = 0, j = 0;
 	u8 data;
 
-#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 /*
 *	Power Bus Message Format
 *	Broadcast Message (16 Bits)
@@ -585,7 +585,7 @@ static int config_warmreset_sequence(void)
 	int e = 0, i = 0, j = 0;
 	u8 data;
 
-#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 
 	union triton_pmb_message t2_wrst_seq[WRST_I] = {
 		{DEV_GRP_NULL | MSG_TYPE_SINGULAR | 0x1B << RES_ID_SHIFT |
@@ -697,7 +697,7 @@ int power_companion_init(void)
 	init_MUTEX(&pwr_reg_lock);
 
 	e |= unprotect_pm_master();
-#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	/* Disabling AC charger effect on sleep-active transitions */
 	e |= t2_in(PM_MASTER, &data, R_CFG_P1_TRANSITION);
 	data &= 0x0;

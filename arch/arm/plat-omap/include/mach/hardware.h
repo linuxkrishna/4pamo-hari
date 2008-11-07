@@ -346,6 +346,10 @@
 #include "board-ldp.h"
 #endif
 
+#ifdef CONFIG_MACH_OMAP_ZOOM2
+#include "board-zoom2.h"
+#endif
+
 #ifdef CONFIG_MACH_OMAP_APOLLON
 #include "board-apollon.h"
 #endif

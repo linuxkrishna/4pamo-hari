@@ -38,7 +38,7 @@
 #include <mach/gpio.h>
 #include <mach/clock.h>
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined (CONFIG_MACH_OMAP_3430SDP) ||\
-    defined(CONFIG_MACH_OMAP_LDP)
+    defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 #include <linux/i2c/twl4030.h>
 #endif
 #include <linux/workqueue.h>
@@ -71,7 +71,8 @@
 #define OMAP24xx_TV_DEVICE		"sdp2430_tv"
 #endif
 
-#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)\
+					|| defined(CONFIG_MACH_OMAP_ZOOM2)
 #if 0
 #define OMAP24xx_LCD_DEVICE		"sdp3430_lcd"
 #define OMAP24xx_TV_DEVICE		"sdp3430_tv"
@@ -123,7 +124,7 @@
 #endif
 
 #if defined(CONFIG_ARCH_OMAP3430)
-#if defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 #define LCD_PANEL_ENABLE_GPIO 		(15 + OMAP_MAX_GPIO_LINES)
 #define LCD_PANEL_RESET_GPIO		55
 #define LCD_PANEL_QVGA_GPIO		56
@@ -336,7 +337,7 @@ lcd_panel_enable(struct work_struct *work)
 	omap_set_gpio_dataout(LCD_PANEL_ENABLE_GPIO, 1);
 	/* power to the RGB lines from T2 is issued separately in
 	 * omap2_dss-rgb_enable */
-#elif defined(CONFIG_MACH_OMAP_LDP)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 1);
 #endif
 }
@@ -394,7 +395,7 @@ lcd_panel_disable(struct work_struct *work)
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined(CONFIG_MACH_OMAP_3430SDP)
 	omap_set_gpio_dataout(LCD_PANEL_ENABLE_GPIO, 0);
 	/* power to the RGB lines is disabled in omap2_dss_rgb_disable */
-#elif defined(CONFIG_MACH_OMAP_LDP)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 0);
 #endif
 }
@@ -453,7 +454,7 @@ lcd_backlight_on(struct work_struct *work)
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined(CONFIG_MACH_OMAP_3430SDP)
 	omap_set_gpio_dataout(LCD_PANEL_BACKLIGHT_GPIO, 1);
 	lcd_backlight_state = LCD_ON;
-#elif defined(CONFIG_MACH_OMAP_LDP)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	gpio_direction_output(LCD_PANEL_BACKLIGHT_GPIO, 1);
 	lcd_backlight_state = LCD_ON;
 #endif
@@ -486,7 +487,7 @@ lcd_backlight_off(struct work_struct *work)
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined(CONFIG_MACH_OMAP_3430SDP)
 	omap_set_gpio_dataout(LCD_PANEL_BACKLIGHT_GPIO, 0);
 	lcd_backlight_state = LCD_OFF;
-#elif defined(CONFIG_MACH_OMAP_LDP)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	gpio_direction_output(LCD_PANEL_BACKLIGHT_GPIO, 0);
 	lcd_backlight_state = LCD_OFF;
 #endif
@@ -521,7 +522,7 @@ void disable_backlight(void)
 }
 EXPORT_SYMBOL(disable_backlight);
 
-#ifdef CONFIG_MACH_OMAP_LDP
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 static void
 enable_dvi_output(void)
 {
@@ -758,7 +759,7 @@ int omap_lcd_init(struct omap_lcd_info *info)
 	omap_request_gpio(LCD_PANEL_BACKLIGHT_GPIO);	 /* LCD backlight */
 	omap_set_gpio_direction(LCD_PANEL_ENABLE_GPIO, 0); /* output */
 	omap_set_gpio_direction(LCD_PANEL_BACKLIGHT_GPIO, 0); /* output */
-#elif defined(CONFIG_MACH_OMAP_LDP)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	omap_request_gpio(LCD_PANEL_RESET_GPIO);
 	omap_request_gpio(LCD_PANEL_QVGA_GPIO);
 	omap_request_gpio(DVI_OUTPUT_GPIO);
@@ -894,7 +895,7 @@ lcd_exit(void)
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined(CONFIG_MACH_OMAP_3430SDP)
 	omap_free_gpio(LCD_PANEL_ENABLE_GPIO);  /* LCD panel */
 	omap_free_gpio(LCD_PANEL_BACKLIGHT_GPIO);  /* LCD backlight */
-#elif defined(CONFIG_MACH_OMAP_LDP)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	omap_free_gpio(LCD_PANEL_RESET_GPIO);
 	omap_free_gpio(LCD_PANEL_QVGA_GPIO);
 	gpio_free(LCD_PANEL_ENABLE_GPIO);  /* LCD panel */

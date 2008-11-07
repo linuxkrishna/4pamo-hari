@@ -116,7 +116,7 @@ struct triton_ins {
 
 #define CONFIG_DISABLE_HFCLK	1
 
-#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 
 struct triton_ins sleep_on_seq[] __initdata = {
 	{MSG_SINGULAR(DEV_GRP_P1, 0xf, RES_STATE_OFF), 4},

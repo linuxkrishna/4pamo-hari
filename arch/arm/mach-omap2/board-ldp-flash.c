@@ -24,6 +24,12 @@
 #include <mach/gpmc.h>
 #include <mach/nand.h>
 
+#ifdef CONFIG_MACH_OMAP_ZOOM2
+#include <mach/board-zoom2.h>
+#else
+#include <mach/board-ldp.h>
+#endif
+
 #define GPMC_CS0_BASE	0x60
 #define GPMC_CS_SIZE	0x30
 

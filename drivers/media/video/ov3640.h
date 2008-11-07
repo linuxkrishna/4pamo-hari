@@ -36,7 +36,7 @@
 
 /* Sensor specific GPIO signals */
 #define OV3640_RESET_GPIO  	98
-#ifdef CONFIG_MACH_OMAP_LDP
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 #define OV3640_STANDBY_GPIO	7
 #else
 #define OV3640_STANDBY_GPIO	55

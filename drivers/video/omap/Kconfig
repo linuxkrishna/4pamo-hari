@@ -14,8 +14,8 @@ config FB_OMAP_720P_STREAMING
 	  Set DVI 720p streaming as output.
 
 config FB_OMAP_LCD_WVGA
-	bool "MID LDP WVGA Display"
-	depends on ARCH_OMAP34XX && MACH_OMAP_LDP
+	bool "MID LDP WVGA Display and Zoom2"
+	depends on ARCH_OMAP34XX && (MACH_OMAP_LDP || MACH_OMAP_ZOOM2)
 	help
 	  Say Y to support the NEC NL8048HL WVGA display
 

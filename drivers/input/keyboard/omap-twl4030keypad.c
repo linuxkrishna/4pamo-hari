@@ -188,7 +188,7 @@ static void twl4030_kp_scan(struct omap_keypad *kp, int release_all)
 
 			key = omap_kp_find_key(kp, col, row);
 			if (key < 0) {
-#ifdef CONFIG_MACH_OMAP_LDP
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 				/* OMAP LDP has a TWL4030 GPIO
 				 * (KBR5/KBC4) that is set to a persistent
 				 * state and should be ignored.

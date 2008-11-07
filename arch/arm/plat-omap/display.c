@@ -1641,7 +1641,7 @@ omap24xx_ll_config_tv_clocks(int sleep_state)
 {
 		static int start = 1;
 		static struct clk *tv_clk;
-#ifdef CONFIG_MACH_OMAP_LDP
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 		static struct clk *dac_clk;
 #endif
 		static int disabled = 0;
@@ -1651,10 +1651,10 @@ omap24xx_ll_config_tv_clocks(int sleep_state)
 #ifdef CONFIG_MACH_OMAP_2430SDP
 				tv_clk = clk_get(NULL,"dss_54m_fck");
 #endif
-	#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+	#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 				tv_clk = clk_get(NULL,"dss_tv_fck");
 #endif
-#if defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 				dac_clk = clk_get(NULL,"dss_96m_fck");
 				if(IS_ERR(dac_clk)) {
 						printk("\n UNABLE to get dss 96MHz fclk \n");
@@ -1671,7 +1671,7 @@ omap24xx_ll_config_tv_clocks(int sleep_state)
 		if (sleep_state == 1) {
 				if ((disabled == 0) && (enabled == 1)) {
 						clk_disable(tv_clk);
-#if defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 						clk_disable(dac_clk);
 #endif
 						disabled = 1;
@@ -1684,7 +1684,7 @@ omap24xx_ll_config_tv_clocks(int sleep_state)
 								printk("\n UNABLE to enable dss TV fclk \n");
 								return;
 						}
-#if defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 						if(clk_enable(dac_clk) != 0) {
 							printk("\n UNABLE to enable dss 96MHz fclk \n");
 							return;
@@ -1978,7 +1978,7 @@ omap2_disp_config_lcd(u32 clkdiv, u32 hbp, u32 hfp, u32 hsw,
 #ifdef CONFIG_FB_OMAP_720P_STREAMING
 	control |= DISPC_CONTROL_TFTDATALINES_OALSB24B;
 #else
-#ifdef CONFIG_MACH_OMAP_LDP
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	control |= DISPC_CONTROL_TFTDATALINES_OALSB18B;
 #else
 	control |= DISPC_CONTROL_TFTDATALINES_OALSB16B;
@@ -2011,7 +2011,7 @@ void
 omap2_disp_set_dssfclk(void)
 {
 	/* TODO set the LCD pixel clock rate based on the LCD configuration */
-#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 	static int LCD_pixel_clk = 26000000; /* to get more bandwidth*/
 #else	
 	static int LCD_pixel_clk = 10000000; /* to get more bandwidth*/
@@ -3150,7 +3150,7 @@ omap2_reset_venc(void)
 	#ifdef CONFIG_MACH_OMAP_2430SDP
 		dss_tv_fck = clk_get(NULL,"dss_54m_fck");
 	#endif
-	#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+	#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
 		#ifdef CONFIG_TRACK_RESOURCES
 		dss_tv_fck = clk_get(&display_dev,"dss_tv_fck");
 		#else
@@ -3418,7 +3418,7 @@ omap2_disp_init(void)
 	#endif
 #endif
 
-#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)
+#if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
        /* enabling S-video connector for 3430 SDP */
 #ifndef CONFIG_ARCH_OMAP3410
 	dss_control |= (DSS_CONTROL_DAC_DEMEN | DSS_CONTROL_TV_REF |
