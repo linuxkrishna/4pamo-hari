@@ -39,8 +39,16 @@
 #define OMAP2_SRAM_PUB_PA	0x4020f800
 #define OMAP2_SRAM_VA		0xe3000000
 #define OMAP2_SRAM_PUB_VA	(OMAP2_SRAM_VA + 0x800)
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
 #define OMAP3_SRAM_PA           0x40200000
 #define OMAP3_SRAM_VA           0xd7000000
+#define OMAP3_SRAM_PA_MODENA    0x402f0000
+#define OMAP3_SRAM_VA_MODENA    0xd70f0000
+#else
+#define OMAP3_SRAM_PA           0x40200000
+#define OMAP3_SRAM_VA           0xd7000000
+#endif
+
 #define OMAP3_SRAM_PUB_PA       0x40208000
 #define OMAP3_SRAM_PUB_VA       0xd7008000
 
@@ -97,11 +105,13 @@ static int is_sram_locked(void)
 			__raw_writel(0xCFDE, OMAP24XX_VA_WRITEPERM0); /* all i-write */
 		}
 		if (cpu_is_omap34xx()) {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 			__raw_writel(0xFFFF, OMAP34XX_VA_REQINFOPERM0); /* all q-vects */
 			__raw_writel(0xFFFF, OMAP34XX_VA_READPERM0);  /* all i-read */
 			__raw_writel(0xFFFF, OMAP34XX_VA_WRITEPERM0); /* all i-write */
 			__raw_writel(0x0, OMAP34XX_VA_ADDR_MATCH2);
 			__raw_writel(0xFFFFFFFF, OMAP34XX_VA_SMS_RG_ATT0);
+#endif
 		}
 		return 0;
 	} else
@@ -131,8 +141,14 @@ void __init omap_detect_sram(void)
 			}
 		} else {
 			if (cpu_is_omap34xx()) {
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+				omap_sram_base = OMAP3_SRAM_VA_MODENA;
+				omap_sram_start = OMAP3_SRAM_PA_MODENA;
+#else
+
 				omap_sram_base = OMAP3_SRAM_VA;
 				omap_sram_start = OMAP3_SRAM_PA;
+#endif
 				omap_sram_size = 0x10000; /* 64K */
 			} else {
 				omap_sram_base = OMAP2_SRAM_VA;
@@ -396,7 +412,7 @@ int __init omap_sram_init(void)
 {
 	omap_detect_sram();
 	omap_map_sram();
-
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	if (!(cpu_class_is_omap2()))
 		omap1_sram_init();
 	else if (cpu_is_omap242x())
@@ -405,6 +421,6 @@ int __init omap_sram_init(void)
 		omap243x_sram_init();
 	else if (cpu_is_omap34xx())
 		omap3_sram_init();
-
+#endif
 	return 0;
 }

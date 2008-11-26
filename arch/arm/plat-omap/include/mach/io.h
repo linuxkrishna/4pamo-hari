@@ -106,11 +106,19 @@
 
 /* We map both L3 and L4 on OMAP3 */
 #define L3_34XX_PHYS		L3_34XX_BASE	/* 0x68000000 */
-#define L3_34XX_VIRT		0xf8000000
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define L3_34XX_VIRT            0xd4000000
+#else
+#define L3_34XX_VIRT            0xf8000000
+#endif
 #define L3_34XX_SIZE		SZ_1M   /* 44kB of 128MB used, want 1MB sect */
 
 #define L4_34XX_PHYS		L4_34XX_BASE	/* 0x48000000 */
-#define L4_34XX_VIRT		0xd8000000
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define L4_34XX_VIRT            0xda000000
+#else
+#define L4_34XX_VIRT            0xd8000000
+#endif
 #define L4_34XX_SIZE		SZ_4M   /* 1MB of 128MB used, want 1MB sect */
 
 /*
@@ -119,12 +127,22 @@
  */
 
 #define L4_WK_34XX_PHYS		L4_WK_34XX_BASE /* 0x48300000 */
-#define L4_WK_34XX_VIRT		0xd8300000
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define L4_WK_34XX_VIRT         0xda300000
+#else
+#define L4_WK_34XX_VIRT         0xd8300000
+#endif
 #define L4_WK_34XX_SIZE		SZ_1M
 
 #define L4_PER_34XX_PHYS	L4_PER_34XX_BASE /* 0x49000000 */
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define L4_PER_34XX_VIRT        0xd8000000
+/* Need atleast 4MB so that interrupt controller, i2c4 etc are mapped*/
+#define L4_PER_34XX_SIZE        SZ_4M
+#else
 #define L4_PER_34XX_VIRT	0xd9000000
 #define L4_PER_34XX_SIZE	SZ_1M
+#endif
 
 #define L4_EMU_34XX_PHYS	L4_EMU_34XX_BASE /* 0x54000000 */
 #define L4_EMU_34XX_VIRT	0xe4000000

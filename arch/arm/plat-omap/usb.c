@@ -780,6 +780,7 @@ static struct omap_usb_config platform_data;
 static int __init
 omap_usb_init(void)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	const struct omap_usb_config *config;
 
 	config = omap_get_config(OMAP_TAG_USB, struct omap_usb_config);
@@ -798,6 +799,7 @@ omap_usb_init(void)
 		printk(KERN_ERR "USB: No init for your chip yet\n");
 		return -ENODEV;
 	}
+#endif
 	return 0;
 }
 

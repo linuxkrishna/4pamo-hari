@@ -218,12 +218,14 @@ static int omap3_fclks_active(void)
 
 static int omap3_can_sleep(void)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	if (!enable_dyn_sleep)
 		return 0;
 	if (omap3_fclks_active())
 		return 0;
 	if (atomic_read(&sleep_block) > 0)
 		return 0;
+#endif
 	return 1;
 }
 

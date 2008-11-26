@@ -639,6 +639,7 @@ omap_i2c_isr(int this_irq, void *dev_id)
 						}
 					}
 				} else {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 					if (stat & OMAP_I2C_STAT_RRDY)
 						dev_err(dev->dev,
 							"RRDY IRQ while no data"
@@ -647,6 +648,7 @@ omap_i2c_isr(int this_irq, void *dev_id)
 						dev_err(dev->dev,
 							"RDR IRQ while no data"
 								" requested\n");
+#endif
 					break;
 				}
 			}
@@ -678,6 +680,7 @@ omap_i2c_isr(int this_irq, void *dev_id)
 						}
 					}
 				} else {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 					if (stat & OMAP_I2C_STAT_XRDY)
 						dev_err(dev->dev,
 							"XRDY IRQ while no "
@@ -686,6 +689,7 @@ omap_i2c_isr(int this_irq, void *dev_id)
 						dev_err(dev->dev,
 							"XDR IRQ while no "
 							"data to send\n");
+#endif
 					break;
 				}
 				omap_i2c_write_reg(dev, OMAP_I2C_DATA_REG, w);

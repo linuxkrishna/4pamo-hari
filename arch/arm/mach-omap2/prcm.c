@@ -73,14 +73,23 @@ static inline void __omap_prcm_write(u32 value, void __iomem *base,
 /* Read a register in a PRM module */
 u32 prm_read_mod_reg(s16 module, u16 idx)
 {
-	return __omap_prcm_read(prm_base, module, idx);
+	u32 ret = 0;
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
+	ret = __omap_prcm_read(prm_base, module, idx);
+#endif
+return ret;
 }
 EXPORT_SYMBOL(prm_read_mod_reg);
 
 /* Write into a register in a PRM module */
 void prm_write_mod_reg(u32 val, s16 module, u16 idx)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	__omap_prcm_write(val, prm_base, module, idx);
+#endif
+
 }
 EXPORT_SYMBOL(prm_write_mod_reg);
 

@@ -122,13 +122,21 @@
 /*
  * omap34xx specific GPIO registers
  */
-
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define OMAP34XX_GPIO1_BASE             IO_ADDRESS(0x4A310000)
+#define OMAP34XX_GPIO2_BASE             IO_ADDRESS(0x48055000)
+#define OMAP34XX_GPIO3_BASE             IO_ADDRESS(0x48057000)
+#define OMAP34XX_GPIO4_BASE             IO_ADDRESS(0x48059000)
+#define OMAP34XX_GPIO5_BASE             IO_ADDRESS(0x4805B000)
+#define OMAP34XX_GPIO6_BASE             IO_ADDRESS(0x4805D000)
+#else
 #define OMAP34XX_GPIO1_BASE		IO_ADDRESS(0x48310000)
 #define OMAP34XX_GPIO2_BASE		IO_ADDRESS(0x49050000)
 #define OMAP34XX_GPIO3_BASE		IO_ADDRESS(0x49052000)
 #define OMAP34XX_GPIO4_BASE		IO_ADDRESS(0x49054000)
 #define OMAP34XX_GPIO5_BASE		IO_ADDRESS(0x49056000)
 #define OMAP34XX_GPIO6_BASE		IO_ADDRESS(0x49058000)
+#endif
 
 #define OMAP_MPUIO_VBASE		IO_ADDRESS(OMAP_MPUIO_BASE)
 
@@ -1553,12 +1561,13 @@ static int __init _omap_gpio_init(void)
 	if (cpu_is_omap16xx())
 		omap_writel(omap_readl(ULPD_CAM_CLK_CTRL) | 0x04, ULPD_CAM_CLK_CTRL);
 
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	/* Enable autoidle for the OCP interface */
 	if (cpu_is_omap24xx())
 		omap_writel(1 << 0, 0x48019010);
 	if (cpu_is_omap34xx())
 		omap_writel(1 << 0, 0x48306814);
-
+#endif
 	return 0;
 }
 

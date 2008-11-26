@@ -131,6 +131,9 @@ config MACH_OVERO
 	bool "Gumstix Overo board"
 	depends on ARCH_OMAP3 && ARCH_OMAP34XX
 
+config MACH_OMAP_4430VIRTIO
+        bool "OMAP 4430 VIRTIO PLATFORM"
+
 config OMAP3_PM
        bool "Enable TI OMAP Power Management"
        depends on ARCH_OMAP3

@@ -52,6 +52,8 @@ int __init omap_mux_register(struct omap_mux_cfg *arch_mux_cfg)
  */
 int __init_or_module omap_cfg_reg(const unsigned long index)
 {
+	int ret = 0;
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	struct pin_config *reg;
 
 	if (mux_cfg == NULL) {
@@ -71,7 +73,9 @@ int __init_or_module omap_cfg_reg(const unsigned long index)
 	if (!mux_cfg->cfg_reg)
 		return -ENODEV;
 
-	return mux_cfg->cfg_reg(reg);
+	ret = mux_cfg->cfg_reg(reg);
+#endif
+	return ret;
 }
 EXPORT_SYMBOL(omap_cfg_reg);
 #else

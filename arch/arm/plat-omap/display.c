@@ -3350,6 +3350,7 @@ static struct constraint_id cnst_id = {
 int __init
 omap2_disp_init(void)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	int rev,i;
 	u32 dss_control;
 
@@ -3477,7 +3478,7 @@ omap2_disp_init(void)
 #if !defined(CONFIG_OMAP_DSI) && !defined(CONFIG_FB_OMAP_720P_STREAMING)
 	omap2_disp_put_all_clks();
 #endif
-	
+#endif
 	return 0;
 
 }

@@ -75,7 +75,9 @@ static void omap2_gp_timer_set_mode(enum clock_event_mode mode,
 	case CLOCK_EVT_MODE_PERIODIC:
 		period = clk_get_rate(omap_dm_timer_get_fclk(gptimer)) / HZ;
 		period -= 1;
-
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+		period = 0xFF;
+#endif
 		omap_dm_timer_set_load_start(gptimer, 1, 0xffffffff - period);
 		break;
 	case CLOCK_EVT_MODE_ONESHOT:
@@ -108,7 +110,10 @@ static void __init omap2_gp_clockevent_init(void)
 	omap_dm_timer_set_source(gptimer, OMAP_TIMER_SRC_SYS_CLK);
 #endif
 	tick_rate = clk_get_rate(omap_dm_timer_get_fclk(gptimer));
-
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+	/* Assuming 32KHz clk is driving GPT1 in virtio*/
+	tick_rate = 32768;
+#endif
 	pr_info("OMAP clockevent source: GPTIMER%d at %u Hz\n",
 		CONFIG_OMAP_TICK_GPTIMER, tick_rate);
 

@@ -298,6 +298,9 @@ static struct platform_device omap_wdt_device = {
 
 static void omap_init_wdt(void)
 {
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+	wdt_resources[0].start = 0x4A314000;
+#else
 	if (cpu_is_omap16xx())
 		wdt_resources[0].start = 0xfffeb000;
 	else if (cpu_is_omap2420())
@@ -308,7 +311,7 @@ static void omap_init_wdt(void)
 		wdt_resources[0].start = 0x48314000; /* WDT2 */
 	else
 		return;
-
+#endif
 	wdt_resources[0].end = wdt_resources[0].start + 0x4f;
 
 	(void) platform_device_register(&omap_wdt_device);

@@ -39,6 +39,7 @@ int omap_type(void)
 {
 	u32 val = 0;
 
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	if (cpu_is_omap24xx()) {
 		val = omap_ctrl_readl(OMAP24XX_CONTROL_STATUS);
 	} else if (cpu_is_omap34xx()) {
@@ -50,9 +51,12 @@ int omap_type(void)
 
 	val &= OMAP2_DEVICETYPE_MASK;
 	val >>= 8;
-
+#else
+	val |= (0x300 & OMAP2_DEVICETYPE_MASK);
+#endif
 out:
 	return val;
+
 }
 EXPORT_SYMBOL(omap_type);
 

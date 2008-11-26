@@ -44,6 +44,12 @@
 #define OMAP_TIMER_TRIGGER_OVERFLOW		0x01
 #define OMAP_TIMER_TRIGGER_OVERFLOW_AND_COMPARE	0x02
 
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define TIMER_32K_SYNCHRONIZED          0x4A304010
+#else
+#define TIMER_32K_SYNCHRONIZED          0x48320010
+#endif
+
 struct omap_dm_timer;
 struct clk;
 

@@ -43,6 +43,8 @@ static struct clk_functions *arch_clock;
  */
 struct clk * clk_get(struct device *dev, const char *id)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	struct clk *p, *clk = ERR_PTR(-ENOENT);
 	int idno;
 
@@ -72,13 +74,18 @@ found:
 	mutex_unlock(&clocks_mutex);
 
 	return clk;
+#else
+       return 0;
+#endif
+
 }
 EXPORT_SYMBOL(clk_get);
 
 int clk_enable(struct clk *clk)
 {
-	unsigned long flags;
 	int ret = 0;
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+	unsigned long flags;
 
 	if (clk == NULL || IS_ERR(clk))
 		return -EINVAL;
@@ -87,13 +94,15 @@ int clk_enable(struct clk *clk)
 	if (arch_clock->clk_enable)
 		ret = arch_clock->clk_enable(clk);
 	spin_unlock_irqrestore(&clockfw_lock, flags);
-
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(clk_enable);
 
 void clk_disable(struct clk *clk)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	unsigned long flags;
 
 	if (clk == NULL || IS_ERR(clk))
@@ -112,13 +121,15 @@ void clk_disable(struct clk *clk)
 
 out:
 	spin_unlock_irqrestore(&clockfw_lock, flags);
+#endif
 }
 EXPORT_SYMBOL(clk_disable);
 
 int clk_get_usecount(struct clk *clk)
 {
-	unsigned long flags;
 	int ret = 0;
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+	unsigned long flags;
 
 	if (clk == NULL || IS_ERR(clk))
 		return 0;
@@ -126,15 +137,16 @@ int clk_get_usecount(struct clk *clk)
 	spin_lock_irqsave(&clockfw_lock, flags);
 	ret = clk->usecount;
 	spin_unlock_irqrestore(&clockfw_lock, flags);
-
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(clk_get_usecount);
 
 unsigned long clk_get_rate(struct clk *clk)
 {
-	unsigned long flags;
 	unsigned long ret = 0;
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+	unsigned long flags;
 
 	if (clk == NULL || IS_ERR(clk))
 		return 0;
@@ -142,15 +154,18 @@ unsigned long clk_get_rate(struct clk *clk)
 	spin_lock_irqsave(&clockfw_lock, flags);
 	ret = clk->rate;
 	spin_unlock_irqrestore(&clockfw_lock, flags);
-
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(clk_get_rate);
 
 void clk_put(struct clk *clk)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	if (clk && !IS_ERR(clk))
 		module_put(clk->owner);
+#endif
 }
 EXPORT_SYMBOL(clk_put);
 
@@ -160,8 +175,9 @@ EXPORT_SYMBOL(clk_put);
 
 long clk_round_rate(struct clk *clk, unsigned long rate)
 {
-	unsigned long flags;
 	long ret = 0;
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+	unsigned long flags;
 
 	if (clk == NULL || IS_ERR(clk))
 		return ret;
@@ -170,15 +186,16 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 	if (arch_clock->clk_round_rate)
 		ret = arch_clock->clk_round_rate(clk, rate);
 	spin_unlock_irqrestore(&clockfw_lock, flags);
-
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(clk_round_rate);
 
 int clk_set_rate(struct clk *clk, unsigned long rate)
 {
-	unsigned long flags;
 	int ret = -EINVAL;
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+	unsigned long flags;
 
 	if (clk == NULL || IS_ERR(clk))
 		return ret;
@@ -187,16 +204,16 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 	if (arch_clock->clk_set_rate)
 		ret = arch_clock->clk_set_rate(clk, rate);
 	spin_unlock_irqrestore(&clockfw_lock, flags);
-
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(clk_set_rate);
 
 int clk_set_parent(struct clk *clk, struct clk *parent)
 {
-	unsigned long flags;
 	int ret = -EINVAL;
-
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+	unsigned long flags;
 	if (clk == NULL || IS_ERR(clk) || parent == NULL || IS_ERR(parent))
 		return ret;
 
@@ -204,16 +221,16 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
 	if (arch_clock->clk_set_parent)
 		ret =  arch_clock->clk_set_parent(clk, parent);
 	spin_unlock_irqrestore(&clockfw_lock, flags);
-
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(clk_set_parent);
 
 struct clk *clk_get_parent(struct clk *clk)
 {
-	unsigned long flags;
 	struct clk * ret = NULL;
-
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+	unsigned long flags;
 	if (clk == NULL || IS_ERR(clk))
 		return ret;
 
@@ -221,7 +238,7 @@ struct clk *clk_get_parent(struct clk *clk)
 	if (arch_clock->clk_get_parent)
 		ret = arch_clock->clk_get_parent(clk);
 	spin_unlock_irqrestore(&clockfw_lock, flags);
-
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(clk_get_parent);
@@ -253,17 +270,21 @@ __setup("mpurate=", omap_clk_setup);
 /* Used for clocks that always have same value as the parent clock */
 void followparent_recalc(struct clk *clk)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	if (clk == NULL || IS_ERR(clk))
 		return;
 
 	clk->rate = clk->parent->rate;
 	if (unlikely(clk->flags & RATE_PROPAGATES))
 		propagate_rate(clk);
+#endif
 }
 
 /* Propagate rate to children */
 void propagate_rate(struct clk * tclk)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	struct clk *clkp;
 
 	if (tclk == NULL || IS_ERR(tclk))
@@ -275,6 +296,7 @@ void propagate_rate(struct clk * tclk)
 		if (likely((u32)clkp->recalc))
 			clkp->recalc(clkp);
 	}
+#endif
 }
 
 /**
@@ -286,16 +308,21 @@ void propagate_rate(struct clk * tclk)
  */
 void recalculate_root_clocks(void)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	struct clk *clkp;
 
 	list_for_each_entry(clkp, &clocks, node) {
 		if (unlikely(!clkp->parent) && likely((u32)clkp->recalc))
 			clkp->recalc(clkp);
 	}
+#endif
 }
 
 int clk_register(struct clk *clk)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	if (clk == NULL || IS_ERR(clk))
 		return -EINVAL;
 
@@ -306,22 +333,28 @@ int clk_register(struct clk *clk)
 	mutex_unlock(&clocks_mutex);
 
 	return 0;
+#endif
 }
 EXPORT_SYMBOL(clk_register);
 
 void clk_unregister(struct clk *clk)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	if (clk == NULL || IS_ERR(clk))
 		return;
 
 	mutex_lock(&clocks_mutex);
 	list_del(&clk->node);
 	mutex_unlock(&clocks_mutex);
+#endif
 }
 EXPORT_SYMBOL(clk_unregister);
 
 void clk_deny_idle(struct clk *clk)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	unsigned long flags;
 
 	if (clk == NULL || IS_ERR(clk))
@@ -331,11 +364,14 @@ void clk_deny_idle(struct clk *clk)
 	if (arch_clock->clk_deny_idle)
 		arch_clock->clk_deny_idle(clk);
 	spin_unlock_irqrestore(&clockfw_lock, flags);
+#endif
 }
 EXPORT_SYMBOL(clk_deny_idle);
 
 void clk_allow_idle(struct clk *clk)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	unsigned long flags;
 
 	if (clk == NULL || IS_ERR(clk))
@@ -345,17 +381,21 @@ void clk_allow_idle(struct clk *clk)
 	if (arch_clock->clk_allow_idle)
 		arch_clock->clk_allow_idle(clk);
 	spin_unlock_irqrestore(&clockfw_lock, flags);
+#endif
 }
 EXPORT_SYMBOL(clk_allow_idle);
 
 void clk_enable_init_clocks(void)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	struct clk *clkp;
 
 	list_for_each_entry(clkp, &clocks, node) {
 		if (clkp->flags & ENABLE_ON_INIT)
 			clk_enable(clkp);
 	}
+#endif
 }
 EXPORT_SYMBOL(clk_enable_init_clocks);
 
@@ -380,6 +420,8 @@ EXPORT_SYMBOL(clk_init_cpufreq_table);
  */
 static int __init clk_disable_unused(void)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	struct clk *ck;
 	unsigned long flags;
 
@@ -396,7 +438,7 @@ static int __init clk_disable_unused(void)
 			arch_clock->clk_disable_unused(ck);
 		spin_unlock_irqrestore(&clockfw_lock, flags);
 	}
-
+#endif
 	return 0;
 }
 late_initcall(clk_disable_unused);
@@ -404,13 +446,14 @@ late_initcall(clk_disable_unused);
 
 int __init clk_init(struct clk_functions * custom_clocks)
 {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	if (!custom_clocks) {
 		printk(KERN_ERR "No custom clock functions registered\n");
 		BUG();
 	}
 
 	arch_clock = custom_clocks;
-
+#endif
 	return 0;
 }
 

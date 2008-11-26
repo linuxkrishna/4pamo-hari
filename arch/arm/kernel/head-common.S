@@ -203,6 +203,9 @@ ENTRY(lookup_processor_type)
  */
 	.type	__lookup_machine_type, %function
 __lookup_machine_type:
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+	ldr     r1, =0x472
+#endif
 	adr	r3, 3b
 	ldmia	r3, {r4, r5, r6}
 	sub	r3, r3, r4			@ get offset between virt&phys

@@ -28,6 +28,33 @@
  * Please place only base defines here and put the rest in device
  * specific headers.
  */
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define L4_34XX_BASE            0x4A000000
+#define L4_WK_34XX_BASE         0x4A300000
+#define L4_WK_OMAP_BASE         L4_WK_34XX_BASE
+#define L4_PER_34XX_BASE        0x48000000
+#define L4_PER_OMAP_BASE        L4_PER_34XX_BASE
+#define L4_EMU_34XX_BASE        0x54000000
+#define L4_EMU_BASE             L4_EMU_34XX_BASE
+#define L3_34XX_BASE            0x44000000
+#define L3_OMAP_BASE            L3_34XX_BASE
+#define OMAP3430_32KSYNCT_BASE  0x4A304000 /* kk0x48320000 */
+#define OMAP3430_CM_BASE        0x4A004000
+#define OMAP3430_PRM_BASE       0x48306000
+#define OMAP343X_SMS_BASE       0x6C000000
+#define OMAP343X_SDRC_BASE      0x6D000000
+#define OMAP34XX_GPMC_BASE      0x50000000
+#define OMAP343X_SCM_BASE       0x4A002000
+#define OMAP343X_CTRL_BASE      OMAP343X_SCM_BASE
+#define OMAP34XX_IC_BASE        0x48200000
+#define OMAP34XX_IVA_INTC_BASE  0x40000000
+#define IRQ_SIR_IRQ             0x0040
+#define OMAP2_32KSYNCT_BASE             OMAP3430_32KSYNCT_BASE
+#define OMAP2_CM_BASE                   OMAP3430_CM_BASE
+#define OMAP2_PRM_BASE                  OMAP3430_PRM_BASE
+#define OMAP2_VA_IC_BASE                IO_ADDRESS(OMAP34XX_IC_BASE)
+
+#else
 
 #define L4_34XX_BASE		0x48000000
 #define L4_WK_34XX_BASE		0x48300000
@@ -71,5 +98,6 @@
 #define OMAP34XX_DSP_MEM_BASE	(OMAP34XX_DSP_BASE + 0x0)
 #define OMAP34XX_DSP_IPI_BASE	(OMAP34XX_DSP_BASE + 0x1000000)
 #define OMAP34XX_DSP_MMU_BASE	(OMAP34XX_DSP_BASE + 0x2000000)
+#endif
 #endif /* __ASM_ARCH_OMAP34XX_H */
 

@@ -24,7 +24,12 @@
 /* OMAP3 serial ports */
 #define OMAP_UART1_BASE		0x4806a000
 #define OMAP_UART2_BASE		0x4806c000
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define OMAP_UART3_BASE         0x48020000
+#else
+
 #define OMAP_UART3_BASE		0x49020000
+#endif
 #endif
 
 #define OMAP_MAX_NR_PORTS	3

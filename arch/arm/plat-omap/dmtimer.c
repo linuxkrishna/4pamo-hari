@@ -224,7 +224,22 @@ static const int dm_timer_count = ARRAY_SIZE(omap2_dm_timers);
 #define omap2_dm_timers			NULL
 #define omap2_dm_source_names		NULL
 #define omap2_dm_source_clocks		NULL
-
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+static struct omap_dm_timer omap3_dm_timers[] = {
+	{ .phys_base = 0x4A318000, .irq = INT_24XX_GPTIMER1 },
+	{ .phys_base = 0x48032000, .irq = INT_24XX_GPTIMER2 },
+	{ .phys_base = 0x48034000, .irq = INT_24XX_GPTIMER3 },
+	{ .phys_base = 0x48036000, .irq = INT_24XX_GPTIMER4 },
+	{ .phys_base = 0x40138000, .irq = INT_24XX_GPTIMER5 },
+	{ .phys_base = 0x4013A000, .irq = INT_24XX_GPTIMER6 },
+	{ .phys_base = 0x4013C000, .irq = INT_24XX_GPTIMER7 },
+	{ .phys_base = 0x4013E000, .irq = INT_24XX_GPTIMER8 },
+	{ .phys_base = 0x4803E000, .irq = INT_24XX_GPTIMER9 },
+	{ .phys_base = 0x48086000, .irq = INT_24XX_GPTIMER10 },
+	{ .phys_base = 0x48088000, .irq = INT_24XX_GPTIMER11 },
+	{ .phys_base = 0x4A320000, .irq = INT_24XX_GPTIMER12 },
+};
+#else
 static struct omap_dm_timer omap3_dm_timers[] = {
 	{ .phys_base = 0x48318000, .irq = INT_24XX_GPTIMER1 },
 	{ .phys_base = 0x49032000, .irq = INT_24XX_GPTIMER2 },
@@ -239,6 +254,7 @@ static struct omap_dm_timer omap3_dm_timers[] = {
 	{ .phys_base = 0x48088000, .irq = INT_24XX_GPTIMER11 },
 	{ .phys_base = 0x48304000, .irq = INT_34XX_GPT12_IRQ },
 };
+#endif
 
 static const char *omap3_dm_source_names[] __initdata = {
 	"sys_ck",
