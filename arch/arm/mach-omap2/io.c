@@ -208,6 +208,8 @@ void __init omap2_init_common_hw(struct omap_sdrc_params *sp)
 	omap2_resource_init();
 #endif
 	omap2_clk_init();
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	omap2_sdrc_init(sp);
+#endif
 	gpmc_init();
 }

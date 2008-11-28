@@ -962,9 +962,7 @@ static inline void __init sdp3430_init_smc91x(void)
 
 static void __init omap_3430sdp_init_irq(void)
 {
-#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	omap2_init_common_hw(hyb18m512160af6_sdrc_params);
-#endif
 	omap_init_irq();
 	omap_gpio_init();
 #ifndef CONFIG_MACH_OMAP_4430VIRTIO
@@ -1083,8 +1081,8 @@ static void __init omap_3430sdp_init(void)
 	spi_register_board_info(sdp3430_spi_board_info,
 				ARRAY_SIZE(sdp3430_spi_board_info));
 	ads7846_dev_init();
-#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	sdp3430_flash_init();
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	msecure_init();
 #endif
 	omap_serial_init();

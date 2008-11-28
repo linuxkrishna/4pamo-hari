@@ -321,8 +321,8 @@ void __init sdp3430_flash_init(void)
 		sdp_nor_resource.end    = FLASH_BASE_SDPV2
 						+ FLASH_SIZE_SDPV2 - 1;
 	} else {
-		sdp_nor_resource.start  = FLASH_BASE_SDPV1;
-		sdp_nor_resource.end    = FLASH_BASE_SDPV1
+		sdp_nor_resource.start  = FLASH_BASE_SDPV2;
+		sdp_nor_resource.end    = FLASH_BASE_SDPV2
 						+ FLASH_SIZE_SDPV1 - 1;
 	}
 

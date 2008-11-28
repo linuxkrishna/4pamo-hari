@@ -2576,11 +2576,14 @@ static int onenand_probe(struct mtd_info *mtd)
 	/* Clear Sync. Burst Read mode to read BootRAM */
 	this->write_word((syscfg & ~ONENAND_SYS_CFG1_SYNC_READ), this->base + ONENAND_REG_SYS_CFG1);
 
-	/* Send the command for reading device ID from BootRAM */
+	/* Send the command for reading manufacturer ID from BootRAM */
 	this->write_word(ONENAND_CMD_READID, this->base + ONENAND_BOOTRAM);
-
-	/* Read manufacturer and device IDs from BootRAM */
+	/* Read manufacturer ID from BootRAM */
 	bram_maf_id = this->read_word(this->base + ONENAND_BOOTRAM + 0x0);
+
+	/* Send the command for reading device ID from BootRAM */
+	this->write_word(ONENAND_CMD_READID, this->base + ONENAND_BOOTRAM + 0x2);
+	/* Read device ID from BootRAM */
 	bram_dev_id = this->read_word(this->base + ONENAND_BOOTRAM + 0x2);
 
 	/* Reset OneNAND to read default register values */
