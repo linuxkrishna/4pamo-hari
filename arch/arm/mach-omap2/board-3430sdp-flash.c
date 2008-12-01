@@ -48,9 +48,9 @@
 static const unsigned char chip_sel_sdp[][GPMC_CS_NUM] = {
 /* GPMC CS Indices (ON=0, OFF=1)*/
 /* S8-1 2 3 4 IDX   CS0,       CS1,      CS2 ..                    CS7  */
+/*ON ON OFF ON */{PDC_NAND, PDC_ONENAND, PDC_NOR, DBG_MPDB, 0, 0, 0, 0},
 /*ON ON ON ON*/{PDC_NOR, PDC_NAND, PDC_ONENAND, DBG_MPDB, 0, 0, 0, 0},
 /*ON ON ON OFF*/{PDC_ONENAND, PDC_NAND, PDC_NOR, DBG_MPDB, 0, 0, 0, 0},
-/*ON ON OFF ON */{PDC_NAND, PDC_ONENAND, PDC_NOR, DBG_MPDB, 0, 0, 0, 0},
 };
 
 #ifdef CONFIG_OMAP3_PM
@@ -237,6 +237,7 @@ u32 get_gpmc0_type(void)
 	iounmap(fpga_map_addr);
 	return (cs);
 }
+static int sdp_nand_default_setup(void __iomem *);
 static struct mtd_partition sdp_nand_partitions[] = {
 	/* All the partition sizes are listed in terms of NAND block size */
 	{
@@ -271,7 +272,7 @@ static struct mtd_partition sdp_nand_partitions[] = {
 static struct omap_nand_platform_data sdp_nand_data = {
 	.parts          = sdp_nand_partitions,
 	.nr_parts       = ARRAY_SIZE(sdp_nand_partitions),
-	.nand_setup     = NULL,
+	.nand_setup	= sdp_nand_default_setup,
 	.dma_channel    = -1,           /* disable DMA in OMAP NAND driver */
 	.dev_ready      = NULL,
 };
@@ -289,6 +290,18 @@ static struct platform_device sdp_nand_device = {
 	.num_resources  = 1,
 	.resource       = &sdp_nand_resource,
 };
+
+static int  sdp_nand_default_setup(void __iomem *nand_base)
+{
+	struct omap_nand_platform_data *datap = &sdp_nand_data;
+	gpmc_cs_write_reg(datap->cs, GPMC_CS_CONFIG1, 0x800);
+	gpmc_cs_write_reg(datap->cs, GPMC_CS_CONFIG2, 0x00060600);
+	gpmc_cs_write_reg(datap->cs, GPMC_CS_CONFIG3, 0x00060401);
+	gpmc_cs_write_reg(datap->cs, GPMC_CS_CONFIG4, 0x05010801);
+	gpmc_cs_write_reg(datap->cs, GPMC_CS_CONFIG5, 0x00090B0B);
+	gpmc_cs_write_reg(datap->cs, GPMC_CS_CONFIG6, 0x050001C0);
+	return 0;
+}
 
 
 /**
