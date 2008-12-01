@@ -142,8 +142,6 @@ static void omap2_mcbsp_request(unsigned int id)
 {
 	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
 
-	omap_mcbsp_clk_enable(mcbsp->clk);
-
 	if (cpu_is_omap2420() && (id == OMAP_MCBSP2))
 		omap2_mcbsp2_mux_setup();
 }
@@ -156,7 +154,8 @@ static void omap2_mcbsp_request(unsigned int id)
 static void  mcbsp_power_settings(unsigned int id, int level)
 {
 	struct omap_mcbsp *mcbsp;
-	u32 io_base;
+	void __iomem *io_base;
+
 	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
 
@@ -196,9 +195,11 @@ void omap2_mcbsp_config(unsigned int id,
 			 const struct omap_mcbsp_reg_cfg *config)
 {
 	struct omap_mcbsp *mcbsp;
-	u32 io_base;
+	void __iomem *io_base;
+
 	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
+
 	omap_mcbsp_write(io_base, OMAP_MCBSP_REG_XCCR, config->xccr);
 	omap_mcbsp_write(io_base, OMAP_MCBSP_REG_RCCR, config->rccr);
 }
@@ -210,7 +211,8 @@ static struct omap_mcbsp_ops omap2_mcbsp_ops = {
 static void omap2_mcbsp_rx_dma_callback(int lch, u16 ch_status, void *data)
 {
 	struct omap_mcbsp *mcbsp_dma_rx = data;
-	u32 io_base;
+	void __iomem *io_base;
+
 	io_base = mcbsp_dma_rx->io_base;
 
 	/* If we are at the last transfer, Shut down the reciever */
@@ -229,7 +231,8 @@ static void omap2_mcbsp_rx_dma_callback(int lch, u16 ch_status, void *data)
 static void omap2_mcbsp_tx_dma_callback(int lch, u16 ch_status, void *data)
 {
 	struct omap_mcbsp *mcbsp_dma_tx = data;
-	u32 io_base;
+	void __iomem *io_base;
+
 	io_base = mcbsp_dma_tx->io_base;
 
 	/* If we are at the last transfer, Shut down the Transmitter */
@@ -318,9 +321,12 @@ void omap2_mcbsp_set_srg_cfg_param(unsigned int id, int interface_mode,
 					struct omap_mcbsp_reg_cfg *mcbsp_cfg,
 					struct omap_mcbsp_srg_fsg_cfg *param)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
 	u32 clk_rate, clkgdv;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
+
+	mcbsp = id_to_mcbsp_ptr(id);
+
 	io_base = mcbsp->io_base;
 
 	mcbsp->interface_mode = interface_mode;
@@ -433,10 +439,12 @@ EXPORT_SYMBOL(omap2_mcbsp_params_cfg);
  */
 void omap2_mcbsp_set_srg_fsg(unsigned int id, u8 state)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
-
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
+	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
+
+       mcbsp = id_to_mcbsp_ptr(id);
 
 	if (state == OMAP_MCBSP_DISABLE_FSG_SRG) {
 		omap_mcbsp_write(io_base, OMAP_MCBSP_REG_SPCR2,
@@ -460,8 +468,8 @@ void omap2_mcbsp_set_srg_fsg(unsigned int id, u8 state)
  */
 int omap2_mcbsp_stop_datatx(unsigned int id)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
@@ -491,13 +499,16 @@ EXPORT_SYMBOL(omap2_mcbsp_stop_datatx);
  */
 int omap2_mcbsp_stop_datarx(u32 id)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
+
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
+
+	mcbsp = id_to_mcbsp_ptr(id);
 
 	io_base = mcbsp->io_base;
 
@@ -523,8 +534,9 @@ EXPORT_SYMBOL(omap2_mcbsp_stop_datarx);
  */
 int omap2_mcbsp_reset(unsigned int id)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
+
 	int counter = 0;
 	int wait_for_reset = 10000;
 
@@ -532,7 +544,7 @@ int omap2_mcbsp_reset(unsigned int id)
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
-
+	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
 
 	omap_mcbsp_write(io_base, OMAP_MCBSP_REG_SYSCON,
@@ -562,13 +574,15 @@ EXPORT_SYMBOL(omap2_mcbsp_reset);
  */
 int omap2_mcbsp_transmitter_index(int id, int *ei, int *fi)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
+	struct omap_mcbsp *mcbsp;
 	int eix = 0, fix = 0;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
+
+	mcbsp = id_to_mcbsp_ptr(id);
 
 	if ((!ei) || (!fi)) {
 		printk(KERN_ERR	"OMAP_McBSP: Invalid ei and fi params \n");
@@ -604,14 +618,14 @@ EXPORT_SYMBOL(omap2_mcbsp_transmitter_index);
  */
 int omap2_mcbsp_receiver_index(int id, int *ei, int *fi)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
+	struct omap_mcbsp *mcbsp;
 	int eix = 0, fix = 0;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
-
+	mcbsp = id_to_mcbsp_ptr(id);
 	if ((!ei) || (!fi)) {
 		printk(KERN_ERR	"OMAP_McBSP: Invalid ei and fi params x\n");
 		goto rxinx_err;
@@ -646,13 +660,14 @@ EXPORT_SYMBOL(omap2_mcbsp_receiver_index);
  */
 int omap2_mcbsp_set_xrst(unsigned int id, u8 state)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
+	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
 
 	if (state == OMAP_MCBSP_XRST_DISABLE)
@@ -674,13 +689,14 @@ EXPORT_SYMBOL(omap2_mcbsp_set_xrst);
  */
 int omap2_mcbsp_set_rrst(unsigned int id, u8 state)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
+	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
 
 	if (state == OMAP_MCBSP_RRST_DISABLE)
@@ -690,6 +706,7 @@ int omap2_mcbsp_set_rrst(unsigned int id, u8 state)
 	else
 		omap_mcbsp_write(io_base, OMAP_MCBSP_REG_SPCR1,
 		      omap_mcbsp_read(io_base, OMAP_MCBSP_REG_SPCR1) | RRST);
+
 	udelay(10);
 	return 0;
 }
@@ -702,14 +719,14 @@ EXPORT_SYMBOL(omap2_mcbsp_set_rrst);
  */
 int omap2_mcbsp_rxmultich_enable(unsigned int id, u8 state)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
-
+	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
 
 	if (state == OMAP_MCBSP_RXMUTICH_ENABLE) {
@@ -742,15 +759,14 @@ EXPORT_SYMBOL(omap2_mcbsp_rxmultich_enable);
  */
 int omap2_mcbsp_txmultich_enable(unsigned int id, u32 state)
 {
-
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
-
+	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
 
 	if (state == OMAP_MCBSP_TXMUTICH_ENABLE) {
@@ -787,14 +803,15 @@ EXPORT_SYMBOL(omap2_mcbsp_txmultich_enable);
 int omap2_mcbsp_txmultich_cfg(unsigned int id, u8 part_mode, u8 parta_enable,
 					 u8 partb_enable, u32 ch_enable)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
 
+	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
 
 	/* check for valid partition mode */
@@ -826,14 +843,14 @@ EXPORT_SYMBOL(omap2_mcbsp_txmultich_cfg);
 int omap2_mcbsp_rxmultich_cfg(unsigned int id, u8 part_mode,
 			       u8 parta_enable, u8 partb_enable, u32 ch_enable)
 {
-	struct omap_mcbsp *mcbsp = mcbsp_ptr[id];
-	u32 io_base;
+	struct omap_mcbsp *mcbsp;
+	void __iomem *io_base;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
-
+	mcbsp = id_to_mcbsp_ptr(id);
 	io_base = mcbsp->io_base;
 
 	/* check for valid partition mode */
@@ -861,7 +878,7 @@ int omap2_mcbsp_dma_recv_params(unsigned int id,
 				omap_mcbsp_dma_transfer_params *rp)
 {
 	struct omap_mcbsp *mcbsp;
-	u32 io_base;
+	void __iomem *io_base;
 	int err, chain_id = -1;
 	struct omap_dma_channel_params rx_params;
 	u32  dt = 0;
@@ -971,10 +988,9 @@ int omap2_mcbsp_dma_trans_params(unsigned int id,
 				omap_mcbsp_dma_transfer_params *tp)
 {
 	struct omap_mcbsp *mcbsp;
-
+	void __iomem *io_base;
 	struct omap_dma_channel_params tx_params;
 	int err = 0, chain_id = -1;
-	u32 io_base;
 	u32 dt = 0;
 #ifdef CONFIG_USE_MCBSP_FIFO
 	u32 mcbsp_fifo_size;
@@ -1060,7 +1076,7 @@ int omap2_mcbsp_dma_trans_params(unsigned int id,
 			return -EINVAL;
 		}
 		mcbsp->tx_dma_chain_state = 0;
-	mcbsp->dma_tx_lch = chain_id;
+		mcbsp->dma_tx_lch = chain_id;
 	} else {
 		/* DMA params already set, modify the same!! */
 		err = omap_modify_dma_chain_params(mcbsp->dma_tx_lch,
@@ -1088,7 +1104,7 @@ int omap2_mcbsp_receive_data(unsigned int id, void *cbdata,
 			     dma_addr_t buf_start_addr, u32 buf_size)
 {
 	struct omap_mcbsp *mcbsp;
-	u32 io_base;
+	void __iomem *io_base;
 	int enable_rx = 0;
 	int e_count = 0;
 	int f_count = 0;
@@ -1104,9 +1120,7 @@ int omap2_mcbsp_receive_data(unsigned int id, void *cbdata,
 	}
 
 	mcbsp = id_to_mcbsp_ptr(id);
-
 	io_base = mcbsp->io_base;
-
 	mcbsp->rx_cb_arg = cbdata;
 
 	/* Auto RRST handling logic - disable the Reciever before 1st dma */
@@ -1192,17 +1206,21 @@ int omap2_mcbsp_receive_data(unsigned int id, void *cbdata,
 		buf_start_addr += mcbsp->rx_word_length;
 
 	if (omap_dma_chain_a_transfer(mcbsp->dma_rx_lch,
-			mcbsp->phy_base + OMAP_MCBSP_REG_DRR, buf_start_addr,
+			mcbsp->phys_base + OMAP_MCBSP_REG_DRR, buf_start_addr,
 			e_count, f_count, mcbsp) < 0) {
 		printk(KERN_ERR " Buffer chaining failed \n");
 		return -EINVAL;
 	}
+
 	if (mcbsp->rx_dma_chain_state == 0) {
 		if (mcbsp->interface_mode == OMAP_MCBSP_MASTER)
 			omap2_mcbsp_set_srg_fsg(id, OMAP_MCBSP_ENABLE_FSG_SRG);
 
-		if (omap_start_dma_chain_transfers(mcbsp->dma_rx_lch) < 0)
+		if (omap_start_dma_chain_transfers(mcbsp->dma_rx_lch) < 0) {
+			printk(KERN_INFO " DMA chaining failed \n");
 			return -EINVAL;
+
+		}
 		mcbsp->rx_dma_chain_state = 1;
 	}
 	/* Auto RRST handling logic - Enable the Reciever after 1st dma */
@@ -1227,17 +1245,16 @@ int omap2_mcbsp_send_data(unsigned int id, void *cbdata,
 			  dma_addr_t buf_start_addr, u32 buf_size)
 {
 	struct omap_mcbsp *mcbsp;
-	u32 io_base;
 	u8 enable_tx = 0;
 	int e_count = 0;
 	int f_count = 0;
+	void __iomem *io_base;
 
 	if (!omap_mcbsp_check_valid_id(id)) {
 		printk(KERN_ERR "%s: Invalid id (%d)\n", __func__, id + 1);
 		return -ENODEV;
 	}
 	mcbsp = id_to_mcbsp_ptr(id);
-
 	io_base = mcbsp->io_base;
 
 	mcbsp->tx_cb_arg = cbdata;
@@ -1248,7 +1265,7 @@ int omap2_mcbsp_send_data(unsigned int id, void *cbdata,
 				== OMAP_DMA_CHAIN_INACTIVE)) {
 		omap_mcbsp_write(io_base, OMAP_MCBSP_REG_SPCR2,
 			omap_mcbsp_read(io_base,
-				OMAP_MCBSP_REG_SPCR2) & (~XRST));
+				OMAP_MCBSP_REG_SPCR2) &	(~XRST));
 		enable_tx = 1;
 	}
 	/*
@@ -1277,7 +1294,7 @@ int omap2_mcbsp_send_data(unsigned int id, void *cbdata,
 		buf_start_addr += mcbsp->tx_word_length;
 
 	if (omap_dma_chain_a_transfer(mcbsp->dma_tx_lch,
-		buf_start_addr,	mcbsp->phy_base + OMAP_MCBSP_REG_DXR,
+		buf_start_addr, mcbsp->phys_base + OMAP_MCBSP_REG_DXR,
 		e_count, f_count, mcbsp) < 0)
 			return -EINVAL;
 
@@ -1287,6 +1304,7 @@ int omap2_mcbsp_send_data(unsigned int id, void *cbdata,
 
 		if (omap_start_dma_chain_transfers(mcbsp->dma_tx_lch) < 0)
 			return -EINVAL;
+
 		mcbsp->tx_dma_chain_state = 1;
 	}
 
@@ -1385,7 +1403,7 @@ static struct omap_mcbsp_platform_data omap2430_mcbsp_pdata[] = {
 #ifdef CONFIG_ARCH_OMAP34XX
 static struct omap_mcbsp_platform_data omap34xx_mcbsp_pdata[] = {
 	{
-		.phy_base	= OMAP34XX_MCBSP1_BASE,
+		.phys_base      = OMAP34XX_MCBSP1_BASE,
 		.dma_rx_sync	= OMAP24XX_DMA_MCBSP1_RX,
 		.dma_tx_sync	= OMAP24XX_DMA_MCBSP1_TX,
 		.rx_irq		= INT_24XX_MCBSP1_IRQ_RX,
@@ -1394,7 +1412,7 @@ static struct omap_mcbsp_platform_data omap34xx_mcbsp_pdata[] = {
 		.clk_name	= "mcbsp_clk",
 	},
 	{
-		.phy_base	= OMAP34XX_MCBSP2_BASE,
+		.phys_base      = OMAP34XX_MCBSP2_BASE,
 		.dma_rx_sync	= OMAP24XX_DMA_MCBSP2_RX,
 		.dma_tx_sync	= OMAP24XX_DMA_MCBSP2_TX,
 		.rx_irq		= INT_24XX_MCBSP2_IRQ_RX,
@@ -1403,7 +1421,7 @@ static struct omap_mcbsp_platform_data omap34xx_mcbsp_pdata[] = {
 		.clk_name	= "mcbsp_clk",
 	},
 	{
-		.phy_base	= OMAP34XX_MCBSP3_BASE,
+		.phys_base      = OMAP34XX_MCBSP3_BASE,
 		.dma_rx_sync	= OMAP24XX_DMA_MCBSP3_RX,
 		.dma_tx_sync	= OMAP24XX_DMA_MCBSP3_TX,
 		.rx_irq		= INT_24XX_MCBSP3_IRQ_RX,
@@ -1412,7 +1430,7 @@ static struct omap_mcbsp_platform_data omap34xx_mcbsp_pdata[] = {
 		.clk_name	= "mcbsp_clk",
 	},
 	{
-		.phy_base	= OMAP34XX_MCBSP4_BASE,
+		.phys_base      = OMAP34XX_MCBSP4_BASE,
 		.dma_rx_sync	= OMAP24XX_DMA_MCBSP4_RX,
 		.dma_tx_sync	= OMAP24XX_DMA_MCBSP4_TX,
 		.rx_irq		= INT_24XX_MCBSP4_IRQ_RX,
@@ -1421,7 +1439,7 @@ static struct omap_mcbsp_platform_data omap34xx_mcbsp_pdata[] = {
 		.clk_name	= "mcbsp_clk",
 	},
 	{
-		.phy_base	= OMAP34XX_MCBSP5_BASE,
+		.phys_base      = OMAP34XX_MCBSP5_BASE,
 		.dma_rx_sync	= OMAP24XX_DMA_MCBSP5_RX,
 		.dma_tx_sync	= OMAP24XX_DMA_MCBSP5_TX,
 		.rx_irq		= INT_24XX_MCBSP5_IRQ_RX,

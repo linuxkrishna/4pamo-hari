@@ -380,31 +380,31 @@ struct omap_mcbsp_srg_fsg_cfg {
 
 /* we don't do multichannel for now */
 struct omap_mcbsp_reg_cfg {
-	u32 spcr2;
-	u32 spcr1;
-	u32 rcr2;
-	u32 rcr1;
-	u32 xcr2;
-	u32 xcr1;
-	u32 srgr2;
-	u32 srgr1;
-	u32 mcr2;
-	u32 mcr1;
-	u32 pcr0;
-	u32 rcerc;
-	u32 rcerd;
-	u32 xcerc;
-	u32 xcerd;
-	u32 rcere;
-	u32 rcerf;
-	u32 xcere;
-	u32 xcerf;
-	u32 rcerg;
-	u32 rcerh;
-	u32 xcerg;
-	u32 xcerh;
-	u32 xccr;
-	u32 rccr;
+	u16 spcr2;
+	u16 spcr1;
+	u16 rcr2;
+	u16 rcr1;
+	u16 xcr2;
+	u16 xcr1;
+	u16 srgr2;
+	u16 srgr1;
+	u16 mcr2;
+	u16 mcr1;
+	u16 pcr0;
+	u16 rcerc;
+	u16 rcerd;
+	u16 xcerc;
+	u16 xcerd;
+	u16 rcere;
+	u16 rcerf;
+	u16 xcere;
+	u16 xcerf;
+	u16 rcerg;
+	u16 rcerh;
+	u16 xcerg;
+	u16 xcerh;
+	u16 xccr;
+	u16 rccr;
 };
 
 typedef enum {
@@ -481,7 +481,7 @@ struct omap_mcbsp_ops {
 };
 
 struct omap_mcbsp_platform_data {
-	unsigned long phy_base;
+	unsigned long phys_base;
 	u8 dma_rx_sync, dma_tx_sync;
 	u16 rx_irq, tx_irq;
 	struct omap_mcbsp_ops *ops;
@@ -518,7 +518,6 @@ struct omap_mcbsp {
 	spinlock_t lock;
 	struct omap_mcbsp_platform_data *pdata;
 	struct clk *clk;
-	u32 phy_base;
 	u8  auto_reset;	/* Auto Reset */
 	u8  txskip_alt;	/* Tx skip flags */
 	u8  rxskip_alt;	/* Rx skip flags */

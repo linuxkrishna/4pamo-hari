@@ -51,6 +51,9 @@ int omap_mcbsp_read(void __iomem *io_base, u16 reg)
 			omap_mcbsp_read(base, OMAP_MCBSP_REG_##reg)
 #define OMAP_MCBSP_WRITE(base, reg, val) \
 			omap_mcbsp_write(base, OMAP_MCBSP_REG_##reg, val)
+#define omap_mcbsp_check_valid_id(id)  (id < omap_mcbsp_count)
+#define id_to_mcbsp_ptr(id)            mcbsp_ptr[id];
+
 
 static void omap_mcbsp_dump_reg(u8 id)
 {
@@ -104,6 +107,7 @@ static irqreturn_t omap_mcbsp_rx_irq_handler(int irq, void *dev_id)
 
 	dev_dbg(mcbsp_rx->dev, "RX IRQ callback : 0x%x\n",
 		OMAP_MCBSP_READ(mcbsp_rx->io_base, SPCR2));
+
 
 	complete(&mcbsp_rx->rx_irq_completion);
 
@@ -224,6 +228,8 @@ int omap_mcbsp_request(unsigned int id)
 	if (mcbsp->pdata && mcbsp->pdata->ops && mcbsp->pdata->ops->request)
 		mcbsp->pdata->ops->request(id);
 
+	clk_enable(mcbsp->clk);
+
 	spin_lock(&mcbsp->lock);
 	if (!mcbsp->free) {
 		dev_err(mcbsp->dev, "McBSP%d is currently in use\n",
@@ -282,6 +288,8 @@ void omap_mcbsp_free(unsigned int id)
 
 	if (mcbsp->pdata && mcbsp->pdata->ops && mcbsp->pdata->ops->free)
 		mcbsp->pdata->ops->free(id);
+
+	clk_disable(mcbsp->clk);
 
 	spin_lock(&mcbsp->lock);
 	if (mcbsp->free) {
@@ -864,6 +872,7 @@ EXPORT_SYMBOL(omap_mcbsp_set_spi_mode);
  */
 static int __devinit omap_mcbsp_probe(struct platform_device *pdev)
 {
+
 	struct omap_mcbsp_platform_data *pdata = pdev->dev.platform_data;
 	struct omap_mcbsp *mcbsp;
 	int id = pdev->id - 1;
@@ -877,6 +886,7 @@ static int __devinit omap_mcbsp_probe(struct platform_device *pdev)
 	}
 
 	dev_dbg(&pdev->dev, "Initializing OMAP McBSP (%d).\n", pdev->id);
+
 
 	if (id >= omap_mcbsp_count) {
 		dev_err(&pdev->dev, "Invalid McBSP device id (%d)\n", id);
@@ -897,8 +907,9 @@ static int __devinit omap_mcbsp_probe(struct platform_device *pdev)
 	mcbsp->dma_tx_lch = -1;
 	mcbsp->dma_rx_lch = -1;
 
-	mcbsp->phys_base = pdata->phy_base;
-	mcbsp->io_base = ioremap(pdata->phy_base, SZ_4K);
+	mcbsp->phys_base = pdata->phys_base;
+	mcbsp->io_base = ioremap(pdata->phys_base, SZ_4K);
+
 	if (!mcbsp->io_base) {
 		ret = -ENOMEM;
 		goto err_ioremap;
