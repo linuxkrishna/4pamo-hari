@@ -289,7 +289,11 @@ static int omap_i2c_init(struct omap_i2c_dev *dev)
 
 		/* HSI2C controller internal clk rate should be 19.2 Mhz */
 		internal_clk = 19200;
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 		fclk_rate = clk_get_rate(dev->fclk) / 1000;
+#else
+		fclk_rate = 96000; /* fclk for i2c is 96 MHz */
+#endif
 
 		/* Compute prescaler divisor */
 		psc = fclk_rate / internal_clk;
@@ -599,7 +603,9 @@ omap_i2c_isr(int this_irq, void *dev_id)
 			dev_warn(dev->dev, "Too much work in one IRQ\n");
 			break;
 		}
-
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+		udelay(2);
+#endif
 		omap_i2c_write_reg(dev, OMAP_I2C_STAT_REG, stat);
 
 		err = 0;
@@ -777,6 +783,7 @@ omap_i2c_probe(struct platform_device *pdev)
 		dev->rev1 = omap_i2c_read_reg(dev, OMAP_I2C_REV_REG) < 0x20;
 
 	if (cpu_is_omap2430() || cpu_is_omap34xx()) {
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 		u16 s;
 
 		/* Set up the fifo size - Get total size */
@@ -790,6 +797,10 @@ omap_i2c_probe(struct platform_device *pdev)
 		 */
 		dev->fifo_size = (dev->fifo_size / 2);
 		dev->b_hw = 1; /* Enable hardware fixes */
+#else
+		dev->fifo_size = 0;
+                dev->b_hw = 0; /* Enable hardware fixes */
+#endif
 	}
 
 	/* reset ASAP, clearing any IRQs */
