@@ -317,7 +317,7 @@ static int __init config_warmreset_sequence(void)
 static int __init twl4030_power_init(void)
 {
 	int err = 0;
-
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	err = twl4030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, KEY_1,
 				R_PROTECT_KEY);
 	err |= twl4030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, KEY_2,
@@ -335,7 +335,7 @@ static int __init twl4030_power_init(void)
 		return err;
 
 	err = twl4030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0, R_PROTECT_KEY);
-
+#endif
 	return err;
 
 }

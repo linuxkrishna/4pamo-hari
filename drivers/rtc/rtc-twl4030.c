@@ -445,7 +445,7 @@ static int __devinit twl4030_rtc_probe(struct platform_device *pdev)
 	ret = twl4030_rtc_write_u8(rd_reg, REG_RTC_STATUS_REG);
 	if (ret < 0)
 		goto out1;
-
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	ret = request_irq(irq, twl4030_rtc_interrupt,
 				IRQF_TRIGGER_RISING,
 				rtc->dev.bus_id, rtc);
@@ -453,7 +453,7 @@ static int __devinit twl4030_rtc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "IRQ is not free.\n");
 		goto out1;
 	}
-
+#endif
 	/* Check RTC module status, Enable if it is off */
 	ret = twl4030_rtc_read_u8(&rd_reg, REG_RTC_CTRL_REG);
 	if (ret < 0)

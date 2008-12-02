@@ -127,7 +127,11 @@
 #define TWL4030_BASEADD_INT		0x002E
 #define TWL4030_BASEADD_PM_MASTER	0x0036
 #define TWL4030_BASEADD_PM_RECEIVER	0x005B
-#define TWL4030_BASEADD_RTC		0x001C
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+	#define TWL4030_BASEADD_RTC             0x0
+#else
+	#define TWL4030_BASEADD_RTC		0x001C
+#endif
 #define TWL4030_BASEADD_SECURED_REG	0x0000
 
 /* Triton Identification */
@@ -224,7 +228,11 @@ static struct twl4030mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
 	{ 3, TWL4030_BASEADD_INT },
 	{ 3, TWL4030_BASEADD_PM_MASTER },
 	{ 3, TWL4030_BASEADD_PM_RECEIVER },
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+	{ 0, TWL4030_BASEADD_RTC },
+#else
 	{ 3, TWL4030_BASEADD_RTC },
+#endif
 	{ 3, TWL4030_BASEADD_SECURED_REG },
 };
 
@@ -878,7 +886,7 @@ twl4030_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		mutex_init(&twl->xfer_lock);
 	}
 	inuse = true;
-
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	/* setup clock framework */
 	clocks_init();
 
@@ -890,7 +898,7 @@ twl4030_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		if (status < 0)
 			goto fail;
 	}
-
+#endif
 	status = add_children(pdata);
 fail:
 	if (status < 0)
