@@ -144,6 +144,34 @@ struct omap2_mcspi_cs {
 	int			word_len;
 };
 
+#ifdef CONFIG_SPI_TI_OMAP_TEST
+struct reg_type {
+	char name[40];
+	int offset;
+};
+
+static struct reg_type reg_map[] = {
+	{"MCSPI_REV", 0x0},
+	{"MCSPI_SYSCONFIG", 0x10},
+	{"MCSPI_SYSSTATUS", 0x14},
+	{"MCSPI_IRQSTATUS", 0x18},
+	{"MCSPI_IRQENABLE", 0x1C},
+	{"MCSPI_WAKEUPENABLE", 0x20},
+	{"MCSPI_SYST", 0x24},
+	{"MCSPI_MODULCTRL", 0x28},
+	{"CH0", 0x2C},
+	{"CH1", 0x40},
+	{"CH2", 0x54},
+	{"CH3", 0x68}
+};
+
+static struct reg_type ch_reg_type[] = {
+	{"CONF", 0x00},
+	{"STAT", 0x04},
+	{"CTRL", 0x08},
+};
+#endif
+
 #if defined(CONFIG_OMAP34XX_OFFMODE) && defined(CONFIG_OMAP3_PM)
 struct omap_mcspi_regs {
 	u32 sysconfig;
@@ -246,6 +274,43 @@ static void omap2_mcspi_set_master_mode(struct spi_master *master)
 	MOD_REG_BIT(l, OMAP2_MCSPI_MODULCTRL_SINGLE, 1);
 	mcspi_write_reg(master, OMAP2_MCSPI_MODULCTRL, l);
 }
+
+#ifdef CONFIG_SPI_TI_OMAP_TEST
+static int omap2_mcspi_dump_regs(struct spi_master *master)
+{
+	u32 spi_base;
+	u32 reg;
+	u32 bus;
+	u32 chan;
+	u32 channel;
+	struct omap2_mcspi *mcspi = spi_master_get_devdata(master);
+
+	spi_base = mcspi->base;
+
+	for (reg = 0; (reg < sizeof(reg_map) / sizeof(struct reg_type));
+	     reg++) {
+		struct reg_type *reg_d = &reg_map[reg];
+		u32 base1 = spi_base + reg_d->offset;
+		if (reg_d->name[0] == 'C') {
+			for (channel = 0;
+			     (channel < (sizeof(ch_reg_type) /
+					 sizeof(struct reg_type)));
+			     channel++) {
+				struct reg_type *reg_c = &ch_reg_type[channel];
+				u32 base2 = base1 + reg_c->offset;
+				printk(KERN_INFO "MCSPI_%s%s [0x%08X] = 0x%08X\n",
+				       reg_d->name, reg_c->name, base2,
+				       __raw_readl(base2));
+			}
+		} else {
+			printk(KERN_INFO "%s : [0x%08X] = 0x%08X\n",
+				reg_d->name, base1, __raw_readl(base1));
+		}
+
+	}
+	return 0;
+}
+#endif
 
 static void omap_mcspi_wakeup_enable(struct spi_master *spi_cntrl, int level)
 {
@@ -703,6 +768,10 @@ static void omap2_mcspi_dma_rx_callback(int lch, u16 ch_status, void *data)
 	struct omap2_mcspi	*mcspi;
 	struct omap2_mcspi_dma	*mcspi_dma;
 
+#ifdef CONFIG_SPI_TI_OMAP_TEST
+	printk(KERN_INFO "In omap_mcspi_dma_rx_callback=%d\n", ch_status);
+#endif
+
 	mcspi = spi_master_get_devdata(spi->master);
 	mcspi_dma = &(mcspi->dma_channels[spi->chip_select]);
 
@@ -717,6 +786,10 @@ static void omap2_mcspi_dma_tx_callback(int lch, u16 ch_status, void *data)
 	struct spi_device	*spi = data;
 	struct omap2_mcspi	*mcspi;
 	struct omap2_mcspi_dma	*mcspi_dma;
+
+#ifdef CONFIG_SPI_TI_OMAP_TEST
+	printk(KERN_INFO "In omap_mcspi_dma_tx_callback=%d\n", ch_status);
+#endif
 
 	mcspi = spi_master_get_devdata(spi->master);
 	mcspi_dma = &(mcspi->dma_channels[spi->chip_select]);

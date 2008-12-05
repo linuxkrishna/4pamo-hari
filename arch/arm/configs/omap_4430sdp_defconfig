@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.27-omap1
-# Tue Dec  2 20:04:57 2008
+# Fri Dec  5 18:00:22 2008
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -609,6 +609,7 @@ CONFIG_SPI_MASTER=y
 #
 # CONFIG_SPI_BITBANG is not set
 CONFIG_SPI_OMAP24XX=y
+# CONFIG_SPI_TI_OMAP_TEST is not set
 
 #
 # SPI Protocol Masters
@@ -1110,4 +1111,3 @@ CONFIG_PLIST=y
 CONFIG_HAS_IOMEM=y
 CONFIG_HAS_IOPORT=y
 CONFIG_HAS_DMA=y
-

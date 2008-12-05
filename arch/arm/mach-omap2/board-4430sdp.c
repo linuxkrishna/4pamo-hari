@@ -530,6 +530,17 @@ static struct omap2_mcspi_device_config tsc2046_mcspi_config = {
 	.single_channel	= 1,  /* 0: slave, 1: master */
 };
 
+#ifdef CONFIG_SPI_TI_OMAP_TEST
+static struct omap2_mcspi_device_config dummy1_mcspi_config = {
+	.turbo_mode	= 0,
+	.single_channel = 1,  /* 0: slave, 1: master */
+};
+static struct omap2_mcspi_device_config dummy2_mcspi_config = {
+	.turbo_mode	= 0,
+	.single_channel = 0,  /* 0: slave, 1: master */
+};
+#endif
+
 static struct spi_board_info sdp3430_spi_board_info[] __initdata = {
 	[0] = {
 		/*
@@ -544,6 +555,30 @@ static struct spi_board_info sdp3430_spi_board_info[] __initdata = {
 		.irq			= 0,
 		.platform_data		= &tsc2046_config,
 	},
+#ifdef CONFIG_SPI_TI_OMAP_TEST
+/* below info is only for test case */
+	[1] = {
+		.modalias		= "spidev",
+		.bus_num		= 1,
+		.chip_select		= 2,
+		.max_speed_hz   	= 1500000,
+	},
+
+	[2] = {
+		.modalias		= "spidev",
+		.bus_num		= 3,
+		.chip_select		= 0,
+		.max_speed_hz		= 6000000,
+		.controller_data	= &dummy2_mcspi_config, /* Slave */
+	},
+	[3] = {
+		.modalias		= "dummydevice1",
+		.bus_num		= 2,
+		.chip_select		= 0,
+		.max_speed_hz		= 1500000,
+		.controller_data	= &dummy1_mcspi_config, /*Master */
+	},
+#endif
 };
 
 #ifdef CONFIG_VIDEO_DW9710
