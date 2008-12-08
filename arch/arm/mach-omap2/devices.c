@@ -185,6 +185,10 @@ static inline void omap_init_sti(void) {}
 #define OMAP2_MCSPI2_BASE		0x4809a000
 #define OMAP2_MCSPI3_BASE		0x480b8000
 #define OMAP2_MCSPI4_BASE		0x480ba000
+#define OMAP2_MCSPI5_BASE		0x480d5000
+
+/* Define this for enabling McSPI5 */
+#undef OMAP4_ENABLE_MCSPI5
 
 static struct omap2_mcspi_platform_config omap2_mcspi1_config = {
 	.num_cs		= 4,
@@ -298,6 +302,34 @@ static struct platform_device omap2_mcspi4 = {
 };
 #endif
 
+/* Structures for McSPI5  */
+static struct omap2_mcspi_platform_config omap2_mcspi5_config = {
+	.num_cs		= 1,
+};
+
+static struct resource omap2_mcspi5_resources[] = {
+	{
+		.start		= OMAP2_MCSPI5_BASE,
+		.end		= OMAP2_MCSPI5_BASE + 0xff,
+		.flags		= IORESOURCE_MEM,
+	},
+
+	{
+		.start		= INT_44XX_SPI5_IRQ,
+		.flags		= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device omap2_mcspi5 = {
+	.name		= "omap2_mcspi",
+	.id		= 5,
+	.num_resources 	= ARRAY_SIZE(omap2_mcspi5_resources),
+	.resource	= omap2_mcspi5_resources,
+	.dev		= {
+		.platform_data = &omap2_mcspi5_config,
+	},
+};
+
 static void omap_init_mcspi(void)
 {
 	platform_device_register(&omap2_mcspi1);
@@ -309,6 +341,9 @@ static void omap_init_mcspi(void)
 #ifdef CONFIG_ARCH_OMAP3
 	if (cpu_is_omap343x())
 		platform_device_register(&omap2_mcspi4);
+#endif
+#if defined(CONFIG_MACH_OMAP_4430VIRTIO) && defined(OMAP4_ENABLE_MCSPI5)
+	platform_device_register(&omap2_mcspi5);
 #endif
 }
 

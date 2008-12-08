@@ -1094,6 +1094,15 @@ static u8 __initdata spi4_txdma_id[] = {
 };
 #endif
 
+/* For McPSI5 */
+static u8 __initdata spi5_rxdma_id[] = {
+	OMAP44XX_DMA_SPI5_RX0,
+};
+
+static u8 __initdata spi5_txdma_id[] = {
+	OMAP44XX_DMA_SPI5_TX0,
+};
+
 static int __init omap2_mcspi_probe(struct platform_device *pdev)
 {
 	struct spi_master	*master;
@@ -1128,6 +1137,13 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
 		num_chipselect = 1;
 		break;
 #endif
+	/* For McSPI5 */
+	case 5:
+		rxdma_id = spi5_rxdma_id;
+		txdma_id = spi5_txdma_id;
+		num_chipselect = 1;
+		break;
+
 	default:
 		return -EINVAL;
 	}

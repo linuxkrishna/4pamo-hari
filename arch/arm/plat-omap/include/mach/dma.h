@@ -309,6 +309,9 @@
 #define OMAP34XX_DMA_USIM_TX		79	/* S_DMA_78 */
 #define OMAP34XX_DMA_USIM_RX		80	/* S_DMA_79 */
 
+/* DMA Channels for McSPI5  */
+#define OMAP44XX_DMA_SPI5_TX0		59	/* S_DMA_58 */
+#define OMAP44XX_DMA_SPI5_RX0		60	/* S_DMA_59 */
 /*----------------------------------------------------------------------------*/
 
 /* Hardware registers for LCD DMA */
