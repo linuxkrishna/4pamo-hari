@@ -343,8 +343,13 @@ omap24xxfb_check_mode(const struct omap24xxfb_info *oinfo,
 		return -EINVAL;
 	}
 
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	clkdiv = pixclock / oinfo->gfx_clk_period;
-	pixclock = oinfo->gfx_clk_period * clkdiv;
+        pixclock = oinfo->gfx_clk_period * clkdiv;
+#else
+ 	clkdiv = 0;
+#endif
+
 	if (pixclock > omap24xx_display_pixclock_max(output_dev)) {
 		omap2_disp_put_dss();
 		return -EINVAL;
@@ -1113,7 +1118,11 @@ omap24xxfb_set_par(struct fb_info *info)
 			      omap24xxfb_mirroring);
 
 	/* LCD parameters */
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	clkdiv = var->pixclock / oinfo->gfx_clk_period;
+#else
+	clkdiv = 0;
+#endif
 	/* horizontal timing parameters in pixclocks */
 	hbp = (var->left_margin > 0) ? (var->left_margin - 1) : 0;
 	hfp = (var->right_margin > 0) ? (var->right_margin - 1) : 0;
@@ -1144,7 +1153,6 @@ omap24xxfb_set_par(struct fb_info *info)
 	omap2_disp_put_dss();
 	return ret;
 }
-
 
 int
 omap24xxfb_set_output_layer(int layer)
@@ -1866,7 +1874,11 @@ int __init omap24xxfb_init(void)
 	oinfo->rotation_support = (omap24xxfb_rotation >= 0) ? 1 : 0;
 
 	/* set the period (in picoseconds) of the graphics timebase */
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	oinfo->gfx_clk_period = omap24xxfb_gfx_clk_period();
+#else
+	oinfo->gfx_clk_period = 0;
+#endif
 
 	/* Set base addrs */
 	oinfo->fb_base_phys = omap24xxfb_fb_base();
@@ -2016,7 +2028,6 @@ int __init omap24xxfb_init(void)
 	info = &oinfo->info;
 	info->flags = FBINFO_DEFAULT;
 	info->fbops = &omap24xxfb_ops;
-
 	if (oinfo->rotation_support){
 		/* If mirroring in rotation is enabled by default */
 		if(omap24xxfb_mirroring == 1){
@@ -2057,12 +2068,12 @@ int __init omap24xxfb_init(void)
 		}
 		info->fix.line_length = MAX_PIXELS_PER_LINE *
 					info->var.bits_per_pixel / 8;
-	} else {
+	}
+	else{
 		info->fix.smem_start = oinfo->fb_base_phys;
 		info->fix.line_length =
 			(info->var.xres_virtual*info->var.bits_per_pixel)/8;
 	}
-
 	if (oinfo->rotation_support)
 		info->fix.smem_len = oinfo->vrfb_size;
 	else
@@ -2099,7 +2110,6 @@ int __init omap24xxfb_init(void)
 	}
 
 	oinfo->timeout = HZ/5;
-
 	/* initialize the vsync wait queue */
 	init_waitqueue_head(&oinfo->vsync_wait);
 

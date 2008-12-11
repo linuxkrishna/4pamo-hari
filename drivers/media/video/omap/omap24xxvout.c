@@ -1109,17 +1109,17 @@ omap24xxvout_do_ioctl (struct inode *inode, struct file *file,
 		}
 
 		vout->pos = (vout->pos == 0)? 1 : 0;		
-		mutex_unlock(&q->vb_lock);
-		if (!streaming_on)
+		//mutex_unlock(&q->vb_lock);
+		/*if (!streaming_on)
 		omap2_disp_put_dss();
-
+		*/
 		return 0;
 	}
 	case VIDIOC_DQBUF:
 	{
 		/* don't allow to dequeue buffer for the linked layer */
-		if (vout->vid == vout_linked)
-			return -EINVAL;
+		/*if (vout->vid == vout_linked)
+			return -EINVAL;*/
 		return 0;
 	}
 	case VIDIOC_STREAMON:
@@ -1127,7 +1127,7 @@ omap24xxvout_do_ioctl (struct inode *inode, struct file *file,
 		int k;
 		if (vout->streaming)
 			return -EBUSY;
-
+		/*
 		if (automatic_link && vout->vid == 1) {
 			tv_state = get_tv_state();
 			if (tv_state) {
@@ -1140,6 +1140,7 @@ omap24xxvout_do_ioctl (struct inode *inode, struct file *file,
 					omap24xxvout_tv_link();
 			}
 		}
+		*/
 
 		/*
 		 * If rotation mode is selected then allocate a
@@ -1213,9 +1214,9 @@ omap24xxvout_do_ioctl (struct inode *inode, struct file *file,
 
 						}
 						
-						if (!vout->smsshado_virt_addr[k])
+					/*	if (!vout->smsshado_virt_addr[k])
 							return -ENOMEM;
-					
+					*/
 						memset((void *) vout->smsshado_virt_addr[k], 0, vout->smsshado_size);
 	
 						if(vout->rotation == 90 || vout->rotation == 270){
@@ -1250,7 +1251,7 @@ omap24xxvout_do_ioctl (struct inode *inode, struct file *file,
 		if (automatic_link && tv_state && vout->vid == 1) {
 			omap24xxvout_tv_link_release();
 			if (prev_output_dev == OMAP2_OUTPUT_LCD) {
-				set_output_device("lcd", AUTO_VIDEO_LINK);
+				//set_output_device("lcd", AUTO_VIDEO_LINK);
 				prev_output_dev = -1;
 			}
 		}
@@ -2388,6 +2389,7 @@ static int __init
 omap24xxvout_init (void)
 {
 	omap2_disp_get_dss();
+	printk(KERN_INFO "\n Inside : omap24xxvout_init ");
 	saved_v1out = init_vout_device (OMAP2_VIDEO1);
 	if (saved_v1out == NULL) {
 		omap2_disp_put_dss();
@@ -2409,6 +2411,7 @@ omap24xxvout_init (void)
 	tv_state = 0;
 	vout_linked = -1;
 	spin_lock_init (&vout_link_lock);
+	printk(KERN_INFO "\n Returning ZERO from omap24xxvout_init ");
 	return 0;
 }
 

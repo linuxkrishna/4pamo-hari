@@ -147,19 +147,19 @@ dss_reg_merge(u32 offset, u32 val, u32 mask)
 static __inline__ u32
 dispc_reg_in(u32 offset)
 {
-	return omap_readl(DSS_REG_BASE + DISPC_REG_OFFSET + offset);
+	return omap_readl(DISPC_REG_BASE + offset);
 }
 
 static __inline__ u32
 dispc_reg_out(u32 offset, u32 val)
 {
-	omap_writel(val, DSS_REG_BASE + DISPC_REG_OFFSET + offset);
+	omap_writel(val, DISPC_REG_BASE + offset);
 	return val;
 }
 static __inline__ u32
 dispc_reg_merge(u32 offset, u32 val, u32 mask)
 {
-	u32 addr = DSS_REG_BASE + DISPC_REG_OFFSET + offset;
+	u32 addr = DISPC_REG_BASE + offset;
 	u32 new_val = (omap_readl(addr) & ~mask) | (val & mask);
 
 	omap_writel(new_val, addr);
@@ -335,11 +335,11 @@ omap2_disp_get_panel_size(int output_dev, int *width, int *height)
 		*height = *height << 1;
 	}
 	else if (output_dev == OMAP2_OUTPUT_LCD) {
-		size = dispc_reg_in(DISPC_SIZE_LCD);
-		*width = 1 + ((size & DISPC_SIZE_LCD_PPL)
-				>> DISPC_SIZE_LCD_PPL_SHIFT);
-		*height = 1 + ((size & DISPC_SIZE_LCD_LPP)
-				>> DISPC_SIZE_LCD_LPP_SHIFT);
+		size = dispc_reg_in(DISPC_SIZE_LCD1);
+		*width = 1 + ((size & DISPC_SIZE_LCD1_PPL)
+				>> DISPC_SIZE_LCD1_PPL_SHIFT);
+		*height = 1 + ((size & DISPC_SIZE_LCD1_LPP)
+				>> DISPC_SIZE_LCD1_LPP_SHIFT);
 	}
 }
 void
@@ -355,10 +355,9 @@ omap2_disp_set_panel_size(int output_dev, int width, int height)
 		dispc_reg_out(DISPC_SIZE_DIG, size);
 	}
 	else if (output_dev == OMAP2_OUTPUT_LCD) {
-		size = ((width - 1) << DISPC_SIZE_LCD_PPL_SHIFT) & DISPC_SIZE_LCD_PPL;
-		size |= ((height - 1) << DISPC_SIZE_LCD_LPP_SHIFT) 
-									& DISPC_SIZE_LCD_LPP;
-		dispc_reg_out(DISPC_SIZE_LCD, size);
+		size = ((width - 1) << DISPC_SIZE_LCD1_PPL_SHIFT) & DISPC_SIZE_LCD1_PPL;
+		size |= ((height - 1) << DISPC_SIZE_LCD1_LPP_SHIFT)& DISPC_SIZE_LCD1_LPP;
+		dispc_reg_out(DISPC_SIZE_LCD1, size);
 	}
 }
 
@@ -477,7 +476,7 @@ omap2_disp_save_ctx(int ltype)
 		dispc->timing_v = dispc_reg_in(DISPC_TIMING_V);
 		dispc->pol_freq = dispc_reg_in(DISPC_POL_FREQ);
 		dispc->divisor  = dispc_reg_in(DISPC_DIVISOR);
-		dispc->size_lcd = dispc_reg_in(DISPC_SIZE_LCD);
+		dispc->size_lcd = dispc_reg_in(DISPC_SIZE_LCD1);
 		dispc->size_dig = dispc_reg_in(DISPC_SIZE_DIG);
 
 	case OMAP2_GRAPHICS:
@@ -619,7 +618,7 @@ omap2_disp_restore_ctx(int ltype)
 		dispc_reg_out(DISPC_TIMING_V, dispc->timing_v);
 		dispc_reg_out(DISPC_POL_FREQ, dispc->pol_freq);
 		dispc_reg_out(DISPC_DIVISOR, dispc->divisor);
-		dispc_reg_out(DISPC_SIZE_LCD, dispc->size_lcd);
+		dispc_reg_out(DISPC_SIZE_LCD1, dispc->size_lcd);
 		dispc_reg_out(DISPC_SIZE_DIG, dispc->size_dig);
 		break;
 
@@ -3350,7 +3349,6 @@ static struct constraint_id cnst_id = {
 int __init
 omap2_disp_init(void)
 {
-#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	int rev,i;
 	u32 dss_control;
 
@@ -3477,7 +3475,6 @@ omap2_disp_init(void)
 							DISPC_IRQSTATUS_SYNCLOST|DISPC_IRQSTATUS_SYNCLOSTDIGITAL);
 #if !defined(CONFIG_OMAP_DSI) && !defined(CONFIG_FB_OMAP_720P_STREAMING)
 	omap2_disp_put_all_clks();
-#endif
 #endif
 	return 0;
 

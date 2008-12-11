@@ -18,10 +18,24 @@
 
 /* physical memory map definitions */
 	/* display subsystem */
-#define DSS_REG_BASE		0x48050000
-#define DSS_REG_SIZE		0x00001000
-	/* display controller */
-#define DISPC_REG_OFFSET	0x00000400
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define DSS_REG_BASE                    0x48042000
+#else
+#define DSS_REG_BASE                    0x48050000
+#endif
+
+#define DSS_REG_SIZE                    0x00001000
+        /* DSS */
+#define DSS_REG_OFFSET                  0x00000000
+        /* display controller */
+#define DISPC_REG_OFFSET                0x00001000
+
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define DISPC_REG_BASE                  0x48041000
+#else
+#define DISPC_REG_BASE                  DSS_REG_BASE + DISPC_REG_OFFSET
+#endif
+
 	/* remote framebuffer interface */
 #define RFBI_REG_OFFSET		0x00000800
 	/* video encoder */
@@ -57,7 +71,7 @@
 #define DISPC_DIVISOR			0x070
 
 #define DISPC_SIZE_DIG			0x078
-#define DISPC_SIZE_LCD			0x07C
+#define DISPC_SIZE_LCD1			0x07C
 #define DISPC_GFX_BA0			0x080
 #define DISPC_GFX_BA1			0x084
 #define DISPC_GFX_POSITION		0x088

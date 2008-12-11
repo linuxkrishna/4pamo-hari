@@ -54,12 +54,23 @@ typedef struct { volatile u32 offset[4096]; } __regbase32;
 
 /*physical memory map definitions */
 	/* display subsystem */
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define DSS_REG_BASE			0x48042000
+#else
 #define DSS_REG_BASE			0x48050000
+#endif
+
 #define DSS_REG_SIZE			0x00001000
 	/* DSS */
 #define DSS_REG_OFFSET			0x00000000
 	/* display controller */
-#define DISPC_REG_OFFSET		0x00000400
+#define DISPC_REG_OFFSET                0x00001000
+
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define DISPC_REG_BASE			0x48041000
+#else
+#define DISPC_REG_BASE			DSS_REG_BASE + DISPC_REG_OFFSET
+#endif
 	/* remote framebuffer interface */
 #define RFBI_REG_OFFSET			0x00000800
 	/* video encoder */
@@ -100,7 +111,7 @@ typedef struct { volatile u32 offset[4096]; } __regbase32;
 #define DISPC_DIVISOR			0x070
 #define DISPC_GLOBAL_ALPHA		0x074
 #define DISPC_SIZE_DIG			0x078
-#define DISPC_SIZE_LCD			0x07C
+#define DISPC_SIZE_LCD1			0x07C
 #define DISPC_GFX_BA0			0x080
 #define DISPC_GFX_BA1			0x084
 #define DISPC_GFX_POSITION		0x088
@@ -329,11 +340,10 @@ typedef struct { volatile u32 offset[4096]; } __regbase32;
 #define DISPC_GLOBAL_ALPHA_GFX_GALPHA	0xFF
 #define DISPC_GLOBAL_ALPHA_GFX_GALPHA_SHIFT		0
 
-#define DISPC_SIZE_LCD_LPP				(0x7FF << 16)
-#define DISPC_SIZE_LCD_LPP_SHIFT			16
-#define DISPC_SIZE_LCD_PPL				0x7FF
-#define DISPC_SIZE_LCD_PPL_SHIFT			0
-
+#define DISPC_SIZE_LCD1_LPP				(0x7FF << 16)
+#define DISPC_SIZE_LCD1_LPP_SHIFT			16
+#define DISPC_SIZE_LCD1_PPL				0x7FF
+#define DISPC_SIZE_LCD1_PPL_SHIFT			0
 
 #define DISPC_SIZE_DIG_LPP				(0x7FF << 16)
 #define DISPC_SIZE_DIG_LPP_SHIFT			16

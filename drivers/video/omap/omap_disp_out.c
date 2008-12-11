@@ -72,7 +72,8 @@
 #endif
 
 #if defined(CONFIG_MACH_OMAP_3430SDP) || defined(CONFIG_MACH_OMAP_LDP)\
-					|| defined(CONFIG_MACH_OMAP_ZOOM2)
+	|| defined(CONFIG_MACH_OMAP_ZOOM2)\
+	|| defined(CONFIG_MACH_OMAP_4430VIRTIO)
 #if 0
 #define OMAP24xx_LCD_DEVICE		"sdp3430_lcd"
 #define OMAP24xx_TV_DEVICE		"sdp3430_tv"
@@ -124,7 +125,8 @@
 #endif
 
 #if defined(CONFIG_ARCH_OMAP3430)
-#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)\
+	 || defined(CONFIG_MACH_OMAP_4430VIRTIO)
 #define LCD_PANEL_ENABLE_GPIO 		(15 + OMAP_MAX_GPIO_LINES)
 #define LCD_PANEL_RESET_GPIO		55
 #define LCD_PANEL_QVGA_GPIO		56
@@ -337,7 +339,8 @@ lcd_panel_enable(struct work_struct *work)
 	omap_set_gpio_dataout(LCD_PANEL_ENABLE_GPIO, 1);
 	/* power to the RGB lines from T2 is issued separately in
 	 * omap2_dss-rgb_enable */
-#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)\
+				 || defined(CONFIG_MACH_OMAP_4430VIRTIO)
 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 1);
 #endif
 }
@@ -354,12 +357,14 @@ omap2_dss_rgb_enable(void)
 	else {
 #if 0
 		resource_request(lcd_rhandle,T2_VPLL2_1V80);
-#else	
+#else
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 				ENABLE_VPLL2_DEDICATED,TWL4030_VPLL2_DEDICATED);
 
 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 				ENABLE_VPLL2_DEV_GRP,TWL4030_VPLL2_DEV_GRP);
+#endif
 #endif
 		mdelay(4);
 	}
@@ -395,7 +400,8 @@ lcd_panel_disable(struct work_struct *work)
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined(CONFIG_MACH_OMAP_3430SDP)
 	omap_set_gpio_dataout(LCD_PANEL_ENABLE_GPIO, 0);
 	/* power to the RGB lines is disabled in omap2_dss_rgb_disable */
-#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)\
+	 || defined(CONFIG_MACH_OMAP_4430VIRTIO)
 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 0);
 #endif
 }
@@ -406,22 +412,24 @@ omap2_dss_rgb_disable(void)
 #ifdef CONFIG_MACH_OMAP_2430SDP
 		twl4030_vaux2_ldo_unuse();
 #else
-		if(is_sil_rev_less_than(OMAP3430_REV_ES2_0)) {
-//				if( 0 != twl4030_vaux3_ldo_unuse())
-//						printk(KERN_WARNING "omap2_disp: twl4030_vaux3_ldo_unuse returns error \n");
-		}
-		else {
+	if(is_sil_rev_less_than(OMAP3430_REV_ES2_0)) {
+//		if( 0 != twl4030_vaux3_ldo_unuse())
+//			printk(KERN_WARNING "omap2_disp: twl4030_vaux3_ldo_unuse returns error");
+	}
+	else {
 #if 0
-				resource_release(lcd_rhandle);
+		resource_release(lcd_rhandle);
 #else
-				twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
-								0x0,TWL4030_VPLL2_DEDICATED);
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+						0x0,TWL4030_VPLL2_DEDICATED);
 
-				twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
-								0x0,TWL4030_VPLL2_DEV_GRP);	
+		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+						0x0,TWL4030_VPLL2_DEV_GRP);
 #endif
-				mdelay(4);      
-		}
+#endif
+		mdelay(4);
+	}
 #endif
 
 }
@@ -454,7 +462,8 @@ lcd_backlight_on(struct work_struct *work)
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined(CONFIG_MACH_OMAP_3430SDP)
 	omap_set_gpio_dataout(LCD_PANEL_BACKLIGHT_GPIO, 1);
 	lcd_backlight_state = LCD_ON;
-#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)\
+	 || defined(CONFIG_MACH_OMAP_4430VIRTIO)
 	gpio_direction_output(LCD_PANEL_BACKLIGHT_GPIO, 1);
 	lcd_backlight_state = LCD_ON;
 #endif
@@ -487,7 +496,8 @@ lcd_backlight_off(struct work_struct *work)
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined(CONFIG_MACH_OMAP_3430SDP)
 	omap_set_gpio_dataout(LCD_PANEL_BACKLIGHT_GPIO, 0);
 	lcd_backlight_state = LCD_OFF;
-#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)\
+	 || defined(CONFIG_MACH_OMAP_4430VIRTIO)
 	gpio_direction_output(LCD_PANEL_BACKLIGHT_GPIO, 0);
 	lcd_backlight_state = LCD_OFF;
 #endif
@@ -522,7 +532,8 @@ void disable_backlight(void)
 }
 EXPORT_SYMBOL(disable_backlight);
 
-#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
+#if defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)\
+	 || defined(CONFIG_MACH_OMAP_4430VIRTIO)
 static void
 enable_dvi_output(void)
 {
@@ -759,7 +770,8 @@ int omap_lcd_init(struct omap_lcd_info *info)
 	omap_request_gpio(LCD_PANEL_BACKLIGHT_GPIO);	 /* LCD backlight */
 	omap_set_gpio_direction(LCD_PANEL_ENABLE_GPIO, 0); /* output */
 	omap_set_gpio_direction(LCD_PANEL_BACKLIGHT_GPIO, 0); /* output */
-#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)\
+	 || defined(CONFIG_MACH_OMAP_4430VIRTIO)
 	omap_request_gpio(LCD_PANEL_RESET_GPIO);
 	omap_request_gpio(LCD_PANEL_QVGA_GPIO);
 	omap_request_gpio(DVI_OUTPUT_GPIO);
@@ -810,9 +822,13 @@ bypass_gpio:
 #ifndef CONFIG_OMAP_DSI
 	omap2_disp_set_panel_size(OMAP2_OUTPUT_LCD, H4_LCD_XRES, H4_LCD_YRES);
 
-	/* clkdiv = pixclock / (omap2 dss1 clock period) */
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+	clkdiv = pixclock / (omap2 dss1 clock period);
 	clkdiv = pixclock / (1000000000UL/omap24xx_get_dss1_clock());
 	clkdiv /= 1000;
+#else
+	clkdiv=0;
+#endif
 
 #ifdef CONFIG_FB_OMAP_720P_STREAMING
 	/* Request dsi pll for 148MHZ */
@@ -895,7 +911,8 @@ lcd_exit(void)
 #if defined(CONFIG_MACH_OMAP_2430SDP) || defined(CONFIG_MACH_OMAP_3430SDP)
 	omap_free_gpio(LCD_PANEL_ENABLE_GPIO);  /* LCD panel */
 	omap_free_gpio(LCD_PANEL_BACKLIGHT_GPIO);  /* LCD backlight */
-#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)
+#elif defined(CONFIG_MACH_OMAP_LDP) || defined(CONFIG_MACH_OMAP_ZOOM2)\
+	 || defined(CONFIG_MACH_OMAP_4430VIRTIO)
 	omap_free_gpio(LCD_PANEL_RESET_GPIO);
 	omap_free_gpio(LCD_PANEL_QVGA_GPIO);
 	gpio_free(LCD_PANEL_ENABLE_GPIO);  /* LCD panel */
@@ -1077,8 +1094,11 @@ h4_i2c_tvout_off(struct work_struct *work)
 #if 0
 	resource_release(tv_rhandle);
 #else
+
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,0x00,TWL4030_VDAC_DEDICATED);
 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,0x00,TWL4030_VDAC_DEV_GRP);
+#endif
 #endif
 #endif
 }
@@ -1128,11 +1148,13 @@ h4_i2c_tvout_on(struct work_struct *work)
 
 #if 0
 	resource_request(tv_rhandle,T2_VDAC_1V80);
-#else	
+#else
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			ENABLE_VDAC_DEDICATED,TWL4030_VDAC_DEDICATED);
 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			ENABLE_VDAC_DEV_GRP,TWL4030_VDAC_DEV_GRP);
+#endif
 #endif
 #endif
 }
@@ -1290,6 +1312,7 @@ write_layer_out(const char *buffer, size_t count,int layer)
 	else
 		return -EINVAL;
 
+#ifdef CONFIG_OMAP2_TV
 	if (out_dev == OMAP2_OUTPUT_TV) {
 			if (tv_in_use == 0) {
 				h4_i2c_tvout_on(NULL);
@@ -1297,16 +1320,14 @@ write_layer_out(const char *buffer, size_t count,int layer)
 				tv_in_use = 1;	
 			}
 	}
-
 	if(omap2_disp_get_output_dev(layer) == out_dev)
 		return count;
 
 	omap2_disp_get_all_clks();
 
-	if (fb_out_layer != OMAP2_GRAPHICS)
-	{
+	if (fb_out_layer != OMAP2_GRAPHICS) {
 		omap2_disp_disable_layer(fb_out_layer);
-		omap2_disp_release_layer (fb_out_layer);
+		omap2_disp_release_layer(fb_out_layer);
 	}
 	mdelay(1);
 	omap2_disp_set_output_dev(layer, out_dev);
@@ -1326,7 +1347,7 @@ write_layer_out(const char *buffer, size_t count,int layer)
 					tv_in_use = 0;	
 			}
 	}
- 			 
+#endif
 	return count;
 }
 
@@ -1836,10 +1857,12 @@ static void enable_tv_detect(void){
 #ifdef CONFIG_OMAP3_PM
 		resource_request(tv_rhandle, T2_VDAC_1V80);
 #else
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			ENABLE_VDAC_DEDICATED, TWL4030_VDAC_DEDICATED);
 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			ENABLE_VDAC_DEV_GRP, TWL4030_VDAC_DEV_GRP);
+#endif
 #endif
 	}
 	omap2_enable_tv_detect();
@@ -1852,10 +1875,12 @@ static void disable_tv_detect(void){
 #ifdef CONFIG_OMAP3_PM
 	resource_release(tv_rhandle);
 #else
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00,
 		TWL4030_VDAC_DEDICATED);
 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00,
 		TWL4030_VDAC_DEV_GRP);
+#endif
 #endif
        }
 	omap2_disp_put_all_clks();
@@ -2174,10 +2199,6 @@ static struct fb_var_screeninfo ntsc_tv_var = {
 	.blue		= { 0, 5, 0},
 	.transp		= { 0, 0, 0},
 	.nonstd		= 0,
-	.activate	= FB_ACTIVATE_NOW,
-	.height		= -1,
-	.width		= -1,
-	.accel_flags	= 0,
 	.pixclock	= 0,		/* picoseconds */
 	.left_margin	= 0,		/* pixclocks */
 	.right_margin	= 0,		/* pixclocks */
