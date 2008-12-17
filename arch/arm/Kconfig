@@ -574,7 +574,9 @@ source "arch/arm/plat-omap/Kconfig"
 
 source "arch/arm/mach-omap1/Kconfig"
 
-source "arch/arm/mach-omap2/Kconfig"
+#source "arch/arm/mach-omap2/Kconfig"
+
+source "arch/arm/mach-omap4/Kconfig"
 
 source "arch/arm/mach-orion5x/Kconfig"
 

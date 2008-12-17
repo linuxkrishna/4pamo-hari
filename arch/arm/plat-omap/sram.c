@@ -28,9 +28,15 @@
 #include <mach/control.h>
 
 #if defined(CONFIG_ARCH_OMAP2) || defined(CONFIG_ARCH_OMAP3)
+#if CONFIG_MACH_OMAP_4430VIRTIO
+# include "../mach-omap4/prm.h"
+# include "../mach-omap4/cm.h"
+# include "../mach-omap4/sdrc.h"
+#else
 # include "../mach-omap2/prm.h"
 # include "../mach-omap2/cm.h"
 # include "../mach-omap2/sdrc.h"
+#endif
 #endif
 
 #define OMAP1_SRAM_PA		0x20000000

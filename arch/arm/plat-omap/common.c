@@ -35,7 +35,11 @@
 #include <mach/clock.h>
 
 #if defined(CONFIG_ARCH_OMAP2) || defined(CONFIG_ARCH_OMAP3)
-# include "../mach-omap2/sdrc.h"
+#if CONFIG_MACH_OMAP_4430VIRTIO
+#include "../mach-omap4/sdrc.h"
+#else
+#include "../mach-omap2/sdrc.h"
+#endif
 #endif
 
 #define NO_LENGTH_CHECK 0xffffffff
