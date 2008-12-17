@@ -407,4 +407,7 @@ int twl4030_set_gpio_debounce(int gpio, int enable);
 	static inline int twl4030charger_usb_en(int enable) { return 0; }
 #endif
 
+int twl_init_irq(int irq_num, unsigned irq_base, unsigned irq_end);
+int twl_exit_irq(void);
+
 #endif /* End of __TWL4030_H */

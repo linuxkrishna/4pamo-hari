@@ -330,7 +330,6 @@ static int twl4030_rtc_ioctl(struct device *dev, unsigned int cmd,
 		return twl4030_rtc_irq_set_state(0);
 	case RTC_UIE_ON:
 		return twl4030_rtc_irq_set_state(1);
-
 	default:
 		return -ENOIOCTLCMD;
 	}
@@ -373,7 +372,7 @@ static irqreturn_t twl4030_rtc_interrupt(int irq, void *rtc)
 				   REG_RTC_STATUS_REG);
 	if (res)
 		goto out;
-
+#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	/* Clear on Read enabled. RTC_IT bit of TWL4030_INT_PWR_ISR1
 	 * needs 2 reads to clear the interrupt. One read is done in
 	 * do_twl4030_pwrirq(). Doing the second read, to clear
@@ -389,6 +388,7 @@ static irqreturn_t twl4030_rtc_interrupt(int irq, void *rtc)
 			&rd_reg, TWL4030_INT_PWR_ISR1);
 	if (res)
 		goto out;
+#endif
 
 	/* Notify RTC core on event */
 	rtc_update_irq(rtc, 1, events);
@@ -445,7 +445,7 @@ static int __devinit twl4030_rtc_probe(struct platform_device *pdev)
 	ret = twl4030_rtc_write_u8(rd_reg, REG_RTC_STATUS_REG);
 	if (ret < 0)
 		goto out1;
-#ifndef CONFIG_MACH_OMAP_4430VIRTIO
+
 	ret = request_irq(irq, twl4030_rtc_interrupt,
 				IRQF_TRIGGER_RISING,
 				rtc->dev.bus_id, rtc);
@@ -453,7 +453,7 @@ static int __devinit twl4030_rtc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "IRQ is not free.\n");
 		goto out1;
 	}
-#endif
+
 	/* Check RTC module status, Enable if it is off */
 	ret = twl4030_rtc_read_u8(&rd_reg, REG_RTC_CTRL_REG);
 	if (ret < 0)

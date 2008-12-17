@@ -64,6 +64,18 @@ config TWL4030_CORE
 	  high speed USB OTG transceiver, an audio codec (on most
 	  versions) and many other features.
 
+config TWL6030_CORE
+	bool "Texas Instruments TWL6030 Support"
+	depends on I2C=y && GENERIC_HARDIRQS && (ARCH_OMAP2 || ARCH_OMAP3)
+	help
+	  Say yes here if you have TWL6030 family chip on your board.
+	  This core driver provides register access and IRQ handling
+	  facilities, and registers devices for the various functions
+	  so that function-specific drivers can bind to them.
+
+	  These multi-function chips are meant for OMAP4 processors,
+	  providing power management, RTC, a USB transciever and a GPADC.
+
 config MFD_TMIO
 	bool
 	default n

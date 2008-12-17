@@ -604,9 +604,12 @@ omap_i2c_isr(int this_irq, void *dev_id)
 			break;
 		}
 #ifdef CONFIG_MACH_OMAP_4430VIRTIO
-		udelay(2);
+		udelay(100);
 #endif
 		omap_i2c_write_reg(dev, OMAP_I2C_STAT_REG, stat);
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+		udelay(100);
+#endif
 
 		err = 0;
 		if (stat & OMAP_I2C_STAT_NACK) {
@@ -624,11 +627,18 @@ omap_i2c_isr(int this_irq, void *dev_id)
 		if (stat & (OMAP_I2C_STAT_RRDY | OMAP_I2C_STAT_RDR)) {
 			u8 num_bytes = 1;
 			if (dev->fifo_size) {
-				if (stat & OMAP_I2C_STAT_RRDY)
+				if (stat & OMAP_I2C_STAT_RRDY) {
 					num_bytes = dev->fifo_size;
-				else
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+					udelay(100);
+#endif
+				} else {
 					num_bytes = omap_i2c_read_reg(dev,
 							OMAP_I2C_BUFSTAT_REG);
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+					udelay(100);
+#endif
+				}
 			}
 			while (num_bytes) {
 				num_bytes--;
@@ -667,9 +677,14 @@ omap_i2c_isr(int this_irq, void *dev_id)
 			if (dev->fifo_size) {
 				if (stat & OMAP_I2C_STAT_XRDY)
 					num_bytes = dev->fifo_size;
-				else
+				else {
 					num_bytes = omap_i2c_read_reg(dev,
 							OMAP_I2C_BUFSTAT_REG);
+
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+					udelay(100);
+#endif
+				}
 			}
 			while (num_bytes) {
 				num_bytes--;
@@ -699,6 +714,9 @@ omap_i2c_isr(int this_irq, void *dev_id)
 					break;
 				}
 				omap_i2c_write_reg(dev, OMAP_I2C_DATA_REG, w);
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+				udelay(100);
+#endif
 			}
 			omap_i2c_ack_stat(dev,
 				stat & (OMAP_I2C_STAT_XRDY | OMAP_I2C_STAT_XDR));
@@ -798,7 +816,7 @@ omap_i2c_probe(struct platform_device *pdev)
 		dev->fifo_size = (dev->fifo_size / 2);
 		dev->b_hw = 1; /* Enable hardware fixes */
 #else
-		dev->fifo_size = 0;
+		dev->fifo_size = 4;
                 dev->b_hw = 0; /* Enable hardware fixes */
 #endif
 	}
