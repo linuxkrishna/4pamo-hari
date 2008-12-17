@@ -823,7 +823,7 @@ bypass_gpio:
 	omap2_disp_set_panel_size(OMAP2_OUTPUT_LCD, H4_LCD_XRES, H4_LCD_YRES);
 
 #ifndef CONFIG_MACH_OMAP_4430VIRTIO
-	clkdiv = pixclock / (omap2 dss1 clock period);
+	/* clkdiv = pixclock / (omap2 dss1 clock period); */
 	clkdiv = pixclock / (1000000000UL/omap24xx_get_dss1_clock());
 	clkdiv /= 1000;
 #else
