@@ -35,6 +35,7 @@
 #include <sound/initval.h>
 
 #include "twl4030.h"
+#define TWL4030_EMULATED 1
 
 /*
  * twl4030 register cache & default register settings
@@ -146,8 +147,13 @@ static inline void twl4030_write_reg_cache(struct snd_soc_codec *codec,
 static int twl4030_write(struct snd_soc_codec *codec,
 			unsigned int reg, unsigned int value)
 {
+#ifdef TWL4030_EMULATED
+	printk("twl4030_clear_codecpdz\n");
+	return 0;
+#else
 	twl4030_write_reg_cache(codec, reg, value);
 	return twl4030_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE, value, reg);
+#endif
 }
 
 static void twl4030_clear_codecpdz(struct snd_soc_codec *codec)
@@ -155,8 +161,12 @@ static void twl4030_clear_codecpdz(struct snd_soc_codec *codec)
 	u8 mode;
 
 	mode = twl4030_read_reg_cache(codec, TWL4030_REG_CODEC_MODE);
+#ifdef TWL4030_EMULATED
+	printk("twl4030_clear_codecpdz\n");
+#else
 	twl4030_write(codec, TWL4030_REG_CODEC_MODE,
 		mode & ~TWL4030_CODECPDZ);
+#endif
 
 	/* REVISIT: this delay is present in TI sample drivers */
 	/* but there seems to be no TRM requirement for it     */
@@ -168,8 +178,12 @@ static void twl4030_set_codecpdz(struct snd_soc_codec *codec)
 	u8 mode;
 
 	mode = twl4030_read_reg_cache(codec, TWL4030_REG_CODEC_MODE);
+#ifdef TWL4030_EMULATED
+	printk("twl4030_set_codecpdz\n");
+#else
 	twl4030_write(codec, TWL4030_REG_CODEC_MODE,
 		mode | TWL4030_CODECPDZ);
+#endif
 
 	/* REVISIT: this delay is present in TI sample drivers */
 	/* but there seems to be no TRM requirement for it     */
@@ -183,10 +197,14 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
 	/* clear CODECPDZ prior to setting register defaults */
 	twl4030_clear_codecpdz(codec);
 
+#ifdef TWL4030_EMULATED
+	printk("twl4030_clear_codecpdz\n");
+#else
 	/* set all audio section registers to reasonable defaults */
 	for (i = TWL4030_REG_OPTION; i <= TWL4030_REG_MISC_SET_2; i++)
 		twl4030_write(codec, i,	twl4030_reg[i]);
 
+#endif
 }
 
 static const struct snd_kcontrol_new twl4030_snd_controls[] = {
@@ -254,6 +272,9 @@ static void twl4030_power_up(struct snd_soc_codec *codec)
 	u8 anamicl, regmisc1, byte, popn, hsgain;
 	int i = 0;
 
+#ifdef TWL4030_EMULATED
+	printk("twl4030_power_up\n");
+#else
 	/* set CODECPDZ to turn on codec */
 	twl4030_set_codecpdz(codec);
 
@@ -296,12 +317,16 @@ static void twl4030_power_up(struct snd_soc_codec *codec)
 	/* enable anti-pop ramp */
 	popn |= TWL4030_RAMP_EN;
 	twl4030_write(codec, TWL4030_REG_HS_POPN_SET, popn);
+#endif
 }
 
 static void twl4030_power_down(struct snd_soc_codec *codec)
 {
 	u8 popn, hsgain;
 
+#ifdef TWL4030_EMULATED
+	printk("twl4030_power_down\n");
+#else
 	/* disable anti-pop ramp */
 	popn = twl4030_read_reg_cache(codec, TWL4030_REG_HS_POPN_SET);
 	popn &= ~TWL4030_RAMP_EN;
@@ -317,11 +342,15 @@ static void twl4030_power_down(struct snd_soc_codec *codec)
 
 	/* power down */
 	twl4030_clear_codecpdz(codec);
+#endif
 }
 
 static int twl4030_set_bias_level(struct snd_soc_codec *codec,
 				  enum snd_soc_bias_level level)
 {
+#ifdef TWL4030_EMULATED
+	printk("twl4030_set_bias_level\n");
+#else
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 		twl4030_power_up(codec);
@@ -339,6 +368,7 @@ static int twl4030_set_bias_level(struct snd_soc_codec *codec,
 	}
 	codec->bias_level = level;
 
+#endif
 	return 0;
 }
 

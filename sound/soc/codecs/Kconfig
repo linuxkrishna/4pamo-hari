@@ -53,5 +53,5 @@ config SND_SOC_TLV320AIC3X
 
 config SND_SOC_TWL4030
 	tristate
-	depends on SND_SOC && TWL4030_CORE
+	depends on SND_SOC
 

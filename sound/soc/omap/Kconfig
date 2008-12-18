@@ -22,3 +22,10 @@ config SND_OMAP_SOC_OVERO
 	help
 	  Say Y if you want to add support for SoC audio on the Gumstix Overo.
 
+config SND_OMAP_SOC_SDP4430
+	tristate "SoC Audio support for Texas Instruments SDP4430"
+	depends on SND_OMAP_SOC && MACH_OMAP_4430VIRTIO
+	select SND_OMAP_SOC_MCBSP
+	select SND_SOC_TWL4030
+	help
+	  Say Y if you want to add support for SoC audio on Texas Instruments SDP430.
