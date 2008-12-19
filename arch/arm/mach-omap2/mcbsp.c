@@ -205,8 +205,8 @@ void omap2_mcbsp_config(unsigned int id,
 }
 static struct omap_mcbsp_ops omap2_mcbsp_ops = {
 	.request	= omap2_mcbsp_request,
-	//.free 		= omap2_mcbsp_free,
-	//.config		= omap2_mcbsp_config,
+	.free 		= omap2_mcbsp_free,
+	.config		= omap2_mcbsp_config,
 };
 static void omap2_mcbsp_rx_dma_callback(int lch, u16 ch_status, void *data)
 {

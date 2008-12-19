@@ -215,7 +215,6 @@ static int sdp_onenand_setup(void __iomem *onenand_base, int freq)
 u32 get_gpmc0_type(void)
 {
 	u8 cs;
-#ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	void __iomem *fpga_map_addr;
 
 	fpga_map_addr = ioremap(DEBUG_BASE, 4096);
@@ -236,9 +235,6 @@ u32 get_gpmc0_type(void)
 		/* change (S8-1:3=DS-2:0) to (S8-3:1=DS-2:0) */
 		cs = ((cs & 4) >> 2) | (cs & 2) | ((cs & 1) << 2);
 	iounmap(fpga_map_addr);
-#else
-	cs = 0;
-#endif
 	return (cs);
 }
 static int sdp_nand_default_setup(void __iomem *);
