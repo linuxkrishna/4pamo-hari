@@ -10,6 +10,9 @@
 #include <mach/hardware.h>
 #include <mach/io.h>
 #include <mach/irqs.h>
+#ifdef CONFIG_ARM_GIC
+#include <asm/hardware/gic.h>
+#endif
 
 #if defined(CONFIG_ARCH_OMAP1)
 
@@ -65,7 +68,9 @@
 #include <mach/omap34xx.h>
 #endif
 
+#ifndef CONFIG_ARM_GIC
 #define INTCPS_SIR_IRQ_OFFSET	0x0040		/* Active interrupt number */
+#endif
 
 		.macro	disable_fiq
 		.endm
@@ -76,7 +81,9 @@
 		.macro  arch_ret_to_user, tmp1, tmp2
 		.endm
 
+#ifndef CONFIG_ARM_GIC
 		.macro	get_irqnr_and_base, irqnr, irqstat, base, tmp
+
 		ldr	\base, =OMAP2_VA_IC_BASE
 		ldr	\irqnr, [\base, #0x98] /* IRQ pending reg 1 */
 		cmp	\irqnr, #0x0
@@ -107,10 +114,24 @@
 				    * before spurious test
 				    */
 #endif
+		.endm
+#else
+		.macro  get_irqnr_and_base, irqnr, irqstat, base, tmp	
+	        ldr     \base, =OMAP44XX_VA_GIC_CPU_BASE
+                ldr     \irqstat, [\base, #GIC_CPU_INTACK]
 
+                ldr     \tmp, =1021
+
+                bic     \irqnr, \irqstat, #0x1c00
+
+                cmp     \irqnr, #29
+                cmpcc   \irqnr, \irqnr
+                cmpne   \irqnr, \tmp
+                cmpcs   \irqnr, \irqnr
+		
 		.endm
 
+#endif
 		.macro	irq_prio_table
 		.endm
-
 #endif

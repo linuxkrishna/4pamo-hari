@@ -80,7 +80,11 @@ ENTRY(cpu_v7_switch_mm)
 #ifdef CONFIG_MMU
 	mov	r2, #0
 	ldr	r1, [r1, #MM_CONTEXT_ID]	@ get mm->context.id
+#ifndef CONFIG_ARCH_CHIRON
 	orr	r0, r0, #TTB_RGN_OC_WB		@ mark PTWs outer cacheable, WB
+#else
+	and	r0, r0, #0xFFFFFF00
+#endif
 	mcr	p15, 0, r2, c13, c0, 1		@ set reserved context ID
 	isb
 1:	mcr	p15, 0, r0, c2, c0, 0		@ set TTB 0
@@ -176,7 +180,11 @@ __v7_setup:
 #ifdef CONFIG_MMU
 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
 	mcr	p15, 0, r10, c2, c0, 2		@ TTB control register
+#ifndef CONFIG_ARCH_CHIRON
 	orr	r4, r4, #TTB_RGN_OC_WB		@ mark PTWs outer cacheable, WB
+#else
+	and	r4, r4, #0xFFFFFF00
+#endif
 	mcr	p15, 0, r4, c2, c0, 0		@ load TTB0
 	mcr	p15, 0, r4, c2, c0, 1		@ load TTB1
 	mov	r10, #0x1f			@ domains 0, 1 = manager
@@ -235,11 +243,18 @@ cpu_elf_name:
 __v7_proc_info:
 	.long	0x000f0000		@ Required ID value
 	.long	0x000f0000		@ Mask for ID
+#ifndef CONFIG_ARCH_CHIRON
 	.long   PMD_TYPE_SECT | \
 		PMD_SECT_BUFFERABLE | \
 		PMD_SECT_CACHEABLE | \
 		PMD_SECT_AP_WRITE | \
 		PMD_SECT_AP_READ
+#else
+	.long   PMD_TYPE_SECT | \
+                PMD_SECT_BUFFERABLE | \
+                PMD_SECT_AP_WRITE | \
+                PMD_SECT_AP_READ
+#endif
 	.long   PMD_TYPE_SECT | \
 		PMD_SECT_XN | \
 		PMD_SECT_AP_WRITE | \

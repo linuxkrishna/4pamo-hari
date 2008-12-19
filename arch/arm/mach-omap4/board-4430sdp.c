@@ -43,6 +43,9 @@
 #include <mach/dma.h>
 #include <mach/gpmc.h>
 #include "ti-compat.h"
+#ifdef CONFIG_ARM_GIC
+#include <asm/hardware/gic.h>
+#endif
 
 #ifdef CONFIG_VIDEO_OMAP3
 #include <media/v4l2-int-device.h>
@@ -995,10 +998,23 @@ static inline void __init sdp3430_init_smc91x(void)
 	omap_set_gpio_direction(eth_gpio, 1);
 }
 
+#ifdef CONFIG_ARM_GIC
+static void __init gic_init_irq(void)
+{
+	gic_dist_init(0, IO_ADDRESS(OMAP44XX_GIC_DIST_BASE), 29);
+	gic_cpu_init(0, IO_ADDRESS(OMAP44XX_GIC_CPU_BASE));
+	
+}
+#endif
+
 static void __init omap_3430sdp_init_irq(void)
 {
 	omap2_init_common_hw(hyb18m512160af6_sdrc_params);
+#ifdef CONFIG_ARM_GIC
+	gic_init_irq();
+#else
 	omap_init_irq();
+#endif
 	omap_gpio_init();
 #ifndef CONFIG_MACH_OMAP_4430VIRTIO
 	sdp3430_init_smc91x();

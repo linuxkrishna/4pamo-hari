@@ -48,7 +48,11 @@ pmd_t *top_pmd;
 #define CPOLICY_WRITEBACK	3
 #define CPOLICY_WRITEALLOC	4
 
+#ifdef CONFIG_CPU_DCACHE_DISABLE
+static unsigned int cachepolicy __initdata = CPOLICY_BUFFERED;
+#else
 static unsigned int cachepolicy __initdata = CPOLICY_WRITEBACK;
+#endif
 static unsigned int ecc_mask __initdata = 0;
 pgprot_t pgprot_user;
 pgprot_t pgprot_kernel;

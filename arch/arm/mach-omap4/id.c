@@ -164,6 +164,13 @@ void __init omap34xx_check_revision(void)
 		goto out;
 	}
 
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+	 if (((cpuid >> 4) & 0xfff) == 0xc09) {
+		system_rev = OMAP3430_REV_ES3_0;
+		rev_name = "ES3.0";
+		goto out;
+	}
+#endif
 	/*
 	 * Detection for 34xx ES2.0 and above can be done with just
 	 * hawkeye and rev. See TRM 1.5.2 Device Identification.
@@ -194,7 +201,6 @@ void __init omap34xx_check_revision(void)
 			rev_name = "Unknown revision\n";
 		}
 	}
-
 out:
 	pr_info("OMAP%04x %s\n", system_rev >> 16, rev_name);
 }
