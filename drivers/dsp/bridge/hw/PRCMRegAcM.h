@@ -14,656 +14,618 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+
 #ifndef _PRCM_REG_ACM_H
 #define _PRCM_REG_ACM_H
 
-#include <GlobalTypes.h>
 
-#include <EasiGlobal.h>
-
+#include "GlobalTypes.h"
 #include "PRCMAccInt.h"
+
+
+/*****************************************************************************
+* EXPORTED DEFINITIONS
+******************************************************************************
+*/
 
 #if defined(USE_LEVEL_1_MACROS)
 
-#define PRCMPRCM_CLKCFG_CTRLValid_configWriteClk_valid32(baseAddress)\
+
+/********************************************************************/
+
+#define PRM_TESLA_PWRSTCTRLReadRegister32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRM_PM_TESLA_PWRSTCTRL_OFFSET))
+
+/********************************************************************/
+
+#define PRM_TESLA_PWRSTCTRLWriteON32(baseAddress)\
 {\
-    const u32 offset = PRCM_PRCM_CLKCFG_CTRL_OFFSET;\
-    const u32 newValue = \
-	(u32)PRCMPRCM_CLKCFG_CTRLValid_configClk_valid <<\
-      PRCM_PRCM_CLKCFG_CTRL_Valid_config_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(\
-      EASIL1_PRCMPRCM_CLKCFG_CTRLValid_configWriteClk_valid32);\
-    data &= ~(PRCM_PRCM_CLKCFG_CTRL_Valid_config_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = PRM_PM_TESLA_PWRSTCTRL_OFFSET;\
+	const u32 newValue = (u32)PM_TESLA_PWRSTCTRLPowerStateON <<\
+	PM_TESLA_PWRSTCTRL_PowerState_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
+	data &= ~(PM_TESLA_PWRSTCTRL_PowerState_MASK);\
+	data |= newValue;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
 }
 
+/********************************************************************/
 
-#define CM_FCLKEN_PERReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_FCLKEN1_COREReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM_FCLKEN_PER_OFFSET))
-
-
-#define CM_ICLKEN_PERReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_FCLKEN1_COREReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM_ICLKEN_PER_OFFSET))
-
-
-#define CM_FCLKEN_PER_GPT5WriteRegister32(baseAddress,value)\
+#define PRM_TESLA_PWRSTCTRLWriteINACTIVE32(baseAddress)\
 {\
-    const u32 offset = CM_FCLKEN_PER_OFFSET;\
-    register u32 data = \
+	const u32 offset = PRM_PM_TESLA_PWRSTCTRL_OFFSET;\
+	const u32 newValue = (u32)PM_TESLA_PWRSTCTRLPowerStateINACTIVE <<\
+	PM_TESLA_PWRSTCTRL_PowerState_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
+	data &= ~(PM_TESLA_PWRSTCTRL_PowerState_MASK);\
+	data |= newValue;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+}
+
+/********************************************************************/
+
+#define PRM_TESLA_PWRSTCTRLWriteRET32(baseAddress)\
+{\
+	const u32 offset = PRM_PM_TESLA_PWRSTCTRL_OFFSET;\
+	const u32 newValue = (u32)PM_TESLA_PWRSTCTRLPowerStateRET <<\
+	PM_TESLA_PWRSTCTRL_PowerState_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
+	data &= ~(PM_TESLA_PWRSTCTRL_PowerState_MASK);\
+	data |= newValue;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+}
+
+/********************************************************************/
+
+#define PRM_TESLA_PWRSTCTRLWriteOFF32(baseAddress)\
+{\
+	const u32 offset = PRM_PM_TESLA_PWRSTCTRL_OFFSET;\
+	const u32 newValue = (u32)PM_TESLA_PWRSTCTRLPowerStateOFF <<\
+	PM_TESLA_PWRSTCTRL_PowerState_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
+	data &= ~(PM_TESLA_PWRSTCTRL_PowerState_MASK);\
+	data |= newValue;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+}
+
+/********************************************************************/
+
+#define PRM_TESLA_PWRSTCTRLWriteLOGICRETSTATE32(baseAddress, value)\
+{\
+	const u32 offset = PRM_PM_TESLA_PWRSTCTRL_OFFSET;\
+	register u32 data = \
 	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_CM_FCLKEN_PER_GPT5WriteRegister32);\
-   data &= ~(CM_FCLKEN_PER_GPT5_MASK);\
-   newValue <<= CM_FCLKEN_PER_GPT5_OFFSET;\
-   newValue &= CM_FCLKEN_PER_GPT5_MASK;\
-   newValue |= data;\
-    WR_MEM_32_VOLATILE(((u32)(baseAddress))+offset, newValue);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(PM_TESLA_PWRSTCTRL_LogicRetState_MASK);\
+	newValue <<= PM_TESLA_PWRSTCTRL_LogicRetState_OFFSET;\
+	newValue &= PM_TESLA_PWRSTCTRL_LogicRetState_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define CM_FCLKEN_PER_GPT6WriteRegister32(baseAddress,value)\
+#define PRM_TESLA_PWRSTCTRLWriteL1RETSTATE32(baseAddress, value)\
 {\
-    const u32 offset = CM_FCLKEN_PER_OFFSET;\
-    register u32 data =\
+	const u32 offset = PRM_PM_TESLA_PWRSTCTRL_OFFSET;\
+	register u32 data = \
 	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_CM_FCLKEN_PER_GPT5WriteRegister32);\
-   data &= ~(CM_FCLKEN_PER_GPT6_MASK);\
-   newValue <<= CM_FCLKEN_PER_GPT6_OFFSET;\
-   newValue &= CM_FCLKEN_PER_GPT6_MASK;\
-   newValue |= data;\
-    WR_MEM_32_VOLATILE(((u32)(baseAddress))+offset, newValue);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(PM_TESLA_PWRSTCTRL_L1RetState_MASK);\
+	newValue <<= PM_TESLA_PWRSTCTRL_L1RetState_OFFSET;\
+	newValue &= PM_TESLA_PWRSTCTRL_L1RetState_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define CM_ICLKEN_PER_GPT5WriteRegister32(baseAddress,value)\
+#define PRM_TESLA_PWRSTCTRLWriteL2RETSTATE32(baseAddress, value)\
 {\
-    const u32 offset = CM_ICLKEN_PER_OFFSET;\
-    register u32 data = \
+	const u32 offset = PRM_PM_TESLA_PWRSTCTRL_OFFSET;\
+	register u32 data = \
 	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_CM_ICLKEN_PER_GPT5WriteRegister32);\
-   data &= ~(CM_ICLKEN_PER_GPT5_MASK);\
-   newValue <<= CM_ICLKEN_PER_GPT5_OFFSET;\
-   newValue &= CM_ICLKEN_PER_GPT5_MASK;\
-   newValue |= data;\
-    WR_MEM_32_VOLATILE(((u32)(baseAddress))+offset, newValue);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(PM_TESLA_PWRSTCTRL_L2RetState_MASK);\
+	newValue <<= PM_TESLA_PWRSTCTRL_L2RetState_OFFSET;\
+	newValue  &= PM_TESLA_PWRSTCTRL_L2RetState_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
 
-#define CM_ICLKEN_PER_GPT6WriteRegister32(baseAddress,value)\
+/********************************************************************/
+
+
+#define PRM_TESLA_PWRSTSTReadRegister32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRM_PM_TESLA_PWRSTST_OFFSET))
+
+/********************************************************************/
+
+
+#define PRM_TESLA_PWRSTSTGet32(baseAddress)\
+	(((RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRM_PM_TESLA_PWRSTST_OFFSET))&\
+	PM_TESLA_PWRSTST_PowerState_MASK) >>\
+	PM_TESLA_PWRSTST_PowerState_OFFSET)
+
+/********************************************************************/
+
+#define PRM_CORE_PWRSTCTRLWrite32(baseAddress, value)\
 {\
-    const u32 offset = CM_ICLKEN_PER_OFFSET;\
-    register u32 data = \
+	const u32 offset = PRM_PM_CORE_PWRSTCTRL_OFFSET;\
+	register u32 data = \
 	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_CM_ICLKEN_PER_GPT5WriteRegister32);\
-   data &= ~(CM_ICLKEN_PER_GPT6_MASK);\
-   newValue <<= CM_ICLKEN_PER_GPT6_OFFSET;\
-   newValue &= CM_ICLKEN_PER_GPT6_MASK;\
-   newValue |= data;\
-    WR_MEM_32_VOLATILE(((u32)(baseAddress))+offset, newValue);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(PRM_PM_CORE_PWRSTCTRL_PowerControl_MASK);\
+	newValue <<= PRM_PM_CORE_PWRSTCTRL_PowerControl_OFFSET;\
+	newValue &= PRM_PM_CORE_PWRSTCTRL_PowerControl_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
 
-#define CM_FCLKEN1_COREReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_FCLKEN1_COREReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM_FCLKEN1_CORE_OFFSET))
+#define PRM_TESLA_RSTCTRLReadRegister32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRM_RM_TESLA_RSTCTRL_OFFSET))
 
-
-#define PRCMCM_FCLKEN1_COREEN_GPT8Write32(baseAddress,value)\
+#define PRM_TESLA_RSTCTRL_RST1_Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_FCLKEN1_CORE_OFFSET;\
-    register u32 data = \
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_FCLKEN1_COREEN_GPT8Write32);\
-    data &= ~(PRCM_CM_FCLKEN1_CORE_EN_GPT8_MASK);\
-    newValue <<= PRCM_CM_FCLKEN1_CORE_EN_GPT8_OFFSET;\
-    newValue &= PRCM_CM_FCLKEN1_CORE_EN_GPT8_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = PRM_RM_TESLA_RSTCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(RM_TESLA_RSTCTRL_RST1_MASK);\
+	newValue <<= RM_TESLA_RSTCTRL_RST1_OFFSET;\
+	newValue &= RM_TESLA_RSTCTRL_RST1_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_FCLKEN1_COREEN_GPT7Write32(baseAddress,value)\
+#define PRM_TESLA_RSTCTRL_RST2_Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_FCLKEN1_CORE_OFFSET;\
-    register u32 data = \
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_FCLKEN1_COREEN_GPT7Write32);\
-    data &= ~(PRCM_CM_FCLKEN1_CORE_EN_GPT7_MASK);\
-    newValue <<= PRCM_CM_FCLKEN1_CORE_EN_GPT7_OFFSET;\
-    newValue &= PRCM_CM_FCLKEN1_CORE_EN_GPT7_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = PRM_RM_TESLA_RSTCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(RM_TESLA_RSTCTRL_RST2_MASK);\
+	newValue <<= RM_TESLA_RSTCTRL_RST2_OFFSET;\
+	newValue &= RM_TESLA_RSTCTRL_RST2_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
 
-#define CM_ICLKEN1_COREReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_ICLKEN1_COREReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM_ICLKEN1_CORE_OFFSET))
+/********************************************************************/
 
+#define PRM_TESLA_RSTSTReadRegister32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRM_RM_TESLA_RSTST_OFFSET))
 
-#define  CM_ICLKEN1_COREEN_MAILBOXESWrite32(baseAddress, value)\
+/********************************************************************/
+
+#define PRM_TESLA_RSTST_Clear32(baseAddress)\
 {\
-    const u32 offset = CM_ICLKEN1_CORE_OFFSET;\
-    register u32 data = \
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_ICLKEN1_COREEN_MAILBOXESWrite32);\
-    data &= ~(CM_ICLKEN1_CORE_EN_MAILBOXES_MASK);\
-    newValue <<= CM_ICLKEN1_CORE_EN_MAILBOXES_OFFSET;\
-    newValue &= CM_ICLKEN1_CORE_EN_MAILBOXES_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = PRM_RM_TESLA_RSTST_OFFSET;\
+	register u32 newValue = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	newValue &= ~(RM_TESLA_RSTST_Clear_MASK);\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_ICLKEN1_COREEN_GPT8Write32(baseAddress, value)\
+#define PRM_TESLA_CONTEXTReadRegister32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRM_RM_TESLA_TESLA_CONTEXT_OFFSET))
+
+/********************************************************************/
+
+#define PRM_TESLA_CONTEXT_Clear32(baseAddress)\
 {\
-    const u32 offset = PRCM_CM_ICLKEN1_CORE_OFFSET;\
-    register u32 data = \
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_ICLKEN1_COREEN_GPT8Write32);\
-    data &= ~(PRCM_CM_ICLKEN1_CORE_EN_GPT8_MASK);\
-    newValue <<= PRCM_CM_ICLKEN1_CORE_EN_GPT8_OFFSET;\
-    newValue &= PRCM_CM_ICLKEN1_CORE_EN_GPT8_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = PRM_RM_TESLA_TESLA_CONTEXT_OFFSET;\
+	register u32 newValue = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	newValue &= ~(RM_TESLA_TESLA_CONTEXT_Clear_MASK);\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_ICLKEN1_COREEN_GPT7Write32(baseAddress, value)\
+
+#define PRM_WKUP_IVA_ReadRegister32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRM_PM_ALWON_SR_IVA_WKDEP_OFFSET))
+
+
+/********************************************************************/
+
+#define PRM_WKUP_IVA_MPU_Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_ICLKEN1_CORE_OFFSET;\
-    register u32 data =\
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_ICLKEN1_COREEN_GPT7Write32);\
-    data &= ~(PRCM_CM_ICLKEN1_CORE_EN_GPT7_MASK);\
-    newValue <<= PRCM_CM_ICLKEN1_CORE_EN_GPT7_OFFSET;\
-    newValue &= PRCM_CM_ICLKEN1_CORE_EN_GPT7_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = PRM_PM_ALWON_SR_IVA_WKDEP_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(PM_ALWON_SR_IVA_WKDEP_MPU_MASK);\
+	newValue <<= PM_ALWON_SR_IVA_WKDEP_MPU_OFFSET;\
+	newValue &= PM_ALWON_SR_IVA_WKDEP_MPU_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT8Write32k32(baseAddress)\
+#define PRM_WKUP_IVA_DUCATI_Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT832k <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT8_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT8Write32k32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT8_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = PRM_PM_ALWON_SR_IVA_WKDEP_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(PM_ALWON_SR_IVA_WKDEP_DUCATI_MASK);\
+	newValue <<= PM_ALWON_SR_IVA_WKDEP_DUCATI_OFFSET;\
+	newValue &= PM_ALWON_SR_IVA_WKDEP_DUCATI_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT8WriteSys32(baseAddress)\
+#define PRM_ALWON_CONTEXTReadRegister32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRM_RM_ALWON_SR_IVA_CONTEXT_OFFSET))
+
+
+/**********************************************************************/
+
+#define CM_CLKSTCTRL_TESLAWriteRegister32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT8Sys <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT8_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT8WriteSys32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT8_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM1_CM_TESLA_CLKSTCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM_TESLA_CLKSTCTRL_Transition_MASK);\
+	newValue <<= CM_TESLA_CLKSTCTRL_Transition_OFFSET;\
+	newValue &= CM_TESLA_CLKSTCTRL_Transition_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT8WriteExt32(baseAddress)\
+/**********************************************************************/
+
+#define CM_TESLA_TESLA_CLKCTRLWriteRegister32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT8Ext <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT8_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT8WriteExt32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT8_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM1_CM_TESLA_TESLA_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM_TESLA_TESLA_CLKCTRL_MODMODE_MASK);\
+	newValue <<= CM_TESLA_TESLA_CLKCTRL_MODMODE_OFFSET;\
+	newValue &= CM_TESLA_TESLA_CLKCTRL_MODMODE_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT7Write32k32(baseAddress)\
+#define CM_TESLA_STBYST_Read32(baseAddress)\
+	(((RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM1_CM_TESLA_TESLA_CLKCTRL_OFFSET))&\
+	CM_TESLA_TESLA_CLKCTRL_STBY_MASK) >>\
+	CM_TESLA_TESLA_CLKCTRL_STBY_OFFSET)
+
+/********************************************************************/
+
+
+#define CM_TESLA_IDLEST_Read32(baseAddress)\
+	(((RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM1_CM_TESLA_TESLA_CLKCTRL_OFFSET))&\
+	CM_TESLA_TESLA_CLKCTRL_IDLE_MASK) >>\
+	CM_TESLA_TESLA_CLKCTRL_IDLE_OFFSET)
+
+
+/********************************************************************/
+
+#define CM_IVA_DVFS_PERFTESTLA_Read32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM2_CM_IVA_DVFS_PERF_TESLA_OFFSET))
+
+
+/********************************************************************/
+
+#define CM_IVA_DVFS_PERFTESTLA_Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT732k <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT7_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT7Write32k32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT7_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM2_CM_IVA_DVFS_PERF_TESLA_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM_IVA_DVFS_PERF_MASK);\
+	newValue <<= CM_IVA_DVFS_PERF_OFFSET;\
+	newValue &= CM_IVA_DVFS_PERF_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT7WriteSys32(baseAddress)\
+#define CM_IVA_DVFS_PERFIVAHD_Read32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM2_CM_IVA_DVFS_PERF_IVAHD_OFFSET))
+
+/********************************************************************/
+
+#define CM_IVA_DVFS_PERFIVAHD_Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT7Sys <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT7_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT7WriteSys32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT7_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM2_CM_IVA_DVFS_PERF_IVAHD_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM_IVA_DVFS_PERF_MASK);\
+	newValue <<= CM_IVA_DVFS_PERF_OFFSET;\
+	newValue &= CM_IVA_DVFS_PERF_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT7WriteExt32(baseAddress)\
+#define CM_IVA_DVFS_PERFABE_Read32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM2_CM_IVA_DVFS_PERF_ABE_OFFSET))
+
+/********************************************************************/
+
+#define CM_IVA_DVFS_PERFABE_Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT7Ext <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT7_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT7WriteExt32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT7_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM2_CM_IVA_DVFS_PERF_ABE_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM_IVA_DVFS_PERF_MASK);\
+	newValue <<= CM_IVA_DVFS_PERF_OFFSET;\
+	newValue &= CM_IVA_DVFS_PERF_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT6WriteSys32(baseAddress)\
+#define CM_IVA_DVFS_RESULT_Read32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM2_CM_IVA_DVFS_RESULT_OFFSET))
+
+/********************************************************************/
+
+#define CM_IVA_DVFS_CURRENT_Read32(baseAddress)\
+	(RD_MEM_32_VOLATILE(((u32)(baseAddress))+CM2_CM_IVA_DVFS_CURRENT_OFFSET))
+
+
+/**********************************************************************/
+
+#define CM_CLKSTCTRL_ABEWriteRegister32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT6Sys <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT6_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT6WriteSys32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT6_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM1_CM1_ABE_CLKSTCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_ABE_CLKSTCTRL_Transition_MASK);\
+	newValue <<= CM1_ABE_CLKSTCTRL_Transition_OFFSET;\
+	newValue &= CM1_ABE_CLKSTCTRL_Transition_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT6WriteExt32(baseAddress)\
+#define CM_ABEEN_MCBSP1Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT6Ext <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT6_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT6WriteExt32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT6_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM1_CM1_ABE_MCBSP1_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_ABE_CLKCTRL_MASK);\
+	newValue <<= CM1_ABE_CLKCTRL_OFFSET;\
+	newValue &= CM1_ABE_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define CM_CLKSEL_PER_GPT5Write32k32(baseAddress)\
+
+#define CM_ABEEN_MCBSP2Write32(baseAddress, value)\
 {\
-    const u32 offset = CM_CLKSEL_PER_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT532k <<\
-      CM_CLKSEL_PER_GPT5_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_CM_CLKSEL_PER_GPT5Write32k32);\
-    data &= ~(CM_CLKSEL_PER_GPT5_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM1_CM1_ABE_MCBSP2_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_ABE_CLKCTRL_MASK);\
+	newValue <<= CM1_ABE_CLKCTRL_OFFSET;\
+	newValue &= CM1_ABE_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define CM_CLKSEL_PER_GPT6Write32k32(baseAddress)\
+
+#define CM_ABEEN_MCBSP3Write32(baseAddress, value)\
 {\
-    const u32 offset = CM_CLKSEL_PER_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT532k <<\
-      CM_CLKSEL_PER_GPT6_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_CM_CLKSEL_PER_GPT6Write32k32);\
-    data &= ~(CM_CLKSEL_PER_GPT6_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM1_CM1_ABE_MCBSP3_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_ABE_CLKCTRL_MASK);\
+	newValue <<= CM1_ABE_CLKCTRL_OFFSET;\
+	newValue &= CM1_ABE_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT5WriteSys32(baseAddress)\
+#define CM_ABEEN_TIMER5Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT5Sys <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT5_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT5WriteSys32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT5_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM1_CM1_ABE_TIMER5_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_ABE_CLKCTRL_MASK);\
+	newValue <<= CM1_ABE_CLKCTRL_OFFSET;\
+	newValue &= CM1_ABE_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL2_CORECLKSEL_GPT5WriteExt32(baseAddress)\
+#define CM_ABEEN_TIMER6Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL2_CORE_OFFSET;\
-    const u32 newValue = (u32)PRCMCM_CLKSEL2_CORECLKSEL_GPT5Ext <<\
-      PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT5_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL2_CORECLKSEL_GPT5WriteExt32);\
-    data &= ~(PRCM_CM_CLKSEL2_CORE_CLKSEL_GPT5_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
+	const u32 offset = CM1_CM1_ABE_TIMER6_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_ABE_CLKCTRL_MASK);\
+	newValue <<= CM1_ABE_CLKCTRL_OFFSET;\
+	newValue &= CM1_ABE_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL1_PLLAPLLs_ClkinRead32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL1_PLLAPLLs_ClkinRead32),\
-      (((RD_MEM_32_VOLATILE((((u32)(baseAddress))+\
-	(PRCM_CM_CLKSEL1_PLL_OFFSET)))) &\
-      PRCM_CM_CLKSEL1_PLL_APLLs_Clkin_MASK) >>\
-      PRCM_CM_CLKSEL1_PLL_APLLs_Clkin_OFFSET))
-
-
-#define CM_FCLKEN_IVA2EN_DSPWrite32(baseAddress,value)\
+#define CM_ABEEN_TIMER7Write32(baseAddress, value)\
 {\
-    const u32 offset = CM_FCLKEN_IVA2_OFFSET;\
-    register u32 data = \
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_FCLKEN_DSPEN_DSPWrite32);\
-    data &= ~(CM_FCLKEN_IVA2_EN_MASK);\
-    newValue <<= CM_FCLKEN_IVA2_EN_OFFSET;\
-    newValue &= CM_FCLKEN_IVA2_EN_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM1_CM1_ABE_TIMER7_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_ABE_CLKCTRL_MASK);\
+	newValue <<= CM1_ABE_CLKCTRL_OFFSET;\
+	newValue &= CM1_ABE_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_ICLKEN_DSPEN_DSP_IPIWrite32(baseAddress, value)\
+#define CM_ABEEN_TIMER8Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_ICLKEN_DSP_OFFSET;\
-    register u32 data = \
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_ICLKEN_DSPEN_DSP_IPIWrite32);\
-    data &= ~(PRCM_CM_ICLKEN_DSP_EN_DSP_IPI_MASK);\
-    newValue <<= PRCM_CM_ICLKEN_DSP_EN_DSP_IPI_OFFSET;\
-    newValue &= PRCM_CM_ICLKEN_DSP_EN_DSP_IPI_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM1_CM1_ABE_TIMER8_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_ABE_CLKCTRL_MASK);\
+	newValue <<= CM1_ABE_CLKCTRL_OFFSET;\
+	newValue &= CM1_ABE_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/**********************************************************************/
 
-#define PRCMCM_IDLEST_DSPReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_IDLEST_DSPReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRCM_CM_IDLEST_DSP_OFFSET))
-
-
-#define PRCMCM_IDLEST_DSPST_IPIRead32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_IDLEST_DSPST_IPIRead32),\
-      (((RD_MEM_32_VOLATILE((((u32)(baseAddress))+\
-	(PRCM_CM_IDLEST_DSP_OFFSET)))) &\
-      PRCM_CM_IDLEST_DSP_ST_IPI_MASK) >>\
-      PRCM_CM_IDLEST_DSP_ST_IPI_OFFSET))
-
-
-#define PRM_IDLEST_IVA2ST_IVA2Read32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_IDLEST_DSPST_DSPRead32),\
-      (((RD_MEM_32_VOLATILE((((u32)(baseAddress))+\
-	  (CM_IDLEST_IVA2_OFFSET)))) &\
-      CM_IDLEST_IVA2_ST_IVA2_MASK) >>\
-      CM_IDLEST_IVA2_ST_IVA2_OFFSET))
-
-
-#define PRCMCM_AUTOIDLE_DSPAUTO_DSP_IPIWrite32(baseAddress, value)\
+#define CM_CLKSTCTRL_L4PERWriteRegister32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_AUTOIDLE_DSP_OFFSET;\
-    register u32 data =\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_AUTOIDLE_DSPAUTO_DSP_IPIWrite32);\
-    data &= ~(PRCM_CM_AUTOIDLE_DSP_AUTO_DSP_IPI_MASK);\
-    newValue <<= PRCM_CM_AUTOIDLE_DSP_AUTO_DSP_IPI_OFFSET;\
-    newValue &= PRCM_CM_AUTOIDLE_DSP_AUTO_DSP_IPI_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_CLKSTCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKSTCTRL_Transition_MASK);\
+	newValue <<= CM1_L4PER_CLKSTCTRL_Transition_OFFSET;\
+	newValue &= CM1_L4PER_CLKSTCTRL_Transition_MASK;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL_DSPSYNC_DSPWrite32(baseAddress,value)\
+#define CM_L4PEREN_MCBSP4Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL_DSP_OFFSET;\
-    register u32 data = \
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL_DSPSYNC_DSPWrite32);\
-    data &= ~(PRCM_CM_CLKSEL_DSP_SYNC_DSP_MASK);\
-    newValue <<= PRCM_CM_CLKSEL_DSP_SYNC_DSP_OFFSET;\
-    newValue &= PRCM_CM_CLKSEL_DSP_SYNC_DSP_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_MCBSP4_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKCTRL_MASK);\
+	newValue <<= CM1_L4PER_CLKCTRL_OFFSET;\
+	newValue &= CM1_L4PER_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL_DSPCLKSEL_DSP_IFWrite32(baseAddress, value)\
+#define CM_L4PEREN_MCBSP5Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL_DSP_OFFSET;\
-    register u32 data = \
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL_DSPCLKSEL_DSP_IFWrite32);\
-    data &= ~(PRCM_CM_CLKSEL_DSP_CLKSEL_DSP_IF_MASK);\
-    newValue <<= PRCM_CM_CLKSEL_DSP_CLKSEL_DSP_IF_OFFSET;\
-    newValue &= PRCM_CM_CLKSEL_DSP_CLKSEL_DSP_IF_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_MCBSP5_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKCTRL_MASK);\
+	newValue <<= CM1_L4PER_CLKCTRL_OFFSET;\
+	newValue &= CM1_L4PER_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSEL_DSPCLKSEL_DSPWrite32(baseAddress, value)\
+#define CM_L4PEREN_DMTIMER2Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSEL_DSP_OFFSET;\
-    register u32 data = \
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSEL_DSPCLKSEL_DSPWrite32);\
-    data &= ~(PRCM_CM_CLKSEL_DSP_CLKSEL_DSP_MASK);\
-    newValue <<= PRCM_CM_CLKSEL_DSP_CLKSEL_DSP_OFFSET;\
-    newValue &= PRCM_CM_CLKSEL_DSP_CLKSEL_DSP_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_DMTIMER2_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKCTRL_MASK);\
+	newValue <<= CM1_L4PER_CLKCTRL_OFFSET;\
+	newValue &= CM1_L4PER_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSTCTRL_IVA2WriteRegister32(baseAddress, value)\
+#define CM_L4PEREN_DMTIMER3Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSTCTRL_IVA2_OFFSET;\
-    register u32 data = \
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSTCTRL_IVA2WriteRegister32);\
-    data &= ~(CM_CLKSTCTRL_IVA2_MASK);\
-    newValue <<= CM_CLKSTCTRL_IVA2_OFFSET;\
-    newValue &= CM_CLKSTCTRL_IVA2_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_DMTIMER3_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKCTRL_MASK);\
+	newValue <<= CM1_L4PER_CLKCTRL_OFFSET;\
+	newValue &= CM1_L4PER_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMCM_CLKSTCTRL_DSPAutostate_DSPRead32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSTCTRL_DSPAutostate_DSPRead32),\
-      (((RD_MEM_32_VOLATILE((((u32)(baseAddress))+\
-	(PRCM_CM_CLKSTCTRL_DSP_OFFSET)))) &\
-      PRCM_CM_CLKSTCTRL_DSP_Autostate_DSP_MASK) >>\
-      PRCM_CM_CLKSTCTRL_DSP_Autostate_DSP_OFFSET))
-
-
-#define PRCMCM_CLKSTCTRL_DSPAutostate_DSPWrite32(baseAddress, value)\
+#define CM_L4PEREN_DMTIMER4Write32(baseAddress, value)\
 {\
-    const u32 offset = PRCM_CM_CLKSTCTRL_DSP_OFFSET;\
-    register u32 data = \
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMCM_CLKSTCTRL_DSPAutostate_DSPWrite32);\
-    data &= ~(PRCM_CM_CLKSTCTRL_DSP_Autostate_DSP_MASK);\
-    newValue <<= PRCM_CM_CLKSTCTRL_DSP_Autostate_DSP_OFFSET;\
-    newValue &= PRCM_CM_CLKSTCTRL_DSP_Autostate_DSP_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_DMTIMER4_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKCTRL_MASK);\
+	newValue <<= CM1_L4PER_CLKCTRL_OFFSET;\
+	newValue &= CM1_L4PER_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRCMRM_RSTCTRL_DSPReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMRM_RSTCTRL_DSPReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRCM_RM_RSTCTRL_DSP_OFFSET))
-
-
-#define PRM_RSTCTRL_IVA2RST1_DSPWrite32(baseAddress,value)\
+#define CM_L4PEREN_DMTIMER9Write32(baseAddress, value)\
 {\
-    const u32 offset = PRM_RSTCTRL_IVA2_OFFSET;\
-    register u32 data =\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMRM_RSTCTRL_DSPRST1_DSPWrite32);\
-    data &= ~(PRM_RSTCTRL_IVA2_RST1_MASK);\
-    newValue <<= PRM_RSTCTRL_IVA2_RST1_OFFSET;\
-    newValue &= PRM_RSTCTRL_IVA2_RST1_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_DMTIMER9_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKCTRL_MASK);\
+	newValue <<= CM1_L4PER_CLKCTRL_OFFSET;\
+	newValue &= CM1_L4PER_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRM_RSTCTRL_IVA2RST2_DSPWrite32(baseAddress,value)\
+#define CM_L4PEREN_DMTIMER10Write32(baseAddress, value)\
 {\
-    const u32 offset = PRM_RSTCTRL_IVA2_OFFSET;\
-    register u32 data =\
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMRM_RSTCTRL_DSPRST1_DSPWrite32);\
-    data &= ~(PRM_RSTCTRL_IVA2_RST2_MASK);\
-    newValue <<= PRM_RSTCTRL_IVA2_RST2_OFFSET;\
-    newValue &= PRM_RSTCTRL_IVA2_RST2_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_DMTIMER10_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKCTRL_MASK);\
+	newValue <<= CM1_L4PER_CLKCTRL_OFFSET;\
+	newValue &= CM1_L4PER_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
+/********************************************************************/
 
-#define PRM_RSTCTRL_IVA2RST3_DSPWrite32(baseAddress,value)\
+#define CM_L4PEREN_DMTIMER11Write32(baseAddress, value)\
 {\
-    const u32 offset = PRM_RSTCTRL_IVA2_OFFSET;\
-    register u32 data =\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMRM_RSTCTRL_DSPRST1_DSPWrite32);\
-    data &= ~(PRM_RSTCTRL_IVA2_RST3_MASK);\
-    newValue <<= PRM_RSTCTRL_IVA2_RST3_OFFSET;\
-    newValue &= PRM_RSTCTRL_IVA2_RST3_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
+	const u32 offset = CM2_CM_L4PER_DMTIMER11_CLKCTRL_OFFSET;\
+	register u32 data = RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
+	register u32 newValue = ((u32)(value));\
+	data &= ~(CM1_L4PER_CLKCTRL_MASK);\
+	newValue <<= CM1_L4PER_CLKCTRL_OFFSET;\
+	newValue &= CM1_L4PER_CLKCTRL_MASK ;\
+	newValue |= data;\
+	WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
 }
 
-
-#define PRCMRM_RSTST_DSPReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMRM_RSTST_DSPReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRCM_RM_RSTST_DSP_OFFSET))
+/********************************************************************/
 
 
-#define PRCMRM_RSTST_DSPWriteRegister32(baseAddress,value)\
-{\
-    const u32 offset = PRCM_RM_RSTST_DSP_OFFSET;\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMRM_RSTST_DSPWriteRegister32);\
-    WR_MEM_32_VOLATILE(((u32)(baseAddress))+offset, newValue);\
-}
+#endif	/* USE_LEVEL_1_MACROS */
 
 
-#define PRCMPM_PWSTCTRL_DSPForceStateWrite32(baseAddress, value)\
-{\
-    const u32 offset = PRCM_PM_PWSTCTRL_DSP_OFFSET;\
-    register u32 data = \
-	RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
-    register u32 newValue = ((u32)(value));\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTCTRL_DSPForceStateWrite32);\
-    data &= ~(PRCM_PM_PWSTCTRL_DSP_ForceState_MASK);\
-    newValue <<= PRCM_PM_PWSTCTRL_DSP_ForceState_OFFSET;\
-    newValue &= PRCM_PM_PWSTCTRL_DSP_ForceState_MASK;\
-    newValue |= data;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, newValue);\
-}
-
-
-#define PRCMPM_PWSTCTRL_IVA2PowerStateWriteON32(baseAddress)\
-{\
-    const u32 offset = PRCM_PM_PWSTCTRL_IVA2_OFFSET;\
-    const u32 newValue = (u32)PRCMPM_PWSTCTRL_IVA2PowerStateON <<\
-      PRCM_PM_PWSTCTRL_IVA2_PowerState_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTCTRL_IVA2PowerStateWriteON32);\
-    data &= ~(PRCM_PM_PWSTCTRL_IVA2_PowerState_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
-}
-
-
-#define PRCMPM_PWSTCTRL_IVA2PowerStateWriteOFF32(baseAddress)\
-{\
-    const u32 offset = PRCM_PM_PWSTCTRL_IVA2_OFFSET;\
-    const u32 newValue = (u32)PRCMPM_PWSTCTRL_IVA2PowerStateOFF <<\
-      PRCM_PM_PWSTCTRL_IVA2_PowerState_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTCTRL_IVA2PowerStateWriteOFF32);\
-    data &= ~(PRCM_PM_PWSTCTRL_IVA2_PowerState_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
-}
-
-
-#define PRCMPM_PWSTCTRL_DSPPowerStateWriteRET32(baseAddress)\
-{\
-    const u32 offset = PRCM_PM_PWSTCTRL_DSP_OFFSET;\
-    const u32 newValue = (u32)PRCMPM_PWSTCTRL_DSPPowerStateRET <<\
-      PRCM_PM_PWSTCTRL_DSP_PowerState_OFFSET;\
-    register u32 data = RD_MEM_32_VOLATILE((u32)(baseAddress)+offset);\
-    _DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTCTRL_DSPPowerStateWriteRET32);\
-    data &= ~(PRCM_PM_PWSTCTRL_DSP_PowerState_MASK);\
-    data |= newValue;\
-    WR_MEM_32_VOLATILE((u32)(baseAddress)+offset, data);\
-}
-
-
-#define PRCMPM_PWSTST_DSPReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTST_DSPReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRCM_PM_PWSTST_DSP_OFFSET))
-
-
-#define PRCMPM_PWSTST_IVA2ReadRegister32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTST_IVA2ReadRegister32),\
-      RD_MEM_32_VOLATILE(((u32)(baseAddress))+PRCM_PM_PWSTST_IVA2_OFFSET))
-
-
-#define PRCMPM_PWSTST_DSPInTransitionRead32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTST_DSPInTransitionRead32),\
-      (((RD_MEM_32_VOLATILE((((u32)(baseAddress))+\
-	(PRCM_PM_PWSTST_DSP_OFFSET)))) &\
-      PRCM_PM_PWSTST_DSP_InTransition_MASK) >>\
-      PRCM_PM_PWSTST_DSP_InTransition_OFFSET))
-
-
-#define PRCMPM_PWSTST_IVA2InTransitionRead32(baseAddress)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTST_IVA2InTransitionRead32),\
-      (((RD_MEM_32_VOLATILE((((u32)(baseAddress))+\
-	(PRCM_PM_PWSTST_IVA2_OFFSET)))) &\
-      PRCM_PM_PWSTST_IVA2_InTransition_MASK) >>\
-      PRCM_PM_PWSTST_IVA2_InTransition_OFFSET))
-
-
-#define PRCMPM_PWSTST_DSPPowerStateStGet32(var)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTST_DSPPowerStateStGet32),\
-      (u32)((((u32)(var)) & PRCM_PM_PWSTST_DSP_PowerStateSt_MASK) >>\
-	PRCM_PM_PWSTST_DSP_PowerStateSt_OFFSET))
-
-
-#define PRCMPM_PWSTST_IVA2PowerStateStGet32(var)\
-    (_DEBUG_LEVEL_1_EASI(EASIL1_PRCMPM_PWSTST_IVA2PowerStateStGet32),\
-      (u32)((((u32)(var)) & PRCM_PM_PWSTST_IVA2_PowerStateSt_MASK) >>\
-      PRCM_PM_PWSTST_IVA2_PowerStateSt_OFFSET))
-
-
-#endif  /* USE_LEVEL_1_MACROS */
 
 #endif /* _PRCM_REG_ACM_H */
+/* EOF */
+

@@ -182,6 +182,7 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 	struct CFG_HOSTRES resources;
 	u16 cnt = 10;
 	u32 temp;
+	volatile unsigned int i;
 	/* We are waiting indefinitely here. This needs to be fixed in the
 	 * second phase */
 	status = CFG_GetHostResources(
@@ -221,8 +222,6 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 		}
 
 #endif
-#endif
-#endif
 		/* Read MMU register to invoke short wakeup of DSP */
 		temp = (u32) *((REG_UWORD32 *) ((u32)
 		       (resources.dwDmmuBase) + 0x10));
@@ -237,8 +236,12 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 			 mboxsetting.irqEnable1);
 		/* Restart the peripheral clocks that were disabled */
 		DSP_PeripheralClocks_Enable(hDevContext, NULL);
+#endif
+#endif
 
 	}
+	for (i = 0; i < 0x1000; i++)
+		;
 	while (--cnt) {
 		hwStatus = HW_MBOX_IsFull(resources.dwMboxBase,
 					   MBOX_ARM2DSP, &mbxFull);

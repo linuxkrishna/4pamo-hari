@@ -59,6 +59,7 @@ static u32 ulDynExtBase;
 static u32 ulTraceSecBeg;
 static u32 ulTraceSecEnd;
 static u32 ulShmBaseVirt;
+static u32 ulshmBeg;
 
 bool bSymbolsReloaded = true;
 
@@ -279,15 +280,21 @@ DSP_STATUS WriteExtDspData(struct WMD_DEV_CONTEXT *pDevContext,
 		 "ulNumBytes 0x%x \n", dwDSPAddr, ulNumBytes);
 	  if (bSymbolsReloaded) {
 		/* Check if it is a load to Trace section */
+#ifndef DSP_TRACEBUF_DISABLED
 		retVal = DEV_GetSymbol(pDevContext->hDevObject,
 					DSP_TRACESEC_BEG, &ulTraceSecBeg);
+#endif
 		if (DSP_SUCCEEDED(retVal))
+#ifndef DSP_TRACEBUF_DISABLED
 			retVal = DEV_GetSymbol(pDevContext->hDevObject,
 				 DSP_TRACESEC_END, &ulTraceSecEnd);
+#endif
+			retVal = DEV_GetSymbol(pDevContext->hDevObject,
+				 SHMBASENAME, &ulshmBeg);
 	}
 	if (DSP_SUCCEEDED(retVal)) {
 		if ((dwDSPAddr <= ulTraceSecEnd) &&
-		   (dwDSPAddr >= ulTraceSecBeg)) {
+		   (dwDSPAddr >= ulshmBeg)) {
 			DBG_Trace(DBG_LEVEL5, "Writing to DSP Trace "
 				 "section 0x%x \n", dwDSPAddr);
 			bTraceLoad = true;

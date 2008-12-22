@@ -95,7 +95,7 @@ static DSP_STATUS WMD_BRD_Read(struct WMD_DEV_CONTEXT *pDevContext,
 static DSP_STATUS WMD_BRD_Start(struct WMD_DEV_CONTEXT *pDevContext,
 			u32 dwDSPAddr);
 static DSP_STATUS WMD_BRD_Status(struct WMD_DEV_CONTEXT *pDevContext,
-			OUT BRD_STATUS *pdwState);
+				OUT BRD_STATUS *pdwState);
 static DSP_STATUS WMD_BRD_Stop(struct WMD_DEV_CONTEXT *pDevContext);
 static DSP_STATUS WMD_BRD_Write(struct WMD_DEV_CONTEXT *pDevContext,
 			IN u8 *pbHostBuf,
@@ -131,9 +131,18 @@ static DSP_STATUS PteSet(struct PgTableAttrs *pt, u32 pa, u32 va,
 static DSP_STATUS MemMapVmalloc(struct WMD_DEV_CONTEXT *hDevContext,
 			u32 ulMpuAddr, u32 ulVirtAddr,
 			u32 ulNumBytes, u32 ulMapAttr);
+#if 0
 static DSP_STATUS run_IdleBoot(u32 prcm_base, u32 cm_base,
 			u32 sysctrl_base);
 void GetHWRegs(u32 prcm_base, u32 cm_base);
+#endif
+
+#ifdef OMAP44XX
+static DSP_STATUS run_IdleBoot(u32 prcm_base, u32 cm1_base, u32 cm2_base,
+			u32 sysctrl_base);
+
+void GetHWRegs(u32 prcm_base, u32 cm1_base, u32 cm2_base);
+#endif
 
 /*  ----------------------------------- Globals */
 
@@ -278,27 +287,52 @@ static DSP_STATUS WMD_BRD_Monitor(struct WMD_DEV_CONTEXT *hDevContext)
 	if (DSP_FAILED(status))
 		goto error_return;
 
-	GetHWRegs(resources.dwPrmBase, resources.dwCmBase);
-	HW_PWRST_IVA2RegGet(resources.dwPrmBase, &temp);
+#if defined(OMAP44XX)
+    printk("Disabling Clocks... and resources.dwCm1Base = 0x%x \n  resources.dwCm2Base= 0x%x\n"
+		"resources.dwPrmBase = 0x%x", resources.dwCm1Base, resources.dwCm2Base, resources.dwPrmBase);
+    HW_CLK_Disable (resources.dwCm1Base, HW_CLK_TESLA) ;
+    printk("Resetting DSP...");
+    HW_RST_Reset(resources.dwPrmBase, HW_RST1_TESLA);
+    printk("Enabling Clocks...");
+    HW_CLK_Enable (resources.dwCm1Base, HW_CLK_TESLA) ;
+
+
+    HW_RST_Reset(resources.dwPrmBase, HW_RST1_TESLA);/*TODO check if it is correct*/
+    HW_RST_Reset(resources.dwPrmBase, HW_RST2_TESLA);/*Just to ensure that the RST's are enabled*/
+#if 0
+    HW_CLK_Enable (resources.dwCm1Base, HW_CLK_TESLA) ;
+	UTIL_Wait(1000);
+	UTIL_Wait(1000);
+	UTIL_Wait(1000);
+#endif
+	HW_RST_UnReset(resources.dwPrmBase, HW_RST2_TESLA);
+
+	printk("Calling the MMU_LOCK BaseValue");
+
+	*((REG_u32 *)((u32)(resources.dwDmmuBase)+0x50)) = 0x400;
+
+#else
+	HW_PWRST_RegGet(resources.dwPrmBase, HW_PWR_DOMAIN_TESLA, &temp);
     if ((temp & 0x03) != 0x03 || (temp & 0x03) != 0x02) {
 		/* IVA2 is not in ON state */
 		/* Read and set PM_PWSTCTRL_IVA2  to ON */
-		HW_PWR_IVA2PowerStateSet(resources.dwPrmBase,
-					  HW_PWR_DOMAIN_DSP,
+		HW_PWR_PowerStateGet(resources.dwPrmBase, HW_PWR_DOMAIN_TESLA,
+				     &pwrState);
+		HW_PWR_PowerStateSet(resources.dwPrmBase,
+					  HW_PWR_DOMAIN_TESLA,
 					  HW_PWR_STATE_ON);
 		/* Set the SW supervised state transition */
-		HW_PWR_CLKCTRL_IVA2RegSet(resources.dwCmBase,
-					   HW_SW_SUP_WAKEUP);
+		HW_PWR_ForceStateSet(resources.dwCm1Base, HW_PWR_DOMAIN_TESLA, HW_SW_SUP_WAKEUP);
 		/* Wait until the state has moved to ON */
-		HW_PWR_IVA2StateGet(resources.dwPrmBase, HW_PWR_DOMAIN_DSP,
-				     &pwrState);
+		HW_PWR_PowerStateGet(resources.dwPrmBase, HW_PWR_DOMAIN_TESLA,
+					&pwrState);
 		/* Disable Automatic transition */
-	HW_PWR_CLKCTRL_IVA2RegSet(resources.dwCmBase, HW_AUTOTRANS_DIS);
 	}
 	DBG_Trace(DBG_LEVEL6, "WMD_BRD_Monitor - Middle ****** \n");
-	GetHWRegs(resources.dwPrmBase, resources.dwCmBase);
-	status = run_IdleBoot(resources.dwPrmBase, resources.dwCmBase,
-			      resources.dwSysCtrlBase);
+	GetHWRegs(resources.dwPrmBase, resources.dwCm1Base, resources.dwCm2Base);
+	status = run_IdleBoot(resources.dwPrmBase, resources.dwCm1Base, resources.dwCm2Base,
+				resources.dwSysCtrlBase);
+#endif
 	if (DSP_SUCCEEDED(status)) {
 		/* set the device state to IDLE */
 		pDevContext->dwBrdState = BRD_IDLE;
@@ -306,7 +340,9 @@ static DSP_STATUS WMD_BRD_Monitor(struct WMD_DEV_CONTEXT *hDevContext)
 	}
 error_return:
 	DBG_Trace(DBG_LEVEL6, "WMD_BRD_Monitor - End ****** \n");
-	GetHWRegs(resources.dwPrmBase, resources.dwCmBase);
+#ifdef OMAP44XX
+	GetHWRegs(resources.dwPrmBase, resources.dwCm1Base, resources.dwCm2Base);
+#endif
 	return status;
 }
 
@@ -403,6 +439,11 @@ static DSP_STATUS WMD_BRD_Start(struct WMD_DEV_CONTEXT *hDevContext,
 
 	DBG_Trace(DBG_ENTER, "Entering WMD_BRD_Start:\n hDevContext: 0x%x\n\t "
 			     "dwDSPAddr: 0x%x\n", hDevContext, dwDSPAddr);
+	printk("Please break Virtio by typing 'y' in console and start CCS"
+		"set DSP  PC adress to below DSP Start address and Run using CCS\n");
+	printk("- - - DSP Start Address [0x%x]- - -\n", dwDSPAddr) ;
+
+	register u32 newAdress = ((u32)(dwDSPAddr));
 
 	 /* The device context contains all the mmu setup info from when the
 	 * last dsp base image was loaded. The first entry is always
@@ -434,36 +475,36 @@ static DSP_STATUS WMD_BRD_Start(struct WMD_DEV_CONTEXT *hDevContext,
 		status = CFG_GetHostResources(
 			(struct CFG_DEVNODE *)DRV_GetFirstDevExtension(),
 			&resources);
+		newAdress &= 0xFFFFFC0;
+	*((REG_u32 *)((u32)(resources.dwSysCtrlBase)+0x304)) = newAdress;
 		/* Assert RST1 i.e only the RST only for DSP megacell  */
 		/* HW_RST_Reset(resources.dwPrcmBase, HW_RST1_IVA2);*/
 		if (DSP_SUCCEEDED(status)) {
-			HW_RST_Reset(resources.dwPrmBase, HW_RST1_IVA2);
+#ifdef OMAP44XX
+			HW_RST_Reset(resources.dwPrmBase, HW_RST1_TESLA);
+#endif
 			if (dsp_debug) {
 				/* Set the bootmode to self loop  */
 				DBG_Trace(DBG_LEVEL7,
 						"Set boot mode to self loop"
 						" for IVA2 Device\n");
-				HW_DSPSS_BootModeSet(resources.dwSysCtrlBase,
-					HW_DSPSYSC_SELFLOOPBOOT, dwDSPAddr);
-			} else {
-				/* Set the bootmode to '0' - direct boot */
-				DBG_Trace(DBG_LEVEL7,
-						"Set boot mode to direct"
-						" boot for IVA2 Device \n");
-				HW_DSPSS_BootModeSet(resources.dwSysCtrlBase,
-					HW_DSPSYSC_DIRECTBOOT, dwDSPAddr);
 			}
 		}
 	}
 	if (DSP_SUCCEEDED(status)) {
 		/* Reset and Unreset the RST2, so that BOOTADDR is copied to
-		 * IVA2 SYSC register */
-		HW_RST_Reset(resources.dwPrmBase, HW_RST2_IVA2);
+		* IVA2 SYSC register: Because of Virtio limitations we have to do this
+		* manually */
+#ifdef OMAP44XX
+		HW_RST_Reset(resources.dwPrmBase, HW_RST2_TESLA);
 		UTIL_Wait(100);
-		HW_RST_UnReset(resources.dwPrmBase, HW_RST2_IVA2);
+		HW_RST_UnReset(resources.dwPrmBase, HW_RST2_TESLA);
 		UTIL_Wait(100);
 		DBG_Trace(DBG_LEVEL6, "WMD_BRD_Start 0 ****** \n");
-		GetHWRegs(resources.dwPrmBase, resources.dwCmBase);
+		GetHWRegs(resources.dwPrmBase, resources.dwCm1Base,
+					resources.dwCm2Base);
+
+#endif
 		/* Disbale the DSP MMU */
 		HW_MMU_Disable(resources.dwDmmuBase);
 		/* Disable TWL */
@@ -503,138 +544,17 @@ static DSP_STATUS WMD_BRD_Start(struct WMD_DEV_CONTEXT *hDevContext,
 		HW_MMU_TTBSet(resources.dwDmmuBase,
 				pDevContext->pPtAttrs->L1BasePa);
 		HW_MMU_TWLEnable(resources.dwDmmuBase);
-		/* Enable the SmartIdle and AutoIdle bit for MMU_SYSCONFIG */
-
-		temp = (u32) *((REG_UWORD32 *)
-				((u32) (resources.dwDmmuBase) + 0x10));
-		temp = (temp & 0xFFFFFFEF) | 0x11;
-		*((REG_UWORD32 *) ((u32) (resources.dwDmmuBase) + 0x10)) =
-			(u32) temp;
 
 		/* Let the DSP MMU run */
 		HW_MMU_Enable(resources.dwDmmuBase);
-
-		/* Enable the BIOS clock  */
-		(void)DEV_GetSymbol(pDevContext->hDevObject,
-					BRIDGEINIT_BIOSGPTIMER,
-				     &ulBiosGpTimer);
-		DBG_Trace(DBG_LEVEL7, "BIOS GPTimer : 0x%x\n", ulBiosGpTimer);
-		(void)DEV_GetSymbol(pDevContext->hDevObject,
-				BRIDGEINIT_LOADMON_GPTIMER,
-				     &ulLoadMonitorTimer);
-		DBG_Trace(DBG_LEVEL7, "Load Monitor Timer : 0x%x\n",
-			  ulLoadMonitorTimer);
 	}
 
+	(void)CHNLSM_EnableInterrupt(pDevContext);
 	if (DSP_SUCCEEDED(status)) {
-		if (ulLoadMonitorTimer != 0xFFFF) {
-			uClkCmd = (BPWR_DisableClock << MBX_PM_CLK_CMDSHIFT) |
-						ulLoadMonitorTimer;
-			DBG_Trace(DBG_LEVEL7,
-				  "encoded LoadMonitor cmd for Disable: 0x%x\n",
-				  uClkCmd);
-			DSPPeripheralClkCtrl(pDevContext, &uClkCmd);
-
-			extClkId = uClkCmd & MBX_PM_CLK_IDMASK;
-			for (tmpIndex = 0; tmpIndex < MBX_PM_MAX_RESOURCES;
-			     tmpIndex++) {
-				if (extClkId == BPWR_CLKID[tmpIndex]) {
-					clkIdIndex = tmpIndex;
-					break;
-				}
-			}
-
-			if (clkIdIndex < MBX_PM_MAX_RESOURCES)
-				status = CLK_Set_32KHz(
-						BPWR_Clks[clkIdIndex].funClk);
-			else
-				status = DSP_EFAIL;
-
-			if (DSP_FAILED(status)) {
-				DBG_Trace(DBG_LEVEL7, " Error while setting"
-							"LM Timer  to 32KHz\n");
-			}
-			uClkCmd = (BPWR_EnableClock << MBX_PM_CLK_CMDSHIFT) |
-				  ulLoadMonitorTimer;
-			DBG_Trace(DBG_LEVEL7,
-				 "encoded LoadMonitor cmd for Enable : 0x%x\n",
-				 uClkCmd);
-			DSPPeripheralClkCtrl(pDevContext, &uClkCmd);
-
-		} else {
-			DBG_Trace(DBG_LEVEL7,
-				  "Not able to get the symbol for Load "
-				  "Monitor Timer\n");
-		}
-	}
-
-	if (DSP_SUCCEEDED(status)) {
-		if (ulBiosGpTimer != 0xFFFF) {
-			uClkCmd = (BPWR_DisableClock << MBX_PM_CLK_CMDSHIFT) |
-								ulBiosGpTimer;
-			DBG_Trace(DBG_LEVEL7, "encoded BIOS GPTimer cmd for"
-					"Disable: 0x%x\n", uClkCmd);
-			DSPPeripheralClkCtrl(pDevContext, &uClkCmd);
-
-			extClkId = uClkCmd & MBX_PM_CLK_IDMASK;
-
-			for (tmpIndex = 0; tmpIndex < MBX_PM_MAX_RESOURCES;
-			     tmpIndex++) {
-				if (extClkId == BPWR_CLKID[tmpIndex]) {
-					clkIdIndex = tmpIndex;
-					break;
-				}
-			}
-
-			if (clkIdIndex < MBX_PM_MAX_RESOURCES)
-				status = CLK_Set_32KHz(
-						BPWR_Clks[clkIdIndex].funClk);
-			else
-				status = DSP_EFAIL;
-
-			if (DSP_FAILED(status)) {
-				DBG_Trace(DBG_LEVEL7,
-				" Error while setting BIOS Timer  to 32KHz\n");
-			}
-
-			uClkCmd = (BPWR_EnableClock << MBX_PM_CLK_CMDSHIFT) |
-				   ulBiosGpTimer;
-			DBG_Trace(DBG_LEVEL7, "encoded BIOS GPTimer cmd :"
-						"0x%x\n", uClkCmd);
-			DSPPeripheralClkCtrl(pDevContext, &uClkCmd);
-
-		} else {
-		DBG_Trace(DBG_LEVEL7,
-			  "Not able to get the symbol for BIOS Timer\n");
-		}
-	}
-
-	if (DSP_SUCCEEDED(status)) {
-		/* Set the DSP clock rate */
-		(void)DEV_GetSymbol(pDevContext->hDevObject,
-					"_BRIDGEINIT_DSP_FREQ", &ulDspClkAddr);
-		DBG_Trace(DBG_LEVEL5, "WMD_BRD_Start: _BRIDGE_DSP_FREQ Addr:"
-				"0x%x \n", ulDspClkAddr);
-		if ((unsigned int *)ulDspClkAddr != NULL) {
-			/* Get the clock rate */
-			status = CLK_GetRate(SERVICESCLK_iva2_ck,
-				 &ulDspClkRate);
-			DBG_Trace(DBG_LEVEL5,
-				 "WMD_BRD_Start: DSP clock rate (KHZ): 0x%x \n",
-				 ulDspClkRate);
-			(void)WMD_BRD_Write(pDevContext, (u8 *)&ulDspClkRate,
-				 ulDspClkAddr, sizeof(u32), 0);
-		}
-		/* Enable Mailbox events and also drain any pending
-		 * stale messages */
-		(void)CHNLSM_EnableInterrupt(pDevContext);
-	}
-
-	if (DSP_SUCCEEDED(status)) {
-		HW_RSTCTRL_RegGet(resources.dwPrmBase, HW_RST1_IVA2, &temp);
+		HW_RSTCTRL_RegGet(resources.dwPrmBase, &temp);
 		DBG_Trace(DBG_LEVEL7, "BRD_Start: RM_RSTCTRL_DSP = 0x%x \n",
 				temp);
-		HW_RSTST_RegGet(resources.dwPrmBase, HW_RST1_IVA2, &temp);
+		HW_RSTST_RegGet(resources.dwPrmBase, &temp);
 		DBG_Trace(DBG_LEVEL7, "BRD_Start0: RM_RSTST_DSP = 0x%x \n",
 				temp);
 
@@ -644,19 +564,19 @@ static DSP_STATUS WMD_BRD_Start(struct WMD_DEV_CONTEXT *hDevContext,
 		HW_MMU_EventEnable(resources.dwDmmuBase,
 				HW_MMU_ALL_INTERRUPTS);
 		/* release the RST1, DSP starts executing now .. */
-		HW_RST_UnReset(resources.dwPrmBase, HW_RST1_IVA2);
+		HW_RST_UnReset(resources.dwPrmBase, HW_RST1_TESLA);
 
-		HW_RSTST_RegGet(resources.dwPrmBase, HW_RST1_IVA2, &temp);
+		HW_RSTST_RegGet(resources.dwPrmBase, &temp);
 		DBG_Trace(DBG_LEVEL7, "BRD_Start: RM_RSTST_DSP = 0x%x \n",
 				temp);
-		HW_RSTCTRL_RegGet(resources.dwPrmBase, HW_RST1_IVA2, &temp);
+		HW_RSTCTRL_RegGet(resources.dwPrmBase, &temp);
 		DBG_Trace(DBG_LEVEL5, "WMD_BRD_Start: CM_RSTCTRL_DSP: 0x%x \n",
 				temp);
 		DBG_Trace(DBG_LEVEL7, "Driver waiting for Sync @ 0x%x \n",
 				dwSyncAddr);
 		DBG_Trace(DBG_LEVEL7, "DSP c_int00 Address =  0x%x \n",
 				dwDSPAddr);
-		if (dsp_debug)
+	if (dsp_debug)
 			while (*((volatile u16 *)dwSyncAddr))
 				;;
 	}
@@ -707,6 +627,7 @@ static DSP_STATUS WMD_BRD_Stop(struct WMD_DEV_CONTEXT *hDevContext)
 	struct CFG_HOSTRES resources;
 	struct PgTableAttrs *pPtAttrs;
 	u32 dspPwrState;
+	enum HW_PwrState_t pwrState;
 	DSP_STATUS clk_status;
 
 	DBG_Trace(DBG_ENTER, "Entering WMD_BRD_Stop:\nhDevContext: 0x%x\n",
@@ -730,60 +651,16 @@ static DSP_STATUS WMD_BRD_Stop(struct WMD_DEV_CONTEXT *hDevContext)
 		DBG_Trace(DBG_LEVEL1, "Device Stopp failed \n ");
 		return DSP_EFAIL;
 	}
-
-	HW_PWRST_IVA2RegGet(resources.dwPrmBase, &dspPwrState);
-	if (dspPwrState != HW_PWR_STATE_OFF) {
-
-			IO_InterruptDSP2(pDevContext, MBX_PM_DSPIDLE);
-
-			UTIL_Wait(10000);	/* 10 msec */
-
-			GetHWRegs(resources.dwPrmBase, resources.dwCmBase);
-
-		run_IdleBoot(resources.dwPrmBase, resources.dwCmBase,
-			     resources.dwSysCtrlBase);
-
-		udelay(50);
-
-		clk_status = CLK_Disable(SERVICESCLK_iva2_ck);
-		if (DSP_FAILED(clk_status)) {
-			DBG_Trace(DBG_LEVEL6,
-				 "\n WMD_BRD_Stop: CLK_Disable failed "
-				 "for iva2_fck\n");
-			}
-		/* IVA2 is not in OFF state */
-		/* Set PM_PWSTCTRL_IVA2  to OFF */
-		HW_PWR_IVA2PowerStateSet(resources.dwPrmBase,
-					  HW_PWR_DOMAIN_DSP,
-					  HW_PWR_STATE_OFF);
-		/* Set the SW supervised state transition for Sleep */
-		HW_PWR_CLKCTRL_IVA2RegSet(resources.dwCmBase,
-					   HW_SW_SUP_SLEEP);
-	} else {
-		clk_status = CLK_Disable(SERVICESCLK_iva2_ck);
-		if (DSP_FAILED(clk_status)) {
-			DBG_Trace(DBG_LEVEL6,
-				 "\n WMD_BRD_Stop: Else loop CLK_Disable failed"
-				 " for iva2_fck\n");
-		}
-	}
-	udelay(10);
-	/* Release the Ext Base virtual Address as the next DSP Program
-	 * may have a different load address */
-	if (pDevContext->dwDspExtBaseAddr)
-		pDevContext->dwDspExtBaseAddr = 0;
-
-	pDevContext->dwBrdState = BRD_STOPPED;	/* update board state */
-	DBG_Trace(DBG_LEVEL1, "Device Stopped \n ");
-	/* This is a good place to clear the MMU page tables as well */
-	if (pDevContext->pPtAttrs) {
-		pPtAttrs = pDevContext->pPtAttrs;
-		memset((u8 *) pPtAttrs->L1BaseVa, 0x00, pPtAttrs->L1size);
-		memset((u8 *) pPtAttrs->L2BaseVa, 0x00, pPtAttrs->L2size);
-		memset((u8 *) pPtAttrs->pgInfo, 0x00,
-		       (pPtAttrs->L2NumPages * sizeof(struct PageInfo)));
-	}
-
+#ifdef OMAP44XX
+		DBG_Trace(DBG_LEVEL7, "Resetting DSP...");
+		printk("Stop:Disabling Clocks...");
+		 HW_CLK_Disable (resources.dwCm1Base, HW_CLK_TESLA) ;
+		 printk("Stop:Resetting DSP...");
+		 HW_RST_Reset(resources.dwPrmBase, HW_RST1_TESLA);
+		 /*  Enable DSP */
+		 printk("Stop:Enabling Clocks...");
+		 HW_CLK_Enable (resources.dwCm1Base, HW_CLK_TESLA) ;
+#endif
 		DBG_Trace(DBG_LEVEL6, "WMD_BRD_Stop - End ****** \n");
 
 	return status;
@@ -827,12 +704,7 @@ static DSP_STATUS WMD_BRD_Delete(struct WMD_DEV_CONTEXT *hDevContext)
 		DBG_Trace(DBG_LEVEL1, "Device Delete failed \n ");
 		return DSP_EFAIL;
 	}
-	status = SleepDSP(pDevContext, PWR_EMERGENCYDEEPSLEEP, NULL);
-	clk_status = CLK_Disable(SERVICESCLK_iva2_ck);
-	if (DSP_FAILED(clk_status)) {
-		DBG_Trace(DBG_LEVEL6, "\n WMD_BRD_Stop: CLK_Disable failed for"
-			  " iva2_fck\n");
-	}
+	 HW_CLK_Disable (resources.dwCm1Base, HW_CLK_TESLA) ;
 	/* Release the Ext Base virtual Address as the next DSP Program
 	 * may have a different load address */
 	if (pDevContext->dwDspExtBaseAddr)
@@ -920,6 +792,9 @@ static DSP_STATUS WMD_DEV_Create(OUT struct WMD_DEV_CONTEXT **ppDevContext,
 	u32   pg_tbl_va;
 	u32   align_size;
 
+	enum HW_PwrState_t pwrState;
+	u32 PwrCtrl;
+	u32 iIterations = 0;
 	DBG_Trace(DBG_ENTER, "WMD_DEV_Create, ppDevContext: 0x%x\n\t\t "
 		  "hDevObject: 0x%x\n\t\tpConfig: 0x%x\n\t\tpDspConfig: 0x%x\n",
 		  ppDevContext, hDevObject, pConfig, pDspConfig);
@@ -962,7 +837,7 @@ static DSP_STATUS WMD_DEV_Create(OUT struct WMD_DEV_CONTEXT **ppDevContext,
 		/* Assuming that we use only DSP's memory map
 		 * until 0x4000:0000 , we would need only 1024
 		 * L1 enties i.e L1 size = 4K */
-		pPtAttrs->L1size = 0x1000;
+		pPtAttrs->L1size = 0x4000;
 		align_size = pPtAttrs->L1size;
 		/* Align sizes are expected to be power of 2 */
 		/* we like to get aligned on L1 table size */
@@ -1046,13 +921,24 @@ static DSP_STATUS WMD_DEV_Create(OUT struct WMD_DEV_CONTEXT **ppDevContext,
 		/* Set the Clock Divisor for the DSP module */
 		DBG_Trace(DBG_LEVEL7, "WMD_DEV_create:Reset mail box and "
 			  "enable the clock \n");
-		status = CLK_Enable(SERVICESCLK_mailbox_ick);
-		if (DSP_FAILED(status)) {
-			DBG_Trace(DBG_LEVEL7,
-				 "WMD_DEV_create:Reset mail box and "
-				 "enable the clock Fail\n");
-		}
-		UTIL_Wait(5);
+#ifdef OMAP44XX
+			HW_PWR_ForceStateSet(resources.dwCm1Base, HW_PWR_DOMAIN_TESLA, HW_SW_SUP_WAKEUP);
+			HW_PWR_PowerStateSet(resources.dwPrmBase, HW_PWR_DOMAIN_TESLA, HW_PWR_STATE_ON);
+			HW_PWR_PowerStateGet(resources.dwPrmBase, HW_PWR_DOMAIN_TESLA, &pwrState);
+
+				while (HW_PWR_STATE_ON != pwrState) {
+						iIterations++;
+						if (iIterations >= 500) {
+							HW_PWRSTCTRL_RegGet(resources.dwPrmBase, &PwrCtrl);
+							printk("Error: Failed to put the DSP domain into ON"
+								"state PRM_TESLA_PWRSTCTRL = 0x%x", PwrCtrl);
+								return DSP_EFAIL;
+						}
+
+						HW_PWR_PowerStateGet(resources.dwPrmBase, HW_PWR_DOMAIN_TESLA, &pwrState);
+				}
+/*			HW_CLK_Enable (resources.dwPrmBase, HW_CLK_IF_MBOX);*/
+#endif
 		/* 24xx-Linux MMU address is obtained from the host
 		 * resources struct */
 		pDevContext->dwDSPMmuBase = resources.dwDmmuBase;
@@ -2052,9 +1938,8 @@ func_cont:
 	DBG_Trace(DBG_LEVEL7, "< WMD_BRD_MemMap  at end status %x\n", status);
 	return status;
 }
-
-static DSP_STATUS run_IdleBoot(u32 prm_base, u32 cm_base,
-			       u32 sysctrl_base)
+static DSP_STATUS run_IdleBoot(u32 prm_base, u32 cm1_base,
+			u32 cm2_base, u32 sysctrl_base)
 {
 	u32 temp;
 	DSP_STATUS status = DSP_SOK;
@@ -2062,69 +1947,51 @@ static DSP_STATUS run_IdleBoot(u32 prm_base, u32 cm_base,
 	enum HW_PwrState_t    pwrState;
 
 	/* Read PM_PWSTST_IVA2 */
-	HW_PWRST_IVA2RegGet(prm_base, &temp);
-	 if ((temp & 0x03) != 0x03 || (temp & 0x03) != 0x02) {
-		/* IVA2 is not in ON state */
-		/*Set PM_PWSTCTRL_IVA2  to ON */
-		HW_PWR_IVA2PowerStateSet(prm_base, HW_PWR_DOMAIN_DSP,
-					  HW_PWR_STATE_ON);
-		/* Set the SW supervised state transition */
-		HW_PWR_CLKCTRL_IVA2RegSet(cm_base, HW_SW_SUP_WAKEUP);
-		/* Wait until the state has moved to ON */
-		HW_PWR_IVA2StateGet(prm_base, HW_PWR_DOMAIN_DSP, &pwrState);
-	}
-	clk_status = CLK_Disable(SERVICESCLK_iva2_ck);
-	if (DSP_FAILED(clk_status)) {
-		DBG_Trace(DBG_LEVEL6, "CLK_Disbale failed for clk = 0x%x \n",
-			  SERVICESCLK_iva2_ck);
-	}
-	udelay(10);
-	/* Assert IVA2-RST1 and IVA2-RST2  */
-	*((REG_UWORD32 *)((u32)(prm_base) + 0x50)) = (u32)0x07;
-	udelay(30);
-	/* set the SYSC for Idle Boot */
-	*((REG_UWORD32 *)((u32)(sysctrl_base) + 0x404)) = (u32)0x01;
-	clk_status = CLK_Enable(SERVICESCLK_iva2_ck);
-	if (DSP_FAILED(clk_status)) {
-		DBG_Trace(DBG_LEVEL6, "CLK_Enable failed for clk = 0x%x \n",
-			  SERVICESCLK_iva2_ck);
-	}
-	udelay(20);
-	GetHWRegs(prm_base, cm_base);
-	/* Release Reset1 and Reset2 */
-	*((REG_UWORD32 *)((u32)(prm_base) + 0x50)) = (u32)0x05;
-	udelay(20);
-	*((REG_UWORD32 *)((u32)(prm_base) + 0x50)) = (u32)0x04;
-	udelay(30);
+#ifdef OMAP_44XX
+	DBG_Trace(DBG_LEVEL6, "Resetting DSP...");
+	HW_RST_Reset(prm_base, HW_RST1_TESLA);
+
+	/*Boot the device in selfloop mode*/
+
+	DBG_Trace(DBG_LEVEL6, "Set boot mode to Self Loop for IVA2 Device  \n");
+	/*GOC REIEW IF IT IS CORRECT*/
+	HW_DSPSS_BootModeSet_4(sysctrl_base, HW_DSPSYSC_SELFLOOPBOOT);
+
+	/* unreset the IVA2 */
+/*	HW_RST_UnReset (prm_base, HW_RST1_TESLA) ;*/
+#endif
 	return status;
 }
 
-
-void GetHWRegs(u32 prm_base, u32 cm_base)
+#ifdef OMAP44XX
+void GetHWRegs(u32 prm_base, u32 cm1_base, u32 cm2_base)
 {
+#if 0
 	u32 temp;
-       temp = (u32)*((REG_UWORD32 *)((u32)(cm_base) + 0x00));
+       temp = (u32)*((REG_u32 *)((u32)(cm_base) + 0x00));
 	   DBG_Trace(DBG_LEVEL6, "CM_FCLKEN_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(cm_base) + 0x10));
+       temp = (u32)*((REG_u32 *)((u32)(cm_base) + 0x10));
 	   DBG_Trace(DBG_LEVEL6, "CM_ICLKEN1_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(cm_base) + 0x20));
+       temp = (u32)*((REG_u32 *)((u32)(cm_base) + 0x20));
 	   DBG_Trace(DBG_LEVEL6, "CM_IDLEST_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(cm_base) + 0x48));
+       temp = (u32)*((REG_u32 *)((u32)(cm_base) + 0x48));
 	   DBG_Trace(DBG_LEVEL6, "CM_CLKSTCTRL_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(cm_base) + 0x4c));
+       temp = (u32)*((REG_u32 *)((u32)(cm_base) + 0x4c));
 	   DBG_Trace(DBG_LEVEL6, "CM_CLKSTST_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(prm_base) + 0x50));
+       temp = (u32)*((REG_u32 *)((u32)(prm_base) + 0x50));
 	   DBG_Trace(DBG_LEVEL6, "RM_RSTCTRL_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(prm_base) + 0x58));
+       temp = (u32)*((REG_u32 *)((u32)(prm_base) + 0x58));
 	   DBG_Trace(DBG_LEVEL6, "RM_RSTST_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(prm_base) + 0xE0));
+       temp = (u32)*((REG_u32 *)((u32)(prm_base) + 0xE0));
 	   DBG_Trace(DBG_LEVEL6, "PM_PWSTCTRL_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(prm_base) + 0xE4));
+       temp = (u32)*((REG_u32 *)((u32)(prm_base) + 0xE4));
 	   DBG_Trace(DBG_LEVEL6, "PM_PWSTST_IVA2 = 0x%x \n", temp);
-       temp = (u32)*((REG_UWORD32 *)((u32)(cm_base) + 0xA10));
+       temp = (u32)*((REG_u32 *)((u32)(cm_base) + 0xA10));
 	   DBG_Trace(DBG_LEVEL6, "CM_ICLKEN1_CORE = 0x%x \n", temp);
+#endif
 }
 
+#endif
 /*
  *  ======== configureDspMmu ========
  *      Make DSP MMU page table entries.

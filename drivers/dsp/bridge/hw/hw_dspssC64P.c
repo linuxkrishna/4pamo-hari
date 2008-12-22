@@ -25,31 +25,49 @@
  *! 16 Feb 2003 sb: Initial version
  */
 
-/* PROJECT SPECIFIC INCLUDE FILES */
+
+/* ============================================================================
+* STANDARD INCLUDE FILES
+* =============================================================================
+*/
+
+/* ============================================================================
+* PROJECT SPECIFIC INCLUDE FILES
+* =============================================================================
+*/
 #include <GlobalTypes.h>
 #include <hw_defs.h>
 #include <hw_dspssC64P.h>
-#include <IVA2RegAcM.h>
-#include <IPIAccInt.h>
 
-/* HW FUNCTIONS */
-HW_STATUS HW_DSPSS_BootModeSet(const u32 baseAddress,
-		      enum HW_DSPSYSC_BootMode_t bootMode,
-		      const u32 bootAddress)
+/* ============================================================================
+* GLOBAL VARIABLES DECLARATIONS
+* =============================================================================
+*/
+
+/* ============================================================================
+* LOCAL TYPES AND DEFINITIONS
+* =============================================================================
+*/
+
+/* ============================================================================
+* LOCAL VARIABLES DECLARATIONS
+* =============================================================================
+*/
+
+/* ============================================================================
+* LOCAL FUNCTIONS PROTOTYPES
+* =============================================================================
+*/
+
+/* ============================================================================
+* HW FUNCTIONS
+* =============================================================================
+*/
+HW_STATUS HW_DSPSS_BootModeSet (const u32 baseAddress, enum  HW_DSPBootMode_t bootMode)
 {
 	HW_STATUS status = RET_OK;
-	u32 offset = SYSC_IVA2BOOTMOD_OFFSET;
-	u32 alignedBootAddr;
-
-	/* if Boot mode it DIRECT BOOT, check that the bootAddress is
-	 * aligned to atleast 1K :: TODO */
-	WR_MEM_32_VOLATILE((baseAddress) + offset, bootMode);
-
-	offset = SYSC_IVA2BOOTADDR_OFFSET;
-
-	alignedBootAddr = bootAddress & SYSC_IVA2BOOTADDR_MASK;
-
-	WR_MEM_32_VOLATILE((baseAddress) + offset, alignedBootAddr);
+	/* TO DO: Use Macro instead of hard-coded value*/
+	*((REG_u32 *)((u32)baseAddress+0x404)) = bootMode;
 
 	return status;
 }

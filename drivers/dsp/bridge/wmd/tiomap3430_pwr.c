@@ -403,8 +403,10 @@ DSP_STATUS DSPPeripheralClkCtrl(struct WMD_DEV_CONTEXT *pDevContext,
 		/* Call BP to disable the needed clock */
 		DBG_Trace(DBG_LEVEL3,
 			 "DSPPeripheralClkCtrl : Disable CLK for \n");
+#if 0
 		status1 = CLK_Disable(BPWR_Clks[clkIdIndex].intClk);
 		status = CLK_Disable(BPWR_Clks[clkIdIndex].funClk);
+#endif
 		if ((DSP_SUCCEEDED(status)) && (DSP_SUCCEEDED(status1))) {
 			(pDevContext->uDspPerClks) &=
 				(~((u32) (1 << clkIdIndex)));
@@ -416,8 +418,10 @@ DSP_STATUS DSPPeripheralClkCtrl(struct WMD_DEV_CONTEXT *pDevContext,
 	case BPWR_EnableClock:
 		DBG_Trace(DBG_LEVEL3,
 			 "DSPPeripheralClkCtrl : Enable CLK for \n");
+#if 0
 		status1 = CLK_Enable(BPWR_Clks[clkIdIndex].intClk);
 		status = CLK_Enable(BPWR_Clks[clkIdIndex].funClk);
+#endif
 		if ((DSP_SUCCEEDED(status)) && (DSP_SUCCEEDED(status1))) {
 			(pDevContext->uDspPerClks) |= (1 << clkIdIndex);
 		} else {
@@ -537,6 +541,7 @@ DSP_STATUS DSP_PeripheralClocks_Disable(struct WMD_DEV_CONTEXT *pDevContext,
 	for (clkIdx = 0; clkIdx < MBX_PM_MAX_RESOURCES; clkIdx++) {
 		if (((pDevContext->uDspPerClks) >> clkIdx) & 0x01) {
 			/* Disables the interface clock of the peripheral */
+#if 0
 			status = CLK_Disable(BPWR_Clks[clkIdx].intClk);
 			if (DSP_FAILED(status)) {
 				DBG_Trace(DBG_LEVEL7,
@@ -550,6 +555,7 @@ DSP_STATUS DSP_PeripheralClocks_Disable(struct WMD_DEV_CONTEXT *pDevContext,
 					 "Failed to Enable the DSP Peripheral"
 					 "Clk 0x%x \n", BPWR_Clks[clkIdx]);
 			}
+#endif
 		}
 	}
 	return status;
@@ -568,6 +574,7 @@ DSP_STATUS DSP_PeripheralClocks_Enable(struct WMD_DEV_CONTEXT *pDevContext,
 	for (clkIdx = 0; clkIdx < MBX_PM_MAX_RESOURCES; clkIdx++) {
 		if (((pDevContext->uDspPerClks) >> clkIdx) & 0x01) {
 			/* Enable the interface clock of the peripheral */
+#if 0
 			status = CLK_Enable(BPWR_Clks[clkIdx].intClk);
 			if (DSP_FAILED(status)) {
 				DBG_Trace(DBG_LEVEL7,
@@ -581,6 +588,7 @@ DSP_STATUS DSP_PeripheralClocks_Enable(struct WMD_DEV_CONTEXT *pDevContext,
 					 "Failed to Enable the DSP Peripheral"
 					 "Clk 0x%x \n", BPWR_Clks[clkIdx]);
 			}
+#endif
 		}
 	}
 	return status;

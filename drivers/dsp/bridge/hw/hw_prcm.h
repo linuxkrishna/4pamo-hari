@@ -24,145 +24,197 @@
  *! 16 Feb 2003 sb: Initial version
  */
 
+
 #ifndef __HW_PRCM_H
 #define __HW_PRCM_H
 
-/* HW_ClkModule:  Enumerated Type used to specify the clock domain */
+/* ============================================================================
+* INCLUDE FILES (only if necessary)
+* =============================================================================
+*/
+#include <linux/types.h>
+
+/* ----------------------------------------------------------------------------
+* TYPE:         HW_ClkModule
+*
+* DESCRIPTION:  Enumerated Type used to specify the clock domain
+*
+* -----------------------------------------------------------------------------
+*/
 
 enum HW_ClkModule_t {
-/* DSP Domain */
-    HW_CLK_DSP_CPU,
-    HW_CLK_DSP_IPI_MMU,
-    HW_CLK_IVA_ARM,
-    HW_CLK_IVA_COP,	/* IVA Coprocessor */
 
-/* Core Domain */
-    HW_CLK_FN_WDT4,	/* Functional Clock */
-    HW_CLK_FN_WDT3,
-    HW_CLK_FN_UART2,
-    HW_CLK_FN_UART1,
-    HW_CLK_GPT5,
-    HW_CLK_GPT6,
-    HW_CLK_GPT7,
-    HW_CLK_GPT8,
+/*CM1 ABE*/
+	HW_CLK_TESLA,
+	HW_CLK_AESS,
+	HW_CLK_PDM,
+	HW_CLK_DMIC,
+	HW_CLK_MCASP,
+	HW_CLK_MCBSP1,
+	HW_CLK_MCBSP2,
+	HW_CLK_MCBSP3,
+	HW_CLK_SLIMBUS,
+	HW_CLK_TIMER5,
+	HW_CLK_TIMER6,
+	HW_CLK_TIMER7,
+	HW_CLK_TIMER8,
+	HW_CLK_WDT3,
 
-    HW_CLK_IF_WDT4,	/* Interface Clock */
-    HW_CLK_IF_WDT3,
-    HW_CLK_IF_UART2,
-    HW_CLK_IF_UART1,
-    HW_CLK_IF_MBOX
+/*CM2 L4PER*/
 
-} ;
-
-enum HW_ClkSubsys_t {
-    HW_CLK_DSPSS,
-    HW_CLK_IVASS
-} ;
-
-/* HW_GPtimers:  General purpose timers */
-enum HW_GPtimer_t {
-    HW_GPT5 = 5,
-    HW_GPT6 = 6,
-    HW_GPT7 = 7,
-    HW_GPT8 = 8
-} ;
+	HW_CLK_DMTIMER2,
+	HW_CLK_DMTIMER3,
+	HW_CLK_DMTIMER4,
+	HW_CLK_DMTIMER9,
+	HW_CLK_DMTIMER10,
+	HW_CLK_DMTIMER11,
+	HW_CLK_MCBSP4,
+	HW_CLK_MCBSP5,
 
 
-/* GP timers Input clock type:  General purpose timers */
-enum HW_Clocktype_t {
-    HW_CLK_32KHz = 0,
-    HW_CLK_SYS   = 1,
-    HW_CLK_EXT   = 2
-} ;
+};
 
-/* HW_ClkDiv:  Clock divisors */
-enum HW_ClkDiv_t {
-    HW_CLK_DIV_1 = 0x1,
-    HW_CLK_DIV_2 = 0x2,
-    HW_CLK_DIV_3 = 0x3,
-    HW_CLK_DIV_4 = 0x4,
-    HW_CLK_DIV_6 = 0x6,
-    HW_CLK_DIV_8 = 0x8,
-    HW_CLK_DIV_12 = 0xC
-} ;
 
-/* HW_RstModule:  Enumerated Type used to specify the module to be reset */
+
+/* ----------------------------------------------------------------------------
+* TYPE:         HW_RstModule
+*
+* DESCRIPTION:  Enumerated Type used to specify the module to be reset
+*
+* -----------------------------------------------------------------------------
+*/
 enum HW_RstModule_t {
-    HW_RST1_IVA2,  /* Reset the DSP */
-    HW_RST2_IVA2,  /* Reset MMU and LEON HWa */
-    HW_RST3_IVA2   /* Reset LEON sequencer */
-} ;
+	HW_RST1_TESLA,  /*Reset the DSP*/
+	HW_RST2_TESLA,  /* Reset MMU */
+};
 
-/* HW_PwrModule:  Enumerated Type used to specify the power domain */
+
+
+/* ----------------------------------------------------------------------------
+* TYPE:         HW_PwrModule
+*
+* DESCRIPTION:  Enumerated Type used to specify the power domain
+*
+* -----------------------------------------------------------------------------
+*/
+
 enum HW_PwrModule_t {
-/* Domains */
-    HW_PWR_DOMAIN_CORE,
-    HW_PWR_DOMAIN_MPU,
-    HW_PWR_DOMAIN_WAKEUP,
-    HW_PWR_DOMAIN_DSP,
-
+/* Domains*/
+	HW_PWR_DOMAIN_CORE,
+	HW_PWR_DOMAIN_MPU,
+	HW_PWR_DOMAIN_WAKEUP,
+	HW_PWR_DOMAIN_TESLA,
+	HW_PWR_DOMAIN_ABE,
+	HW_PWR_DOMAIN_L4PER,
 /* Sub-domains */
-    HW_PWR_DSP_IPI,	/* IPI = Intrusive Port Interface */
-    HW_PWR_IVA_ISP	 /* ISP = Intrusive Slave Port */
+	HW_PWR_DSP_IPI,        /* IPI = Intrusive Port Interface */
+	HW_PWR_IVA_ISP         /* ISP = Intrusive Slave Port*/
 } ;
+
 
 enum HW_PwrState_t {
-    HW_PWR_STATE_OFF,
-    HW_PWR_STATE_RET,
-    HW_PWR_STATE_INACT,
-    HW_PWR_STATE_ON = 3
-} ;
+	HW_PWR_STATE_OFF,
+	HW_PWR_STATE_RET,
+	HW_PWR_STATE_INACT,
+	HW_PWR_STATE_ON = 3
+};
 
-enum HW_ForceState_t {
-    HW_FORCE_OFF,
-    HW_FORCE_ON
-} ;
+enum HW_RetState_t {
+	HW_RETSTATE_LOGIC,
+	HW_RETSTATE_L1,
+	HW_RETSTATE_L2
+};
 
-enum HW_IdleState_t {
-    HW_ACTIVE,
-    HW_STANDBY
+enum HW_WeakUpDep_t {
+	HW_WKUP_IVA_MPU,
+	HW_WKUP_IVA_DUCATI
+};
 
-} ;
+enum HW_IvaDVFS_t {
+	HW_DVFS_PERF_TESLA,
+	HW_DVFS_PERF_IVAHD,
+	HW_DVFS_PERF_ABE,
+	HW_DVFS_RESULT,
+	HW_DVFS_CURRENT
+};
 
-enum HW_TransitionState_t {
-    HW_AUTOTRANS_DIS,
-    HW_SW_SUP_SLEEP,
-    HW_SW_SUP_WAKEUP,
-    HW_AUTOTRANS_EN
-} ;
+enum HW_PWR_TransState_t {
+	HW_AUTOTRANS_DIS = 0x0,
+	HW_SW_SUP_SLEEP,
+	HW_SW_SUP_WAKEUP,
+	HW_AUTOTRANS_EN
+};
 
+enum HW_IdleStatus_t {
+	HW_TESLA_FULLFUNC = 0x0, /* Module is fully functional, including OCP*/
+	HW_TESLA_TRANSITIONING, /* Transitioning (weakup, sleep or sleep abortion)*/
+	HW_TESLA_IDLE,/* Idle mode(only OCP)*/
+	HW_TESLA_DISABLED/*Module is disabled and cannot be accessed*/
+};
+
+
+extern HW_STATUS HW_CLK_Enable(const u32 baseAddress,
+				enum HW_ClkModule_t c);
+
+extern HW_STATUS HW_CLK_Disable(const u32 baseAddress,
+				enum HW_ClkModule_t c);
+
+extern HW_STATUS HW_CLK_AutoIdleEnable(const u32 baseAddress,
+				enum HW_ClkModule_t c);
+
+extern HW_STATUS HW_CLK_AutoIdleDisable(const u32 baseAddress,
+				enum HW_ClkModule_t c);
+
+extern HW_STATUS HW_CLK_StbyStatus(const u32 baseAddress,  enum HW_SetClear_t *stbyState);
+
+extern HW_STATUS HW_CLK_IdleStatus(const u32 baseAddress,  enum HW_IdleStatus_t *idleState);
 
 extern HW_STATUS HW_RST_Reset(const u32 baseAddress,
-				 enum HW_RstModule_t r);
+				enum HW_RstModule_t r);
 
-extern HW_STATUS HW_RST_UnReset(const u32 baseAddress,
-				   enum HW_RstModule_t r);
+extern HW_STATUS HW_RST_UnReset (const u32 baseAddress,
+				enum HW_RstModule_t r);
 
-extern HW_STATUS HW_RSTCTRL_RegGet(const u32 baseAddress,
-					     enum HW_RstModule_t p,
-					     u32 *value);
-extern HW_STATUS HW_RSTST_RegGet(const u32 baseAddress,
-					   enum HW_RstModule_t p, u32 *value);
+extern HW_STATUS HW_RSTCTRL_RegGet(const u32 baseAddress, u32 *value);
 
-extern HW_STATUS HW_PWR_PowerStateSet(const u32 baseAddress,
-						enum HW_PwrModule_t p,
-						enum HW_PwrState_t value);
+extern HW_STATUS HW_RSTST_RegGet(const u32 baseAddress, u32 *value);
 
-extern HW_STATUS HW_CLK_SetInputClock(const u32 baseAddress,
-					enum HW_GPtimer_t gpt,
-					enum HW_Clocktype_t c);
+extern HW_STATUS HW_RSTST_RegClear(const u32 baseAddress);
 
-extern HW_STATUS HW_PWR_IVA2StateGet(const u32 baseAddress,
-					enum HW_PwrModule_t p,
-					enum HW_PwrState_t *value);
+extern HW_STATUS HW_PWRSTCTRL_RegGet(const u32 baseAddress, u32 *value);
 
-extern HW_STATUS HW_PWRST_IVA2RegGet(const u32 baseAddress, u32 *value);
+extern HW_STATUS HW_PWR_PowerStateGet(const u32 baseAddress,
+				enum HW_PwrModule_t p, enum HW_PwrState_t *value);
 
-extern HW_STATUS HW_PWR_IVA2PowerStateSet(const u32 baseAddress,
-					    enum HW_PwrModule_t p,
-					    enum HW_PwrState_t value);
+extern HW_STATUS HW_PWR_PowerStateSet(const u32 baseAddress, enum HW_PwrModule_t p,
+				enum HW_PwrState_t value);
 
-extern HW_STATUS HW_PWR_CLKCTRL_IVA2RegSet(const u32 baseAddress,
-					     enum HW_TransitionState_t val);
+extern HW_STATUS HW_PWR_RetentionStateSet(const u32 baseAddress,
+				enum HW_PwrModule_t p, enum HW_RetState_t src, enum HW_SetClear_t  value);
+
+extern HW_STATUS HW_PWRST_RegGet(const u32 baseAddress, enum HW_PwrModule_t p, u32 *value);
+
+extern HW_STATUS HW_PWR_WkupDependency_RegGet(const u32 baseAddress, u32 *value);
+
+extern HW_STATUS HW_PWR_WkupDependencySet(const u32 baseAddress, enum HW_PwrModule_t p,
+				enum HW_WeakUpDep_t src, enum HW_SetClear_t value);
+
+extern HW_STATUS HW_PWR_ForceStateSet(const u32 baseAddress, enum HW_PwrModule_t p,
+				enum HW_PWR_TransState_t value);
+
+extern HW_STATUS HW_TESLA_RST_WriteVal(const u32 baseAddress, enum HW_RstModule_t p,
+				enum HW_SetClear_t value);
+
+extern HW_STATUS HW_TESLA_CONTEXT_RegGet(const u32 baseAddress, u32 *value);
+
+extern HW_STATUS HW_TESLA_CONTEXT_ClrSet(const u32 baseAddress);
+
+extern HW_STATUS HW_ALWON_CONTEXT_RegGet(const u32 baseAddress, u32 *value);
+
+extern HW_STATUS HW_IVA_DVFSSet(const u32 baseAddress, enum HW_IvaDVFS_t src, u32 value);
+
+extern HW_STATUS HW_IVA_DVFS_RegGet(const u32 baseAddress, enum HW_IvaDVFS_t src, u32 *value);
+
 
 #endif  /* __HW_PRCM_H */
+

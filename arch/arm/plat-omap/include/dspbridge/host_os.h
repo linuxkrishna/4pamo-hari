@@ -54,8 +54,12 @@
 #include <linux/ioport.h>
 #include <linux/platform_device.h>
 #include <dspbridge/dbtype.h>
+#if defined(OMAP_2430) || defined(OMAP_3430)
 #include <mach/clock.h>
+#ifdef OMAP_3430
 #include <linux/clk.h>
+#endif
+#endif
 #include <linux/pagemap.h>
 #include <asm/cacheflush.h>
 #include <linux/dma-mapping.h>

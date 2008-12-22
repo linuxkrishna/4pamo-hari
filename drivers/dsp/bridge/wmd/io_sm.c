@@ -337,7 +337,7 @@ DSP_STATUS WMD_IO_Create(OUT struct IO_MGR **phIOMgr,
 	if (DSP_SUCCEEDED(status)) {
 		pIOMgr->hWmdContext = hWmdContext;
 		pIOMgr->fSharedIRQ = pMgrAttrs->fShared;
-		IO_DisableInterrupt(hWmdContext);
+/*		IO_DisableInterrupt(hWmdContext);*/
 		if (devType == DSP_UNIT) {
 			/* Plug the channel ISR:. */
 			if ((request_irq(INT_MAIL_MPU_IRQ, IO_ISR, 0,
@@ -382,7 +382,7 @@ DSP_STATUS WMD_IO_Destroy(struct IO_MGR *hIOMgr)
 		   &hWmdContext))) {
 			DBC_Assert(hWmdContext);
 		}
-		(void)CHNLSM_DisableInterrupt(hWmdContext);
+/*			(void)CHNLSM_DisableInterrupt(hWmdContext);*/
 		/* Linux function to uninstall ISR */
 		free_irq(INT_MAIL_MPU_IRQ, (void *)hIOMgr);
 		(void)DPC_Destroy(hIOMgr->hDPC);
@@ -550,6 +550,7 @@ func_cont1:
 		ulSegSize = (ulSegSize + 0xFFFF) & (~0xFFFFUL); /* 64K align*/
 		ulPadSize = ulPageAlignSize - ((ulGppPa + ulSeg1Size) %
 			     ulPageAlignSize);
+		printk("ulPadSize = 0x%x\n", ulPadSize);
 			if (ulPadSize == ulPageAlignSize)
 				ulPadSize = 0x0;
 
@@ -730,15 +731,30 @@ func_cont:
 	/* Map the L4 peripherals */
 	{
 		i = 0;
+#if 0
 		while (L4PeripheralTable[i].physAddr && DSP_SUCCEEDED(status)) {
 				status = hIOMgr->pIntfFxns->pfnBrdMemMap
 					(hIOMgr->hWmdContext,
 					L4PeripheralTable[i].physAddr,
 					L4PeripheralTable[i].dspVirtAddr,
-					HW_PAGE_SIZE_4KB, mapAttrs);
+					HW_PAGE_SIZE_4KB,
+					mapAttrs);
 				DBC_Assert(DSP_SUCCEEDED(status));
 				i++;
 		}
+#endif
+#ifdef OMAP44XX
+		while (L4PeripheralTable[i].physAddr && DSP_SUCCEEDED(status)) {
+				status = hIOMgr->pIntfFxns->pfnBrdMemMap
+					(hIOMgr->hWmdContext,
+					L4PeripheralTable[i].physAddr,
+					L4PeripheralTable[i].dspVirtAddr,
+					L4PeripheralTable[i].ulSize,
+					mapAttrs);
+				DBC_Assert(DSP_SUCCEEDED(status));
+				i++;
+		}
+#endif
 	}
 
 	if (DSP_SUCCEEDED(status)) {
@@ -976,6 +992,8 @@ static void IO_DispatchPM(IN struct IO_MGR *pIOMgr)
 					 "Hibernation command failed\n");
 			}
 		} else if (pArg[0] == MBX_PM_OPP_REQ) {
+#ifndef CONFIG_DISABLE_BRIDGE_PM
+#ifndef CONFIG_DISABLE_BRIDGE_DVFS
 			pArg[1] = pIOMgr->pSharedMem->oppRequest.rqstOppPt;
 			DBG_Trace(DBG_LEVEL7, "IO_DispatchPM : Value of OPP "
 				 "value =0x%x \n", pArg[1]);
@@ -987,6 +1005,8 @@ static void IO_DispatchPM(IN struct IO_MGR *pIOMgr)
 					 "to set constraint = 0x%x \n",
 					 pArg[1]);
 			}
+#endif
+#endif
 
 		} else {
 			DBG_Trace(DBG_LEVEL7, "IO_DispatchPM - clock control - "
@@ -1785,6 +1805,8 @@ DSP_STATUS IO_SHMsetting(IN struct IO_MGR *hIOMgr, IN enum SHM_DESCTYPE desc,
 DSP_STATUS WMD_IO_GetProcLoad(IN struct IO_MGR *hIOMgr,
 			     OUT struct DSP_PROCLOADSTAT *pProcStat)
 {
+#ifndef CONFIG_DISABLE_BRIDGE_PM
+#ifndef CONFIG_DISABLE_BRIDGE_DVFS
 	pProcStat->uCurrLoad = hIOMgr->pSharedMem->loadMonInfo.currDspLoad;
 	pProcStat->uPredictedLoad = hIOMgr->pSharedMem->loadMonInfo.predDspLoad;
 	pProcStat->uCurrDspFreq = hIOMgr->pSharedMem->loadMonInfo.currDspFreq;
@@ -1794,6 +1816,8 @@ DSP_STATUS WMD_IO_GetProcLoad(IN struct IO_MGR *hIOMgr,
 			     "Pred Freq = %d\n", pProcStat->uCurrLoad,
 			     pProcStat->uPredictedLoad, pProcStat->uCurrDspFreq,
 			     pProcStat->uPredictedFreq);
+#endif
+#endif
 	return DSP_SOK;
 }
 
@@ -1801,8 +1825,9 @@ DSP_STATUS WMD_IO_GetProcLoad(IN struct IO_MGR *hIOMgr,
 void PrintDSPDebugTrace(struct IO_MGR *hIOMgr)
 {
 	u32 ulNewMessageLength = 0, ulGPPCurPointer;
+	volatile unsigned int i;
 
-	GT_0trace(dsp_trace_mask, GT_ENTER, "Entering PrintDSPDebugTrace\n");
+/*	GT_0trace(dsp_trace_mask, GT_ENTER, "Entering PrintDSPDebugTrace\n");*/
 
 	while (true) {
 		/* Get the DSP current pointer */
@@ -1826,7 +1851,8 @@ void PrintDSPDebugTrace(struct IO_MGR *hIOMgr)
 			 * pointer */
 			hIOMgr->ulGPPReadPointer += ulNewMessageLength;
 			/* Print the trace messages */
-			GT_0trace(dsp_trace_mask, GT_1CLASS, hIOMgr->pMsg);
+/*			GT_1trace(dsp_trace_mask, GT_1CLASS, "%s", hIOMgr->pMsg);*/
+			printk(hIOMgr->pMsg);
 		}
 		/* Handle trace buffer wraparound */
 		else if (ulGPPCurPointer < hIOMgr->ulGPPReadPointer) {
@@ -1847,9 +1873,14 @@ void PrintDSPDebugTrace(struct IO_MGR *hIOMgr)
 			hIOMgr->ulGPPReadPointer = hIOMgr->ulTraceBufferBegin +
 						   ulNewMessageLength;
 			/* Print the trace messages */
-			GT_0trace(dsp_trace_mask, GT_1CLASS, hIOMgr->pMsg);
+/*			GT_1trace(dsp_trace_mask, GT_1CLASS, "%s", hIOMgr->pMsg);*/
+			printk(hIOMgr->pMsg);
 		}
 	}
+#ifdef OMAP44XX
+    for (i = 0; i < 0x100; i++)
+	;
+#endif
 }
 #endif
 

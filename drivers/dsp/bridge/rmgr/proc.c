@@ -167,6 +167,14 @@
 #define PWR_TIMEOUT	 500	/* Sleep/wake timout in msec */
 #define EXTEND	      "_EXT_END"	/* Extmem end addr in DSP binary */
 
+#ifdef OMAP44XX
+/* Start address of memory for dynamic mapping */
+const u32 DEXTMEMMAP_BEG   = 0x30000000 ;
+
+/* End address of memory for dynamic mapping */
+
+const u32 DEXTMEMMAP_END   = 0x40000000 ;
+#endif
 extern char *iva_img;
 /* The PROC_OBJECT structure.   */
 struct PROC_OBJECT {
@@ -222,7 +230,7 @@ static char **PrependEnvp(char **newEnvp, char **envp, s32 cEnvp, s32 cNewEnvp,
  */
 DSP_STATUS
 PROC_Attach(u32 uProcessor, OPTIONAL CONST struct DSP_PROCESSORATTRIN *pAttrIn,
-	   OUT DSP_HPROCESSOR *phProcessor)
+			OUT DSP_HPROCESSOR *phProcessor)
 {
 	DSP_STATUS status = DSP_SOK;
 	struct DEV_OBJECT *hDevObject;
@@ -677,8 +685,8 @@ DSP_STATUS PROC_Detach(DSP_HPROCESSOR hProcessor)
  *      on a DSP processor.
  */
 DSP_STATUS PROC_EnumNodes(DSP_HPROCESSOR hProcessor, OUT DSP_HNODE *aNodeTab,
-			 IN u32 uNodeTabSize, OUT u32 *puNumNodes,
-			 OUT u32 *puAllocated)
+			IN u32 uNodeTabSize, OUT u32 *puNumNodes,
+			OUT u32 *puAllocated)
 {
 	DSP_STATUS status = DSP_EFAIL;
 	struct PROC_OBJECT *pProcObject = (struct PROC_OBJECT *)hProcessor;
@@ -1040,6 +1048,10 @@ DSP_STATUS PROC_Load(DSP_HPROCESSOR hProcessor, IN CONST s32 iArgc,
 	struct DMM_OBJECT *hDmmMgr;
 	u32 dwExtEnd;
 	u32 uProcId;
+#ifdef OMAP44XX
+	u32	dwDmmStart;
+	u32	dwDmmEnd;
+#endif
 #ifdef DEBUG
 	BRD_STATUS uBrdState;
 #endif
@@ -1297,6 +1309,7 @@ DSP_STATUS PROC_Load(DSP_HPROCESSOR hProcessor, IN CONST s32 iArgc,
 			/* Use all available DSP address space after EXTMEM
 			 * for DMM */
 			if (DSP_SUCCEEDED(status)) {
+#ifdef OMAP_3430
 				status = COD_GetSymValue(hCodMgr, EXTEND,
 								&dwExtEnd);
 				if (DSP_FAILED(status)) {
@@ -1305,18 +1318,28 @@ DSP_STATUS PROC_Load(DSP_HPROCESSOR hProcessor, IN CONST s32 iArgc,
 						 "COD_GetSymValue %s.\n",
 						 EXTEND);
 				}
+#endif
 			}
 			/* Reset DMM structs and add an initial free chunk*/
 			if (DSP_SUCCEEDED(status)) {
 				status = DEV_GetDmmMgr(pProcObject->hDevObject,
 						      &hDmmMgr);
 				if (DSP_SUCCEEDED(status)) {
+#if 0
 					/* Set dwExtEnd to DMM START u8
 					  * address */
 					dwExtEnd = (dwExtEnd + 1) * DSPWORDSIZE;
 					 /* DMM memory is from EXT_END */
 					status = DMM_CreateTables(hDmmMgr,
 						dwExtEnd, DMMPOOLSIZE);
+#endif
+#ifdef OMAP44XX
+					dwDmmStart = (DEXTMEMMAP_BEG) * (DSPWORDSIZE);
+					printk("PROC_Load: Calling DMMCreate Tables\n");
+					/* TODO: get the symbol from baseimage */
+					status = DMM_CreateTables(hDmmMgr,
+						dwDmmStart, DMMPOOLSIZE);
+#endif
 				}
 			}
 		}

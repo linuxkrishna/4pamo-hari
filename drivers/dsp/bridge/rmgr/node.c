@@ -721,7 +721,7 @@ func_cont2:
 			ulGppMemBase = hostRes.dwMemBase[1];
 			offSet = pulValue - dynextBase;
 			ulStackSegAddr = ulGppMemBase + offSet;
-			ulStackSegVal = (u32)*((REG_UWORD32 *)
+			ulStackSegVal = (u32)*((REG_u32 *)
 					((u32)(ulStackSegAddr)));
 
 			GT_1trace(NODE_debugMask, GT_5CLASS,

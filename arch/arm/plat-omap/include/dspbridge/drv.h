@@ -67,6 +67,7 @@
 
 #define DRV_ASSIGN     1
 #define DRV_RELEASE    0
+#if 0
 
 /* Provide the DSP Internal memory windows that can be accessed from L3 address
  * space */
@@ -111,6 +112,54 @@
 
 #define OMAP_PRCM_VDD1_DOMAIN 1
 #define OMAP_PRCM_VDD2_DOMAIN 2
+#endif
+#ifdef OMAP44XX
+/* Provide the DSP Internal memory windows that can be accessed from L3 address
+ * space */
+ #define OMAP_GEM_BASE   0x107F8000
+#define OMAP_DSP_SIZE   0x00720000
+
+/* MEM1 is L2 RAM + L2 Cache space */
+#define OMAP_DSP_MEM1_BASE 0x5C7F8000
+#define OMAP_DSP_MEM1_SIZE 0x18000
+#define OMAP_DSP_GEM1_BASE 0x107F8000
+
+
+/* MEM2 is L1P RAM/CACHE space */
+#define OMAP_DSP_MEM2_BASE 0x5CE00000
+#define OMAP_DSP_MEM2_SIZE 0x8000
+#define OMAP_DSP_GEM2_BASE 0x10E00000
+
+/* MEM3 is L1D RAM/CACHE space */
+#define OMAP_DSP_MEM3_BASE 0x5CF04000
+#define OMAP_DSP_MEM3_SIZE 0x14000
+#define OMAP_DSP_GEM3_BASE 0x10F04000
+
+#define OMAP_IVA2_PRM_BASE 0x4A306000
+#define OMAP_IVA2_PRM_SIZE 0x2000
+
+#define OMAP_IVA2_CM1_BASE 0x4A004000
+#define OMAP_IVA2_CM1_SIZE 0x1000
+
+#define OMAP_IVA2_CM2_BASE 0x4A008000
+#define OMAP_IVA2_CM2_SIZE 0x2000
+
+
+#define OMAP_SYSC_BASE 0x4A002000
+#define OMAP_SYSC_SIZE 0x1000
+
+#define OMAP_MBOX_BASE 0x4A0F4000
+#define OMAP_MBOX_SIZE 0x1000
+
+#define OMAP_DMMU_BASE 0x4A066000
+#define OMAP_DMMU_SIZE 0x1000
+
+#define OMAP_PRCM_VDD1_DOMAIN 1
+#define OMAP_PRCM_VDD2_DOMAIN 2
+
+
+
+#endif
 
 #ifndef RES_CLEANUP_DISABLE
 

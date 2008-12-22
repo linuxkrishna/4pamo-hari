@@ -1655,8 +1655,16 @@ static DSP_STATUS RequestBridgeResources(u32 dwContext, s32 bRequest)
 
 			if (pResources->dwPrmBase)
 				iounmap((void *)pResources->dwPrmBase);
+#ifdef OMAP_3430
 			if (pResources->dwCmBase)
 				iounmap((void *)pResources->dwCmBase);
+#endif
+#ifdef OMAP_44XX
+			if (pResources->dwCm1Base)
+				iounmap((void *)pResources->dwCm1Base);
+			if (pResources->dwCm1Base)
+				iounmap((void *)pResources->dwCm1Base);
+#endif
 			if (pResources->dwMboxBase)
 				iounmap((void *)pResources->dwMboxBase);
 			if (pResources->dwMemBase[0])
@@ -1680,7 +1688,13 @@ static DSP_STATUS RequestBridgeResources(u32 dwContext, s32 bRequest)
 				 * as it is used in BOARD_Stop */
 			}
 			pResources->dwPrmBase = (u32) NULL;
+#ifdef OMAP_3430
 			pResources->dwCmBase = (u32) NULL;
+#endif
+#ifdef OMAP_44XX
+			pResources->dwCm1Base = (u32) NULL;
+			pResources->dwCm2Base = (u32) NULL;
+#endif
 			pResources->dwMboxBase = (u32) NULL;
 			pResources->dwMemBase[0] = (u32) NULL;
 			pResources->dwMemBase[2] = (u32) NULL;
@@ -1708,8 +1722,18 @@ static DSP_STATUS RequestBridgeResources(u32 dwContext, s32 bRequest)
 
 		pResources->dwPrmBase = (u32)ioremap(OMAP_IVA2_PRM_BASE,
 							OMAP_IVA2_PRM_SIZE);
+#if 0
 		pResources->dwCmBase = (u32)ioremap(OMAP_IVA2_CM_BASE,
 							OMAP_IVA2_CM_SIZE);
+#endif
+#ifdef OMAP44XX
+		pResources->dwCm1Base = (u32)ioremap(OMAP_IVA2_CM1_BASE,
+							OMAP_IVA2_CM1_SIZE);
+		pResources->dwCm2Base = (u32)ioremap(OMAP_IVA2_CM2_BASE,
+							OMAP_IVA2_CM2_SIZE);
+
+
+#endif
 		pResources->dwMboxBase = (u32)ioremap(OMAP_MBOX_BASE,
 							OMAP_MBOX_SIZE);
 		pResources->dwSysCtrlBase = (u32)ioremap(OMAP_SYSC_BASE,
@@ -1720,8 +1744,6 @@ static DSP_STATUS RequestBridgeResources(u32 dwContext, s32 bRequest)
 			 pResources->dwMemBase[3]);
 		GT_1trace(curTrace, GT_2CLASS, "dwPrmBase 0x%x\n",
 							pResources->dwPrmBase);
-		GT_1trace(curTrace, GT_2CLASS, "dwCmBase 0x%x\n",
-							pResources->dwCmBase);
 		GT_1trace(curTrace, GT_2CLASS, "dwWdTimerDspBase 0x%x\n",
 						pResources->dwWdTimerDspBase);
 		GT_1trace(curTrace, GT_2CLASS, "dwMboxBase 0x%x\n",
@@ -1805,8 +1827,10 @@ static DSP_STATUS RequestBridgeResourcesDSP(u32 dwContext, s32 bRequest)
 							OMAP_DSP_MEM2_SIZE);
 		pResources->dwMemBase[4] = (u32)ioremap(OMAP_DSP_MEM3_BASE,
 							OMAP_DSP_MEM3_SIZE);
+#if 0
 		pResources->dwPerBase = (u32)ioremap(OMAP_PER_CM_BASE,
 							OMAP_PER_CM_SIZE);
+#endif
 		pResources->dwDmmuBase = (u32)ioremap(OMAP_DMMU_BASE,
 							OMAP_DMMU_SIZE);
 		pResources->dwWdTimerDspBase = 0;
@@ -1823,8 +1847,6 @@ static DSP_STATUS RequestBridgeResourcesDSP(u32 dwContext, s32 bRequest)
 						pResources->dwMemBase[4]);
 		GT_1trace(curTrace, GT_2CLASS, "dwPrmBase 0x%x\n",
 						pResources->dwPrmBase);
-		GT_1trace(curTrace, GT_2CLASS, "dwCmBase 0x%x\n",
-						pResources->dwCmBase);
 		GT_1trace(curTrace, GT_2CLASS, "dwWdTimerDspBase 0x%x\n",
 						pResources->dwWdTimerDspBase);
 		GT_1trace(curTrace, GT_2CLASS, "dwMboxBase 0x%x\n",
