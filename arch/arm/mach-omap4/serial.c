@@ -88,7 +88,7 @@ static struct plat_serial8250_port serial_platform_data[] = {
 	{
 		.membase	= IO_ADDRESS(OMAP_UART1_BASE),
 		.mapbase	= OMAP_UART1_BASE,
-		.irq		= 72,
+		.irq		= INT_24XX_UART1_IRQ,
 		.flags		= UPF_BOOT_AUTOCONF,
 		.iotype		= UPIO_MEM,
 		.regshift	= 2,
@@ -96,7 +96,7 @@ static struct plat_serial8250_port serial_platform_data[] = {
 	}, {
 		.membase	= IO_ADDRESS(OMAP_UART2_BASE),
 		.mapbase	= OMAP_UART2_BASE,
-		.irq		= 73,
+		.irq		= INT_24XX_UART2_IRQ,
 		.flags		= UPF_BOOT_AUTOCONF,
 		.iotype		= UPIO_MEM,
 		.regshift	= 2,
@@ -104,7 +104,7 @@ static struct plat_serial8250_port serial_platform_data[] = {
 	}, {
 		.membase	= IO_ADDRESS(OMAP_UART3_BASE),
 		.mapbase	= OMAP_UART3_BASE,
-		.irq		= 74,
+		.irq		= INT_24XX_UART3_IRQ,
 		.flags		= UPF_BOOT_AUTOCONF,
 		.iotype		= UPIO_MEM,
 		.regshift	= 2,
