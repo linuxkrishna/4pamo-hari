@@ -1401,38 +1401,39 @@ static struct omap_mcbsp_platform_data omap2430_mcbsp_pdata[] = {
 #endif
 
 #ifdef CONFIG_ARCH_OMAP34XX
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
 static struct omap_mcbsp_platform_data omap34xx_mcbsp_pdata[] = {
 	{
-		.phys_base      = OMAP34XX_MCBSP1_BASE,
-		.dma_rx_sync	= OMAP24XX_DMA_MCBSP1_RX,
-		.dma_tx_sync	= OMAP24XX_DMA_MCBSP1_TX,
+		.phys_base      = OMAP44XX_MCBSP1_BASE,
+		.dma_rx_sync	= OMAP44XX_DMA_MCBSP1_RX,
+		.dma_tx_sync	= OMAP44XX_DMA_MCBSP1_TX,
 		.rx_irq		= INT_24XX_MCBSP1_IRQ_RX,
 		.tx_irq		= INT_24XX_MCBSP1_IRQ_TX,
 		.ops		= &omap2_mcbsp_ops,
 		.clk_name	= "mcbsp_clk",
 	},
 	{
-		.phys_base      = OMAP34XX_MCBSP2_BASE,
-		.dma_rx_sync	= OMAP24XX_DMA_MCBSP2_RX,
-		.dma_tx_sync	= OMAP24XX_DMA_MCBSP2_TX,
+		.phys_base      = OMAP44XX_MCBSP2_BASE,
+		.dma_rx_sync	= OMAP44XX_DMA_MCBSP2_RX,
+		.dma_tx_sync	= OMAP44XX_DMA_MCBSP2_TX,
 		.rx_irq		= INT_24XX_MCBSP2_IRQ_RX,
 		.tx_irq		= INT_24XX_MCBSP2_IRQ_TX,
 		.ops		= &omap2_mcbsp_ops,
 		.clk_name	= "mcbsp_clk",
 	},
 	{
-		.phys_base      = OMAP34XX_MCBSP3_BASE,
-		.dma_rx_sync	= OMAP24XX_DMA_MCBSP3_RX,
-		.dma_tx_sync	= OMAP24XX_DMA_MCBSP3_TX,
+		.phys_base      = OMAP44XX_MCBSP3_BASE,
+		.dma_rx_sync	= OMAP44XX_DMA_MCBSP3_RX,
+		.dma_tx_sync	= OMAP44XX_DMA_MCBSP3_TX,
 		.rx_irq		= INT_24XX_MCBSP3_IRQ_RX,
 		.tx_irq		= INT_24XX_MCBSP3_IRQ_TX,
 		.ops		= &omap2_mcbsp_ops,
 		.clk_name	= "mcbsp_clk",
 	},
 	{
-		.phys_base      = OMAP34XX_MCBSP4_BASE,
-		.dma_rx_sync	= OMAP24XX_DMA_MCBSP4_RX,
-		.dma_tx_sync	= OMAP24XX_DMA_MCBSP4_TX,
+		.phys_base      = OMAP44XX_MCBSP4_BASE,
+		.dma_rx_sync	= OMAP44XX_DMA_MCBSP4_RX,
+		.dma_tx_sync	= OMAP44XX_DMA_MCBSP4_TX,
 		.rx_irq		= INT_24XX_MCBSP4_IRQ_RX,
 		.tx_irq		= INT_24XX_MCBSP4_IRQ_TX,
 		.ops		= &omap2_mcbsp_ops,
@@ -1448,6 +1449,55 @@ static struct omap_mcbsp_platform_data omap34xx_mcbsp_pdata[] = {
 		.clk_name	= "mcbsp_clk",
 	},
 };
+#else
+static struct omap_mcbsp_platform_data omap34xx_mcbsp_pdata[] = {
+	{
+		.phys_base      = OMAP34XX_MCBSP1_BASE,
+		.dma_rx_sync    = OMAP24XX_DMA_MCBSP1_RX,
+		.dma_tx_sync    = OMAP24XX_DMA_MCBSP1_TX,
+		.rx_irq         = INT_24XX_MCBSP1_IRQ_RX,
+		.tx_irq         = INT_24XX_MCBSP1_IRQ_TX,
+		.ops            = &omap2_mcbsp_ops,
+		.clk_name       = "mcbsp_clk",
+	},
+	{
+		.phys_base      = OMAP34XX_MCBSP2_BASE,
+		.dma_rx_sync    = OMAP24XX_DMA_MCBSP2_RX,
+		.dma_tx_sync    = OMAP34XX_DMA_MCBSP2_TX,
+		.rx_irq         = INT_24XX_MCBSP2_IRQ_RX,
+		.tx_irq         = INT_24XX_MCBSP2_IRQ_TX,
+		.ops            = &omap2_mcbsp_ops,
+		.clk_name       = "mcbsp_clk",
+	},
+	{
+		.phys_base      = OMAP34XX_MCBSP3_BASE,
+		.dma_rx_sync    = OMAP24XX_DMA_MCBSP3_RX,
+		.dma_tx_sync    = OMAP24XX_DMA_MCBSP3_TX,
+		.rx_irq         = INT_24XX_MCBSP3_IRQ_RX,
+		.tx_irq         = INT_24XX_MCBSP3_IRQ_TX,
+		.ops            = &omap2_mcbsp_ops,
+		.clk_name       = "mcbsp_clk",
+	},
+	{
+		.phys_base      = OMAP34XX_MCBSP4_BASE,
+		.dma_rx_sync    = OMAP24XX_DMA_MCBSP4_RX,
+		.dma_tx_sync    = OMAP24XX_DMA_MCBSP4_TX,
+		.rx_irq         = INT_24XX_MCBSP4_IRQ_RX,
+		.tx_irq         = INT_24XX_MCBSP4_IRQ_TX,
+		.ops            = &omap2_mcbsp_ops,
+		.clk_name       = "mcbsp_clk",
+	},
+	{
+		.phys_base      = OMAP34XX_MCBSP5_BASE,
+		.dma_rx_sync    = OMAP24XX_DMA_MCBSP5_RX,
+		.dma_tx_sync    = OMAP24XX_DMA_MCBSP5_TX,
+		.rx_irq         = INT_24XX_MCBSP5_IRQ_RX,
+		.tx_irq         = INT_24XX_MCBSP5_IRQ_TX,
+		.ops            = &omap2_mcbsp_ops,
+		.clk_name       = "mcbsp_clk",
+	},
+};
+#endif/* Enf of Virtio switch */
 #define OMAP34XX_MCBSP_PDATA_SZ		ARRAY_SIZE(omap34xx_mcbsp_pdata)
 #else
 #define omap34xx_mcbsp_pdata		NULL
