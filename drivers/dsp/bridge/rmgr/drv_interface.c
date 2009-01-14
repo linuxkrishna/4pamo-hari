@@ -123,7 +123,7 @@ struct clk *clk_handle;
 #define DRIVER_NAME  "DspBridge"
 #define DRIVER_MAJOR 0		/* Linux assigns our Major device number */
 #define DRIVER_MINOR 0		/* Linux assigns our Major device number */
-s32 dsp_debug;
+s32 dsp_debug = 1;
 
 /* This is a test variable used by Bridge to test different sleep states */
 s32 dsp_test_sleepstate;

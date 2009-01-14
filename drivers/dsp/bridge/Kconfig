@@ -32,5 +32,6 @@ config DISABLE_BRIDGE_PM
 config BRIDGE_DEBUG
 	bool "DSP Bridge Debug Support"
 	depends on MPU_BRIDGE
+	default y
 	help
 	  Say Y to enable Bridge debugging capabilities
