@@ -41,24 +41,19 @@
 #endif
 
 /*
- * TWL4030 IRQ handling has two stages in hardware, and thus in software.
- * The Primary Interrupt Handler (PIH) stage exposes status bits saying
- * which Secondary Interrupt Handler (SIH) stage is raising an interrupt.
- * SIH modules are more traditional IRQ components, which support per-IRQ
- * enable/disable and trigger controls; they do most of the work.
+ * TWL6030 (unlike its predecessors, which had two level interrupt handling)
+ * three interrupt registers INT_STS_A, INT_STS_B and INT_STS_C.
+ * It exposes status bits saying who has raised an interrupt. There are
+ * three mask registers that corresponds to these status registers, that
+ * enables/disables these interrupts.
  *
- * These chips are designed to support IRQ handling from two different
- * I2C masters.  Each has a dedicated IRQ line, and dedicated IRQ status
- * and mask registers in the PIH and SIH modules.
+ * We set up IRQs starting at a platform-specified base. An interrupt map table,
+ * specifies mapping between interrupt number and the associated module.
  *
- * We set up IRQs starting at a platform-specified base, always starting
- * with PIH and the SIH for PWR_INT and then usually adding GPIO:
- *	base + 0  .. base + 7	PIH
- *	base + 8  .. base + 15	SIH for PWR_INT
- *	base + 16 .. base + 33	SIH for GPIO
+ * FIXME: MASKING/UNMASKING
  */
 
-/* PIH register offsets */
+/* INT register offsets */
 #define REG_INT_STS_A			0x00
 #define REG_INT_STS_B			0x01
 #define REG_INT_STS_C			0x02
@@ -94,14 +89,14 @@ static int twl6030_interrupt_mapping[24] = {
 
 /*----------------------------------------------------------------------*/
 
-static unsigned twl4030_irq_base;
+static unsigned twl6030_irq_base;
 
 static struct completion irq_event;
 
 /*
  * This thread processes interrupts reported by the Primary Interrupt Handler.
  */
-static int twl4030_irq_thread(void *data)
+static int twl6030_irq_thread(void *data)
 {
 	long irq = (long)data;
 	irq_desc_t *desc = irq_desc + irq;
@@ -118,10 +113,11 @@ static int twl4030_irq_thread(void *data)
 		/* Wait for IRQ, then read PIH irq status (also blocking) */
 		wait_for_completion_interruptible(&irq_event);
 
+		/* read INT_STS_A, B and C in one shot using a burst read */
 		ret = twl_i2c_read(TWL4030_MODULE_PIH, &int_sts,
-				REG_INT_STS_A, 3); /* read INT_STS_ * */
+				REG_INT_STS_A, 3);
 		if (ret) {
-			pr_warning("twl4030: I2C error %d reading PIH ISR\n",
+			pr_warning("twl6030: I2C error %d reading PIH ISR\n",
 					ret);
 			if (++i2c_errors >= max_i2c_errors) {
 				printk(KERN_ERR "Maximum I2C error count"
@@ -158,24 +154,6 @@ static int twl4030_irq_thread(void *data)
 			}
 		}
 
-#if 0
-		for (module_irq = twl4030_irq_base;
-				pih_isr;
-				pih_isr >>= 1, module_irq++) {
-			if (pih_isr & 0x1) {
-				irq_desc_t *d = irq_desc + module_irq;
-
-				/* These can't be masked ... always warn
-				 * if we get any surprises.
-				 */
-				if (d->status & IRQ_DISABLED)
-					note_interrupt(module_irq, d,
-							IRQ_NONE);
-				else
-					d->handle_irq(module_irq, d);
-			}
-		}
-#endif
 		local_irq_enable();
 
 		desc->chip->unmask(irq);
@@ -185,29 +163,29 @@ static int twl4030_irq_thread(void *data)
 }
 
 /*
- * handle_twl4030_pih() is the desc->handle method for the twl4030 interrupt.
+ * handle_twl6030_int() is the desc->handle method for the twl6030 interrupt.
  * This is a chained interrupt, so there is no desc->action method for it.
- * Now we need to query the interrupt controller in the twl4030 to determine
+ * Now we need to query the interrupt controller in the twl6030 to determine
  * which module is generating the interrupt request.  However, we can't do i2c
  * transactions in interrupt context, so we must defer that work to a kernel
  * thread.  All we do here is acknowledge and mask the interrupt and wakeup
  * the kernel thread.
  */
-static void handle_twl4030_pih(unsigned int irq, irq_desc_t *desc)
+static void handle_twl6030_pih(unsigned int irq, irq_desc_t *desc)
 {
 	/* Acknowledge, clear *AND* mask the interrupt... */
 	desc->chip->ack(irq);
 	complete(&irq_event);
 }
 
-static struct task_struct *start_twl4030_irq_thread(long irq)
+static struct task_struct *start_twl6030_irq_thread(long irq)
 {
 	struct task_struct *thread;
 
 	init_completion(&irq_event);
-	thread = kthread_run(twl4030_irq_thread, (void *)irq, "twl4030-irq");
+	thread = kthread_run(twl6030_irq_thread, (void *)irq, "twl6030-irq");
 	if (!thread)
-		pr_err("twl4030: could not create irq %ld thread!\n", irq);
+		pr_err("twl6030: could not create irq %ld thread!\n", irq);
 
 	return thread;
 }
@@ -231,14 +209,16 @@ static inline void activate_irq(int irq)
 /*----------------------------------------------------------------------*/
 
 
-static unsigned twl4030_irq_next;
+static unsigned twl6030_irq_next;
 
 
 
 /*----------------------------------------------------------------------*/
 
 /* FIXME pass in which interrupt line we'll use ... */
+#if 0
 #define twl_irq_line	0
+#endif
 
 int twl_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
 {
@@ -247,37 +227,38 @@ int twl_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
 	int			i;
 	struct task_struct	*task;
 
-	static struct irq_chip	twl4030_irq_chip;
+	static struct irq_chip	twl6030_irq_chip;
 
-	twl4030_irq_base = irq_base;
+	twl6030_irq_base = irq_base;
 
 	/* install an irq handler for each of the SIH modules;
 	 * clone dummy irq_chip since PIH can't *do* anything
 	 */
-	twl4030_irq_chip = dummy_irq_chip;
-	twl4030_irq_chip.name = "twl4030";
-	twl4030_irq_chip.set_type = NULL;
+	twl6030_irq_chip = dummy_irq_chip;
+	twl6030_irq_chip.name = "twl6030";
+	twl6030_irq_chip.set_type = NULL;
 
 
 	for (i = irq_base; i < irq_end; i++) {
-		set_irq_chip_and_handler(i, &twl4030_irq_chip,
+		set_irq_chip_and_handler(i, &twl6030_irq_chip,
 				handle_simple_irq);
 		activate_irq(i);
 	}
-	twl4030_irq_next = i;
-	pr_info("twl4030: %s (irq %d) chaining IRQs %d..%d\n", "PIH",
-			irq_num, irq_base, twl4030_irq_next - 1);
-
-	/* install an irq handler to demultiplex the TWL4030 interrupt */
-	task = start_twl4030_irq_thread(irq_num);
+#if 0
+	twl6030_irq_next = i;
+	pr_info("twl6030: %s (irq %d) chaining IRQs %d..%d\n", "PIH",
+			irq_num, irq_base, twl6030_irq_next - 1);
+#endif
+	/* install an irq handler to demultiplex the TWL6030 interrupt */
+	task = start_twl6030_irq_thread(irq_num);
 	if (!task) {
-		pr_err("twl4030: irq thread FAIL\n");
+		pr_err("twl6030: irq thread FAIL\n");
 		status = -ESRCH;
 		goto fail;
 	}
 
 	set_irq_data(irq_num, task);
-	set_irq_chained_handler(irq_num, handle_twl4030_pih);
+	set_irq_chained_handler(irq_num, handle_twl6030_pih);
 	return status;
 
 fail:
@@ -289,8 +270,8 @@ fail:
 int twl_exit_irq(void)
 {
 	/* FIXME undo twl_init_irq() */
-	if (twl4030_irq_base) {
-		pr_err("twl4030: can't yet clean up IRQs?\n");
+	if (twl6030_irq_base) {
+		pr_err("twl6030: can't yet clean up IRQs?\n");
 		return -ENOSYS;
 	}
 	return 0;
