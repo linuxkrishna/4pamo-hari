@@ -47,7 +47,6 @@
 #define TWL4030_MODULE_TEST		0x05
 
 /* Slave 2 (i2c address 0x4a) */
-#define TWL4030_MODULE_KEYPAD		0x06
 #define TWL4030_MODULE_MADC		0x07
 #define TWL4030_MODULE_INTERRUPTS	0x08
 #define TWL4030_MODULE_LED		0x09
@@ -95,20 +94,6 @@ int twl4030_i2c_read(u8 mod_no, u8 *value, u8 reg, u8 num_bytes);
 #define TWL4030_SIH_CTRL_EXCLEN_MASK	BIT(0)
 #define TWL4030_SIH_CTRL_PENDDIS_MASK	BIT(1)
 #define TWL4030_SIH_CTRL_COR_MASK	BIT(2)
-
-/*----------------------------------------------------------------------*/
-/*
- * Keypad register offsets (use TWL4030_MODULE_KEYPAD)
- * ... SIH/interrupt only
- */
-
-#define TWL4030_KEYPAD_KEYP_ISR1	0x11
-#define TWL4030_KEYPAD_KEYP_IMR1	0x12
-#define TWL4030_KEYPAD_KEYP_ISR2	0x13
-#define TWL4030_KEYPAD_KEYP_IMR2	0x14
-#define TWL4030_KEYPAD_KEYP_SIR		0x15	/* test register */
-#define TWL4030_KEYPAD_KEYP_EDR		0x16
-#define TWL4030_KEYPAD_KEYP_SIH_CTRL	0x17
 
 /*----------------------------------------------------------------------*/
 
@@ -172,15 +157,6 @@ struct twl4030_madc_platform_data {
 	int		irq_line;
 };
 
-struct twl4030_keypad_data {
-	int rows;
-	int cols;
-	int *keymap;
-	int irq;
-	unsigned int keymapsize;
-	unsigned int rep:1;
-};
-
 enum twl4030_usb_mode {
 	T2_USB_MODE_ULPI = 1,
 	T2_USB_MODE_CEA2011_3PIN = 2,
@@ -194,7 +170,6 @@ struct twl4030_platform_data {
 	unsigned				irq_base, irq_end;
 	struct twl4030_bci_platform_data	*bci;
 	struct twl4030_madc_platform_data	*madc;
-	struct twl4030_keypad_data		*keypad;
 	struct twl4030_usb_data			*usb;
 
 	/* REVISIT more to come ... _nothing_ should be hard-wired */
@@ -214,7 +189,6 @@ int twl4030_sih_setup(int module);
 /* TWL4030 interrupts */
 
 /* #define TWL4030_MODIRQ_GPIO		(TWL4030_IRQ_BASE + 0) */
-#define TWL4030_MODIRQ_KEYPAD		(TWL4030_IRQ_BASE + 1)
 #define TWL4030_MODIRQ_BCI		(TWL4030_IRQ_BASE + 2)
 #define TWL4030_MODIRQ_MADC		(TWL4030_IRQ_BASE + 3)
 /* #define TWL4030_MODIRQ_USB		(TWL4030_IRQ_BASE + 4) */

@@ -387,49 +387,6 @@ static void scm_clk_init(void)
 }
 #endif /* CONFIG_OMAP3_PM */
 
-static int sdp3430_keymap[] = {
-	KEY(0, 0, KEY_LEFT),
-	KEY(0, 1, KEY_RIGHT),
-	KEY(0, 2, KEY_A),
-	KEY(0, 3, KEY_B),
-	KEY(0, 4, KEY_C),
-	KEY(1, 0, KEY_DOWN),
-	KEY(1, 1, KEY_UP),
-	KEY(1, 2, KEY_E),
-	KEY(1, 3, KEY_F),
-	KEY(1, 4, KEY_G),
-	KEY(2, 0, KEY_ENTER),
-	KEY(2, 1, KEY_I),
-	KEY(2, 2, KEY_J),
-	KEY(2, 3, KEY_K),
-	KEY(2, 4, KEY_3),
-	KEY(3, 0, KEY_M),
-	KEY(3, 1, KEY_N),
-	KEY(3, 2, KEY_O),
-	KEY(3, 3, KEY_P),
-	KEY(3, 4, KEY_Q),
-	KEY(4, 0, KEY_R),
-	KEY(4, 1, KEY_4),
-	KEY(4, 2, KEY_T),
-	KEY(4, 3, KEY_U),
-	KEY(4, 4, KEY_D),
-	KEY(5, 0, KEY_V),
-	KEY(5, 1, KEY_W),
-	KEY(5, 2, KEY_L),
-	KEY(5, 3, KEY_S),
-	KEY(5, 4, KEY_H),
-	0
-};
-
-static struct twl4030_keypad_data sdp3430_kp_data = {
-	.rows		= 5,
-	.cols		= 6,
-	.keymap		= sdp3430_keymap,
-	.keymapsize	= ARRAY_SIZE(sdp3430_keymap),
-	.rep		= 1,
-	.irq		= TWL4030_MODIRQ_KEYPAD,
-};
-
 static int ts_gpio;
 
 static int __init msecure_init(void)
@@ -1065,7 +1022,6 @@ static struct twl4030_platform_data sdp3430_twldata = {
 	/* platform_data for children goes here */
 	.bci		= &sdp3430_bci_data,
 	.madc		= &sdp3430_madc_data,
-	.keypad		= &sdp3430_kp_data,
 	.usb		= &sdp3430_usb_data,
 };
 

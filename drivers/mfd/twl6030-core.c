@@ -62,12 +62,6 @@
 #define twl_has_bci()		false
 #endif
 
-#if defined(CONFIG_KEYBOARD_TWL4030) || defined(CONFIG_KEYBOARD_TWL4030_MODULE)
-#define twl_has_keypad()	true
-#else
-#define twl_has_keypad()	false
-#endif
-
 #if defined(CONFIG_TWL4030_MADC) || defined(CONFIG_TWL4030_MADC_MODULE)
 #define twl_has_madc()	true
 #else
@@ -126,7 +120,6 @@
 #define TWL4030_BASEADD_PWM1		0x00FB
 #define TWL4030_BASEADD_PWMA		0x00EF
 #define TWL4030_BASEADD_PWMB		0x00F1
-#define TWL4030_BASEADD_KEYPAD		0x00D2
 
 /* subchip/slave 3 - POWER ID */
 #define TWL4030_BASEADD_BACKUP		0x0014
@@ -223,7 +216,6 @@ static struct twl4030mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
 	{ 1, TWL4030_BASEADD_PIH },
 	{ 1, TWL4030_BASEADD_TEST },
 
-	{ 2, TWL4030_BASEADD_KEYPAD },
 	{ 2, TWL4030_BASEADD_MADC },
 	{ 2, TWL4030_BASEADD_INTERRUPTS },
 	{ 2, TWL4030_BASEADD_LED },
@@ -443,36 +435,6 @@ static int add_children(struct twl4030_platform_data *pdata)
 			dev_dbg(&twl->client->dev,
 					"can't create bci dev, %d\n",
 					status);
-			goto err;
-		}
-	}
-
-	if (twl_has_keypad() && pdata->keypad) {
-		pdev = platform_device_alloc("twl4030_keypad", -1);
-		if (pdev) {
-			twl = &twl4030_modules[2];
-			pdev->dev.parent = &twl->client->dev;
-			device_init_wakeup(&pdev->dev, 1);
-			status = platform_device_add_data(pdev, pdata->keypad,
-					sizeof(*pdata->keypad));
-			if (status < 0) {
-				dev_dbg(&twl->client->dev,
-					"can't add keypad data, %d\n",
-					status);
-				platform_device_put(pdev);
-				goto err;
-			}
-			status = platform_device_add(pdev);
-			if (status < 0) {
-				platform_device_put(pdev);
-				dev_dbg(&twl->client->dev,
-						"can't create keypad dev, %d\n",
-						status);
-				goto err;
-			}
-		} else {
-			pr_debug("%s: can't alloc keypad dev\n", DRIVER_NAME);
-			status = -ENOMEM;
 			goto err;
 		}
 	}
