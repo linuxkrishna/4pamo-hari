@@ -68,12 +68,6 @@
 #define twl_has_keypad()	false
 #endif
 
-#if defined(CONFIG_GPIO_TWL4030) || defined(CONFIG_GPIO_TWL4030_MODULE)
-#define twl_has_gpio()	true
-#else
-#define twl_has_gpio()	false
-#endif
-
 #if defined(CONFIG_TWL4030_MADC) || defined(CONFIG_TWL4030_MADC_MODULE)
 #define twl_has_madc()	true
 #else
@@ -112,7 +106,6 @@
 
 /* subchip/slave 1 - AUD ID */
 #define TWL4030_BASEADD_AUDIO_VOICE	0x0000
-#define TWL4030_BASEADD_GPIO		0x0098
 #define TWL4030_BASEADD_INTBR		0x0085
 
 #ifdef CONFIG_MACH_OMAP_4430VIRTIO
@@ -226,7 +219,6 @@ static struct twl4030mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
 	{ 0, TWL4030_BASEADD_USB },
 
 	{ 1, TWL4030_BASEADD_AUDIO_VOICE },
-	{ 1, TWL4030_BASEADD_GPIO },
 	{ 1, TWL4030_BASEADD_INTBR },
 	{ 1, TWL4030_BASEADD_PIH },
 	{ 1, TWL4030_BASEADD_TEST },
@@ -450,53 +442,6 @@ static int add_children(struct twl4030_platform_data *pdata)
 			platform_device_put(pdev);
 			dev_dbg(&twl->client->dev,
 					"can't create bci dev, %d\n",
-					status);
-			goto err;
-		}
-	}
-
-	if (twl_has_gpio() && pdata->gpio) {
-		twl = &twl4030_modules[1];
-
-		pdev = platform_device_alloc("twl4030_gpio", -1);
-		if (!pdev) {
-			pr_debug("%s: can't alloc gpio dev\n", DRIVER_NAME);
-			status = -ENOMEM;
-			goto err;
-		}
-
-		/* more driver model init */
-		if (status == 0) {
-			pdev->dev.parent = &twl->client->dev;
-			/* device_init_wakeup(&pdev->dev, 1); */
-
-			status = platform_device_add_data(pdev, pdata->gpio,
-					sizeof(*pdata->gpio));
-			if (status < 0) {
-				dev_dbg(&twl->client->dev,
-					"can't add gpio data, %d\n",
-					status);
-				goto err;
-			}
-		}
-
-		/* GPIO module IRQ */
-		if (status == 0) {
-			struct resource	r = {
-				.start = pdata->irq_base + 0,
-				.flags = IORESOURCE_IRQ,
-			};
-
-			status = platform_device_add_resources(pdev, &r, 1);
-		}
-
-		if (status == 0)
-			status = platform_device_add(pdev);
-
-		if (status < 0) {
-			platform_device_put(pdev);
-			dev_dbg(&twl->client->dev,
-					"can't create gpio dev, %d\n",
 					status);
 			goto err;
 		}
