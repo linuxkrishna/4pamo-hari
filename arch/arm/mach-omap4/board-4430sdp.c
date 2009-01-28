@@ -22,7 +22,7 @@
 #include <linux/clk.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/ads7846.h>
-#include <linux/i2c/twl4030.h>
+#include <linux/i2c/twl6030.h>
 #include <linux/mm.h>
 
 #include <mach/hardware.h>
@@ -118,6 +118,17 @@ int console_detect(char *str);
 unsigned int uart_interrupt_mask_value;
 #endif
 
+/* FIXME: Temporary hack. This definition has to go into
+ * appropriate header file alone. This can be done only when
+ * CONFIG_TWL4030 and CONIG_TWL6030 are clearly independent.
+ */
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define twl_i2c_write_u8 twl6030_i2c_write_u8
+#define twl_i2c_read_u8 twl6030_i2c_read_u8
+#define twl_i2c_write twl6030_i2c_write
+#define twl_i2c_read twl6030_i2c_read
+#endif 
+
 static struct resource sdp3430_smc91x_resources[] = {
 	[0] = {
 		.start	= OMAP34XX_ETHR_START,
@@ -183,17 +194,17 @@ static int irda_vaux_control(int vaux_cntrl)
 #ifdef CONFIG_TWL4030_CORE
 	/* check for return value of ldo_use: if success it returns 0 */
 	if (vaux_cntrl == IRDA_VAUX_EN) {
-		if (ret != twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		if (ret != twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			ENABLE_VAUX1_DEDICATED, TWL4030_VAUX1_DEDICATED))
 			return -EIO;
-		if (ret != twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		if (ret != twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			ENABLE_VAUX1_DEV_GRP, TWL4030_VAUX1_DEV_GRP))
 			return -EIO;
 	} else if (vaux_cntrl == IRDA_VAUX_DIS) {
-		if (ret != twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		if (ret != twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			0x00, TWL4030_VAUX1_DEDICATED))
 			return -EIO;
-		if (ret != twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		if (ret != twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			0x00, TWL4030_VAUX1_DEV_GRP))
 			return -EIO;
 	}
@@ -458,17 +469,17 @@ static int ads7846_vaux_control(int vaux_cntrl)
 #ifdef CONFIG_TWL4030_CORE
 	/* check for return value of ldo_use: if success it returns 0 */
 	if (vaux_cntrl == VAUX_ENABLE) {
-		if (ret != twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		if (ret != twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			ENABLE_VAUX3_DEDICATED, TWL4030_VAUX3_DEDICATED))
 			return -EIO;
-		if (ret != twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		if (ret != twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			ENABLE_VAUX3_DEV_GRP, TWL4030_VAUX3_DEV_GRP))
 			return -EIO;
 	} else if (vaux_cntrl == VAUX_DISABLE) {
-		if (ret != twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		if (ret != twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			0x00, TWL4030_VAUX3_DEDICATED))
 			return -EIO;
-		if (ret != twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		if (ret != twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 			0x00, TWL4030_VAUX3_DEV_GRP))
 			return -EIO;
 	}
@@ -638,7 +649,7 @@ static int mt9p012_sensor_power_set(enum v4l2_power power)
 	case V4L2_POWER_OFF:
 		/* Power Down Sequence */
 #ifdef CONFIG_TWL4030_CORE
-		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 				VAUX_DEV_GRP_NONE, TWL4030_VAUX2_DEV_GRP);
 #else
 #error "no power companion board defined!"
@@ -680,9 +691,9 @@ static int mt9p012_sensor_power_set(enum v4l2_power power)
 			enable_fpga_vio_1v8(1);
 #ifdef CONFIG_TWL4030_CORE
 			/* turn on analog power */
-			twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 					VAUX_2_8_V, TWL4030_VAUX2_DEDICATED);
-			twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 					VAUX_DEV_GRP_P1, TWL4030_VAUX2_DEV_GRP);
 #else
 #error "no power companion board defined!"
@@ -831,14 +842,14 @@ static int ov3640_sensor_power_set(enum v4l2_power power)
 #ifdef CONFIG_TWL4030_CORE
 			/* turn on analog power */
 #if defined(CONFIG_VIDEO_OV3640_CSI2)
-			twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 					VAUX_1_8_V, TWL4030_VAUX4_DEDICATED);
-			twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 					VAUX_DEV_GRP_P1, TWL4030_VAUX4_DEV_GRP);
 #else
-			twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 					VAUX_2_8_V, TWL4030_VAUX2_DEDICATED);
-			twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+			twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 					VAUX_DEV_GRP_P1, TWL4030_VAUX2_DEV_GRP);
 #endif
 			udelay(100);
@@ -882,10 +893,10 @@ static int ov3640_sensor_power_set(enum v4l2_power power)
 
 #ifdef CONFIG_TWL4030_CORE
 #if defined(CONFIG_VIDEO_OV3640_CSI2)
-		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 				VAUX_DEV_GRP_NONE, TWL4030_VAUX4_DEV_GRP);
 #else
-		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
 				VAUX_DEV_GRP_NONE, TWL4030_VAUX2_DEV_GRP);
 #endif
 #else
@@ -1015,7 +1026,7 @@ static struct twl4030_madc_platform_data sdp3430_madc_data = {
 	.irq_line	= 1,
 };
 
-static struct twl4030_platform_data sdp3430_twldata = {
+static struct twl6030_platform_data sdp4430_twldata = {
 	.irq_base	= TWL4030_IRQ_BASE,
 	.irq_end	= TWL4030_IRQ_END,
 
@@ -1027,10 +1038,10 @@ static struct twl4030_platform_data sdp3430_twldata = {
 
 static struct i2c_board_info __initdata sdp3430_i2c_boardinfo[] = {
 	{
-		I2C_BOARD_INFO("twl4030", 0x48),
+		I2C_BOARD_INFO("twl6030", 0x48),
 		.flags = I2C_CLIENT_WAKE,
 		.irq = INT_34XX_SYS_NIRQ,
-		.platform_data = &sdp3430_twldata,
+		.platform_data = &sdp4430_twldata,
 	},
 };
 

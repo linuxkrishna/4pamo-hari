@@ -34,9 +34,11 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/kthread.h>
-
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#include <linux/i2c/twl6030.h>
+#else
 #include <linux/i2c/twl4030.h>
-
+#endif
 
 /*
  * TWL4030 IRQ handling has two stages in hardware, and thus in software.
@@ -61,15 +63,15 @@
 #define REG_INT_STS_B			0x01
 #define REG_INT_STS_C			0x02
 
-#define TWL4030_RTC_INT		370
+#define TWL6030_RTC_INT		370
 
 static int twl6030_interrupt_mapping[24] = {
 	-1,  /* Bit 0	PWRON		PWR_INT		*/
 	-1,  /* Bit 1	RPWRON		PWR_INT		*/
 	-1,  /* Bit 2	BAT_VLOW	PWR_INT		*/
 	-1,  /* Bit 3	VBAT		PWR_INT		*/
-	TWL4030_RTC_INT, /* Bit 4	RTC_ALARM	RTC_INT		*/
-	TWL4030_RTC_INT, /* Bit 5	RTC_PERIOD	RTC_INT		*/
+	TWL6030_RTC_INT, /* Bit 4	RTC_ALARM	RTC_INT		*/
+	TWL6030_RTC_INT, /* Bit 5	RTC_PERIOD	RTC_INT		*/
 	-1,  /* Bit 6	HOT_DIE				*/
 	-1,  /* Bit 7	Reserved			*/
 	-1,  /*	Bit 8	VXXX_SHORT			*/
@@ -116,7 +118,7 @@ static int twl4030_irq_thread(void *data)
 		/* Wait for IRQ, then read PIH irq status (also blocking) */
 		wait_for_completion_interruptible(&irq_event);
 
-		ret = twl4030_i2c_read(TWL4030_MODULE_PIH, &int_sts,
+		ret = twl_i2c_read(TWL4030_MODULE_PIH, &int_sts,
 				REG_INT_STS_A, 3); /* read INT_STS_ * */
 		if (ret) {
 			pr_warning("twl4030: I2C error %d reading PIH ISR\n",
@@ -132,7 +134,7 @@ static int twl4030_irq_thread(void *data)
 		}
 
 
-		ret = twl4030_i2c_write_u8(TWL4030_MODULE_PIH, 0,
+		ret = twl_i2c_write_u8(TWL4030_MODULE_PIH, 0,
 				REG_INT_STS_A); /* clear INT_STS_A */
 
 		/* these handlers deal with the relevant SIH irq status */

@@ -27,7 +27,11 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#include <linux/i2c/twl6030.h>
+#else
 #include <linux/i2c/twl4030.h>
+#endif
 
 
 /*
@@ -85,15 +89,15 @@
 /*----------------------------------------------------------------------*/
 
 /*
- * Supports 1 byte read from TWL4030 RTC register.
+ * Supports 1 byte read from TWLxxxx RTC register.
  */
-static int twl4030_rtc_read_u8(u8 *data, u8 reg)
+static int twl_rtc_read_u8(u8 *data, u8 reg)
 {
 	int ret;
 
-	ret = twl4030_i2c_read_u8(TWL4030_MODULE_RTC, data, reg);
+	ret = twl_i2c_read_u8(TWL4030_MODULE_RTC, data, reg);
 	if (ret < 0)
-		pr_err("twl4030_rtc: Could not read TWL4030"
+		pr_err("twlxxxx_rtc: Could not read TWLxxxx"
 		       "register %X - error %d\n", reg, ret);
 	return ret;
 }
@@ -101,13 +105,13 @@ static int twl4030_rtc_read_u8(u8 *data, u8 reg)
 /*
  * Supports 1 byte write to TWL4030 RTC registers.
  */
-static int twl4030_rtc_write_u8(u8 data, u8 reg)
+static int twl_rtc_write_u8(u8 data, u8 reg)
 {
 	int ret;
 
-	ret = twl4030_i2c_write_u8(TWL4030_MODULE_RTC, data, reg);
+	ret = twl_i2c_write_u8(TWL4030_MODULE_RTC, data, reg);
 	if (ret < 0)
-		pr_err("twl4030_rtc: Could not write TWL4030"
+		pr_err("twlxxxx_rtc: Could not write TWLxxxx"
 		       "register %X - error %d\n", reg, ret);
 	return ret;
 }
@@ -127,7 +131,7 @@ static int set_rtc_irq_bit(unsigned char bit)
 	int ret;
 
 	val = rtc_irq_bits | bit;
-	ret = twl4030_rtc_write_u8(val, REG_RTC_INTERRUPTS_REG);
+	ret = twl_rtc_write_u8(val, REG_RTC_INTERRUPTS_REG);
 	if (ret == 0)
 		rtc_irq_bits = val;
 
@@ -143,7 +147,7 @@ static int mask_rtc_irq_bit(unsigned char bit)
 	int ret;
 
 	val = rtc_irq_bits & ~bit;
-	ret = twl4030_rtc_write_u8(val, REG_RTC_INTERRUPTS_REG);
+	ret = twl_rtc_write_u8(val, REG_RTC_INTERRUPTS_REG);
 	if (ret == 0)
 		rtc_irq_bits = val;
 
@@ -189,17 +193,17 @@ static int twl4030_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	int ret;
 	u8 save_control;
 
-	ret = twl4030_rtc_read_u8(&save_control, REG_RTC_CTRL_REG);
+	ret = twl_rtc_read_u8(&save_control, REG_RTC_CTRL_REG);
 	if (ret < 0)
 		return ret;
 
 	save_control |= BIT_RTC_CTRL_REG_GET_TIME_M;
 
-	ret = twl4030_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
+	ret = twl_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
 	if (ret < 0)
 		return ret;
 
-	ret = twl4030_i2c_read(TWL4030_MODULE_RTC, rtc_data,
+	ret = twl_i2c_read(TWL4030_MODULE_RTC, rtc_data,
 			       REG_SECONDS_REG, ALL_TIME_REGS);
 
 	if (ret < 0) {
@@ -231,17 +235,17 @@ static int twl4030_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	rtc_data[6] = bin2bcd(tm->tm_year - 100);
 
 	/* Stop RTC while updating the TC registers */
-	ret = twl4030_rtc_read_u8(&save_control, REG_RTC_CTRL_REG);
+	ret = twl_rtc_read_u8(&save_control, REG_RTC_CTRL_REG);
 	if (ret < 0)
 		goto out;
 
 	save_control &= ~BIT_RTC_CTRL_REG_STOP_RTC_M;
-	twl4030_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
+	twl_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
 	if (ret < 0)
 		goto out;
 
 	/* update all the time registers in one shot */
-	ret = twl4030_i2c_write(TWL4030_MODULE_RTC, rtc_data,
+	ret = twl_i2c_write(TWL4030_MODULE_RTC, rtc_data,
 			REG_SECONDS_REG, ALL_TIME_REGS);
 	if (ret < 0) {
 		dev_err(dev, "rtc_set_time error %d\n", ret);
@@ -250,7 +254,7 @@ static int twl4030_rtc_set_time(struct device *dev, struct rtc_time *tm)
 
 	/* Start back RTC */
 	save_control |= BIT_RTC_CTRL_REG_STOP_RTC_M;
-	ret = twl4030_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
+	ret = twl_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
 
 out:
 	return ret;
@@ -264,7 +268,7 @@ static int twl4030_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	unsigned char rtc_data[ALL_TIME_REGS + 1];
 	int ret;
 
-	ret = twl4030_i2c_read(TWL4030_MODULE_RTC, rtc_data,
+	ret = twl_i2c_read(TWL4030_MODULE_RTC, rtc_data,
 			       REG_ALARM_SECONDS_REG, ALL_TIME_REGS);
 	if (ret < 0) {
 		dev_err(dev, "rtc_read_alarm error %d\n", ret);
@@ -303,7 +307,7 @@ static int twl4030_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	alarm_data[6] = bin2bcd(alm->time.tm_year - 100);
 
 	/* update all the alarm registers in one shot */
-	ret = twl4030_i2c_write(TWL4030_MODULE_RTC, alarm_data,
+	ret = twl_i2c_write(TWL4030_MODULE_RTC, alarm_data,
 			REG_ALARM_SECONDS_REG, ALL_TIME_REGS);
 	if (ret) {
 		dev_err(dev, "rtc_set_alarm error %d\n", ret);
@@ -354,7 +358,7 @@ static irqreturn_t twl4030_rtc_interrupt(int irq, void *rtc)
 	local_irq_enable();
 #endif
 
-	res = twl4030_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+	res = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
 	if (res)
 		goto out;
 	/*
@@ -368,7 +372,7 @@ static irqreturn_t twl4030_rtc_interrupt(int irq, void *rtc)
 	else
 		events |= RTC_IRQF | RTC_UF;
 
-	res = twl4030_rtc_write_u8(rd_reg | BIT_RTC_STATUS_REG_ALARM_M,
+	res = twl_rtc_write_u8(rd_reg | BIT_RTC_STATUS_REG_ALARM_M,
 				   REG_RTC_STATUS_REG);
 	if (res)
 		goto out;
@@ -384,7 +388,7 @@ static irqreturn_t twl4030_rtc_interrupt(int irq, void *rtc)
 	 * risk wrongly clearing status for some other IRQ (losing
 	 * the interrupt).  Be smarter about handling RTC_UF ...
 	 */
-	res = twl4030_i2c_read_u8(TWL4030_MODULE_INT,
+	res = twl_i2c_read_u8(TWL4030_MODULE_INT,
 			&rd_reg, TWL4030_INT_PWR_ISR1);
 	if (res)
 		goto out;
@@ -430,7 +434,7 @@ static int __devinit twl4030_rtc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, rtc);
 
-	ret = twl4030_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
 
 	if (ret < 0)
 		goto out1;
@@ -442,7 +446,7 @@ static int __devinit twl4030_rtc_probe(struct platform_device *pdev)
 		dev_warn(&pdev->dev, "Pending Alarm interrupt detected.\n");
 
 	/* Clear RTC Power up reset and pending alarm interrupts */
-	ret = twl4030_rtc_write_u8(rd_reg, REG_RTC_STATUS_REG);
+	ret = twl_rtc_write_u8(rd_reg, REG_RTC_STATUS_REG);
 	if (ret < 0)
 		goto out1;
 
@@ -455,20 +459,20 @@ static int __devinit twl4030_rtc_probe(struct platform_device *pdev)
 	}
 
 	/* Check RTC module status, Enable if it is off */
-	ret = twl4030_rtc_read_u8(&rd_reg, REG_RTC_CTRL_REG);
+	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_CTRL_REG);
 	if (ret < 0)
 		goto out2;
 
 	if (!(rd_reg & BIT_RTC_CTRL_REG_STOP_RTC_M)) {
 		dev_info(&pdev->dev, "Enabling TWL4030-RTC.\n");
 		rd_reg = BIT_RTC_CTRL_REG_STOP_RTC_M;
-		ret = twl4030_rtc_write_u8(rd_reg, REG_RTC_CTRL_REG);
+		ret = twl_rtc_write_u8(rd_reg, REG_RTC_CTRL_REG);
 		if (ret < 0)
 			goto out2;
 	}
 
 	/* init cached IRQ enable bits */
-	ret = twl4030_rtc_read_u8(&rtc_irq_bits, REG_RTC_INTERRUPTS_REG);
+	ret = twl_rtc_read_u8(&rtc_irq_bits, REG_RTC_INTERRUPTS_REG);
 	if (ret < 0)
 		goto out2;
 
@@ -556,7 +560,7 @@ module_init(twl4030_rtc_init);
 
 static void __exit twl4030_rtc_exit(void)
 {
-	platform_driver_unregister(&twl4030rtc_driver);
+platform_driver_unregister(&twl4030rtc_driver);
 }
 module_exit(twl4030_rtc_exit);
 

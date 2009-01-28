@@ -37,7 +37,7 @@
 #include <linux/err.h>
 
 #include <linux/i2c.h>
-#include <linux/i2c/twl4030.h>
+#include <linux/i2c/twl6030.h>
 
 
 /*
@@ -84,13 +84,9 @@
 /* Triton Core internal information (BEGIN) */
 
 /* Last - for index max*/
-#define TWL4030_MODULE_LAST		TWL4030_MODULE_SECURED_REG
+#define TWL6030_MODULE_LAST		TWL4030_MODULE_SECURED_REG
 
-#ifdef CONFIG_MACH_OMAP_4430VIRTIO
-	#define TWL4030_NUM_SLAVES		4
-#else
-	#define TWL4030_NUM_SLAVES		4
-#endif
+#define TWL6030_NUM_SLAVES		4
 
 
 /* Base Address defns for twl4030_map[] */
@@ -181,8 +177,8 @@ static bool inuse;
 /* Global variable to hold TWL id */
 static u32 twl_id = 0x0;
 
-/* Structure for each TWL4030 Slave */
-struct twl4030_client {
+/* Structure for each TWL6030 Slave */
+struct twl6030_client {
 	struct i2c_client *client;
 	u8 address;
 
@@ -193,19 +189,19 @@ struct twl4030_client {
 	struct mutex xfer_lock;
 };
 
-static struct twl4030_client twl4030_modules[TWL4030_NUM_SLAVES];
+static struct twl6030_client twl6030_modules[TWL6030_NUM_SLAVES];
 
 
 /* mapping the module id to slave id and base address */
-struct twl4030mapping {
+struct twl6030mapping {
 	unsigned char sid;	/* Slave ID */
 	unsigned char base;	/* base address */
 };
 
-static struct twl4030mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
+static struct twl6030mapping twl6030_map[TWL6030_MODULE_LAST + 1] = {
 	/*
 	 * NOTE:  don't change this table without updating the
-	 * <linux/i2c/twl4030.h> defines for TWL4030_MODULE_*
+	 * <linux/i2c/twl6030.h> defines for TWL_MODULE_*
 	 * so they continue to match the order in this table.
 	 */
 
@@ -238,7 +234,7 @@ static struct twl4030mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
 	{ 3, TWL4030_BASEADD_SECURED_REG },
 };
 
-#define TWL4030_RTC_INT	370
+#define TWL6030_RTC_INT	370
 
 
 /*----------------------------------------------------------------------*/
@@ -246,7 +242,7 @@ static struct twl4030mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
 /* Exported Functions */
 
 /**
- * twl4030_i2c_write - Writes a n bit register in TWL4030
+ * twl6030_i2c_write - Writes a n bit register in TWL60x0
  * @mod_no: module number
  * @value: an array of num_bytes+1 containing data to write
  * @reg: register address (just offset will do)
@@ -257,19 +253,19 @@ static struct twl4030mapping twl4030_map[TWL4030_MODULE_LAST + 1] = {
  *
  * Returns the result of operation - 0 is success
  */
-int twl4030_i2c_write(u8 mod_no, u8 *value, u8 reg, u8 num_bytes)
+int twl6030_i2c_write(u8 mod_no, u8 *value, u8 reg, u8 num_bytes)
 {
 	int ret;
 	int sid;
-	struct twl4030_client *twl;
+	struct twl6030_client *twl;
 	struct i2c_msg *msg;
 
-	if (unlikely(mod_no > TWL4030_MODULE_LAST)) {
+	if (unlikely(mod_no > TWL6030_MODULE_LAST)) {
 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
 		return -EPERM;
 	}
-	sid = twl4030_map[mod_no].sid;
-	twl = &twl4030_modules[sid];
+	sid = twl6030_map[mod_no].sid;
+	twl = &twl6030_modules[sid];
 
 	if (unlikely(!inuse)) {
 		pr_err("%s: client %d is not initialized\n", DRIVER_NAME, sid);
@@ -286,7 +282,7 @@ int twl4030_i2c_write(u8 mod_no, u8 *value, u8 reg, u8 num_bytes)
 	msg->flags = 0;
 	msg->buf = value;
 	/* over write the first byte of buffer with the register address */
-	*value = twl4030_map[mod_no].base + reg;
+	*value = twl6030_map[mod_no].base + reg;
 	ret = i2c_transfer(twl->client->adapter, twl->xfer_msg, 1);
 	mutex_unlock(&twl->xfer_lock);
 
@@ -295,10 +291,10 @@ int twl4030_i2c_write(u8 mod_no, u8 *value, u8 reg, u8 num_bytes)
 		ret = 0;
 	return ret;
 }
-EXPORT_SYMBOL(twl4030_i2c_write);
+EXPORT_SYMBOL(twl6030_i2c_write);
 
 /**
- * twl4030_i2c_read - Reads a n bit register in TWL4030
+ * twl6030_i2c_read - Reads a n bit register in TWL6030
  * @mod_no: module number
  * @value: an array of num_bytes containing data to be read
  * @reg: register address (just offset will do)
@@ -306,20 +302,20 @@ EXPORT_SYMBOL(twl4030_i2c_write);
  *
  * Returns result of operation - num_bytes is success else failure.
  */
-int twl4030_i2c_read(u8 mod_no, u8 *value, u8 reg, u8 num_bytes)
+int twl6030_i2c_read(u8 mod_no, u8 *value, u8 reg, u8 num_bytes)
 {
 	int ret;
 	u8 val;
 	int sid;
-	struct twl4030_client *twl;
+	struct twl6030_client *twl;
 	struct i2c_msg *msg;
 
-	if (unlikely(mod_no > TWL4030_MODULE_LAST)) {
+	if (unlikely(mod_no > TWL6030_MODULE_LAST)) {
 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
 		return -EPERM;
 	}
-	sid = twl4030_map[mod_no].sid;
-	twl = &twl4030_modules[sid];
+	sid = twl6030_map[mod_no].sid;
+	twl = &twl6030_modules[sid];
 
 	if (unlikely(!inuse)) {
 		pr_err("%s: client %d is not initialized\n", DRIVER_NAME, sid);
@@ -331,7 +327,7 @@ int twl4030_i2c_read(u8 mod_no, u8 *value, u8 reg, u8 num_bytes)
 	msg->addr = twl->address;
 	msg->len = 1;
 	msg->flags = 0;	/* Read the register value */
-	val = twl4030_map[mod_no].base + reg;
+	val = twl6030_map[mod_no].base + reg;
 	msg->buf = &val;
 	/* [MSG2] fill the data rx buffer */
 	msg = &twl->xfer_msg[1];
@@ -347,40 +343,40 @@ int twl4030_i2c_read(u8 mod_no, u8 *value, u8 reg, u8 num_bytes)
 		ret = 0;
 	return ret;
 }
-EXPORT_SYMBOL(twl4030_i2c_read);
+EXPORT_SYMBOL(twl6030_i2c_read);
 
 /**
- * twl4030_i2c_write_u8 - Writes a 8 bit register in TWL4030
+ * twl6030_i2c_write_u8 - Writes a 8 bit register in TWL6030
  * @mod_no: module number
  * @value: the value to be written 8 bit
  * @reg: register address (just offset will do)
  *
  * Returns result of operation - 0 is success
  */
-int twl4030_i2c_write_u8(u8 mod_no, u8 value, u8 reg)
+int twl6030_i2c_write_u8(u8 mod_no, u8 value, u8 reg)
 {
 
 	/* 2 bytes offset 1 contains the data offset 0 is used by i2c_write */
 	u8 temp_buffer[2] = { 0 };
 	/* offset 1 contains the data */
 	temp_buffer[1] = value;
-	return twl4030_i2c_write(mod_no, temp_buffer, reg, 1);
+	return twl6030_i2c_write(mod_no, temp_buffer, reg, 1);
 }
-EXPORT_SYMBOL(twl4030_i2c_write_u8);
+EXPORT_SYMBOL(twl6030_i2c_write_u8);
 
 /**
- * twl4030_i2c_read_u8 - Reads a 8 bit register from TWL4030
+ * twl6030_i2c_read_u8 - Reads a 8 bit register from TWL6030
  * @mod_no: module number
  * @value: the value read 8 bit
  * @reg: register address (just offset will do)
  *
  * Returns result of operation - 0 is success
  */
-int twl4030_i2c_read_u8(u8 mod_no, u8 *value, u8 reg)
+int twl6030_i2c_read_u8(u8 mod_no, u8 *value, u8 reg)
 {
-	return twl4030_i2c_read(mod_no, value, reg, 1);
+	return twl6030_i2c_read(mod_no, value, reg, 1);
 }
-EXPORT_SYMBOL(twl4030_i2c_read_u8);
+EXPORT_SYMBOL(twl6030_i2c_read_u8);
 
 /*----------------------------------------------------------------------*/
 
@@ -390,10 +386,10 @@ EXPORT_SYMBOL(twl4030_i2c_read_u8);
  * that's how twl_init_irq() sets things up.
  */
 
-static int add_children(struct twl4030_platform_data *pdata)
+static int add_children(struct twl6030_platform_data *pdata)
 {
 	struct platform_device	*pdev = NULL;
-	struct twl4030_client	*twl = NULL;
+	struct twl6030_client	*twl = NULL;
 	int			status = 0;
 #if 0
 	if (twl_has_bci() && pdata->bci) {
@@ -470,9 +466,9 @@ static int add_children(struct twl4030_platform_data *pdata)
 	}
 #endif
 	if (twl_has_rtc()) {
-		twl = &twl4030_modules[3];
+		twl = &twl6030_modules[3];
 
-		pdev = platform_device_alloc("twl4030_rtc", -1);
+		pdev = platform_device_alloc("twl6030_rtc", -1);
 		if (!pdev) {
 			pr_debug("%s: can't alloc rtc dev\n", DRIVER_NAME);
 			status = -ENOMEM;
@@ -492,7 +488,7 @@ static int add_children(struct twl4030_platform_data *pdata)
 		/* RTC module IRQ */
 		if (status == 0) {
 			struct resource	r = {
-				.start = TWL4030_RTC_INT,
+				.start = TWL6030_RTC_INT,
 				.flags = IORESOURCE_IRQ,
 			};
 
@@ -557,7 +553,7 @@ static int add_children(struct twl4030_platform_data *pdata)
 #endif
 err:
 	if (status)
-		pr_err("failed to add twl4030's children (status %d)\n",
+		pr_err("failed to add twl6030's children (status %d)\n",
 				status);
 	return status;
 }
@@ -573,7 +569,7 @@ static inline int __init protect_pm_master(void)
 {
 	int e = 0;
 
-	e = twl4030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, KEY_LOCK,
+	e = twl6030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, KEY_LOCK,
 			R_PROTECT_KEY);
 	return e;
 }
@@ -582,9 +578,9 @@ static inline int __init unprotect_pm_master(void)
 {
 	int e = 0;
 
-	e |= twl4030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, KEY_UNLOCK1,
+	e |= twl6030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, KEY_UNLOCK1,
 			R_PROTECT_KEY);
-	e |= twl4030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, KEY_UNLOCK2,
+	e |= twl6030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, KEY_UNLOCK2,
 			R_PROTECT_KEY);
 	return e;
 }
@@ -608,7 +604,7 @@ static void __init clocks_init(void)
 	osc = ERR_PTR(-EIO);
 #endif
 	if (IS_ERR(osc)) {
-		printk(KERN_WARNING "Skipping twl4030 internal clock init and "
+		printk(KERN_WARNING "Skipping twl6030 internal clock init and "
 				"using bootloader value (unknown osc rate)\n");
 		return;
 	}
@@ -631,7 +627,7 @@ static void __init clocks_init(void)
 	ctrl |= HIGH_PERF_SQ;
 	e |= unprotect_pm_master();
 	/* effect->MADC+USB ck en */
-	e |= twl4030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, ctrl, R_CFG_BOOT);
+	e |= twl6030_i2c_write_u8(TWL4030_MODULE_PM_MASTER, ctrl, R_CFG_BOOT);
 	e |= protect_pm_master();
 
 	if (e < 0)
@@ -640,7 +636,7 @@ static void __init clocks_init(void)
 
 /*----------------------------------------------------------------------*/
 
-static int twl4030_remove(struct i2c_client *client)
+static int twl6030_remove(struct i2c_client *client)
 {
 	unsigned i;
 	int status;
@@ -649,24 +645,24 @@ static int twl4030_remove(struct i2c_client *client)
 	if (status < 0)
 		return status;
 
-	for (i = 0; i < TWL4030_NUM_SLAVES; i++) {
-		struct twl4030_client	*twl = &twl4030_modules[i];
+	for (i = 0; i < TWL6030_NUM_SLAVES; i++) {
+		struct twl6030_client	*twl = &twl6030_modules[i];
 
 		if (twl->client && twl->client != client)
 			i2c_unregister_device(twl->client);
-		twl4030_modules[i].client = NULL;
+		twl6030_modules[i].client = NULL;
 	}
 	inuse = false;
 	return 0;
 }
 
-/* NOTE:  this driver only handles a single twl4030/tps659x0 chip */
+/* NOTE:  this driver only handles a single twl6030 chip */
 static int
-twl4030_probe(struct i2c_client *client, const struct i2c_device_id *id)
+twl6030_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int				status;
 	unsigned			i;
-	struct twl4030_platform_data	*pdata = client->dev.platform_data;
+	struct twl6030_platform_data	*pdata = client->dev.platform_data;
 
 	if (!pdata) {
 		dev_dbg(&client->dev, "no platform data?\n");
@@ -683,8 +679,8 @@ twl4030_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		return -EBUSY;
 	}
 
-	for (i = 0; i < TWL4030_NUM_SLAVES; i++) {
-		struct twl4030_client	*twl = &twl4030_modules[i];
+	for (i = 0; i < TWL6030_NUM_SLAVES; i++) {
+		struct twl6030_client	*twl = &twl6030_modules[i];
 
 		twl->address = client->addr + i;
 		if (i == 0)
@@ -720,48 +716,44 @@ twl4030_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	status = add_children(pdata);
 fail:
 	if (status < 0)
-		twl4030_remove(client);
+		twl6030_remove(client);
 	return status;
 }
 
-static const struct i2c_device_id twl4030_ids[] = {
-	{ "twl4030", 0 },	/* "Triton 2" */
-	{ "tps65950", 0 },	/* catalog version of twl4030 */
-	{ "tps65930", 0 },	/* fewer LDOs and DACs; no charger */
-	{ "tps65920", 0 },	/* fewer LDOs; no codec or charger */
-	{ "twl5030", 0 },	/* T2 updated */
+static const struct i2c_device_id twl6030_ids[] = {
+	{ "twl6030", 0 },	/* "Phoenix power chip" */
 	{ /* end of list */ },
 };
-MODULE_DEVICE_TABLE(i2c, twl4030_ids);
+MODULE_DEVICE_TABLE(i2c, twl6030_ids);
 
 /* One Client Driver , 4 Clients */
-static struct i2c_driver twl4030_driver = {
+static struct i2c_driver twl6030_driver = {
 	.driver.name	= DRIVER_NAME,
-	.id_table	= twl4030_ids,
-	.probe		= twl4030_probe,
-	.remove		= twl4030_remove,
+	.id_table	= twl6030_ids,
+	.probe		= twl6030_probe,
+	.remove		= twl6030_remove,
 };
 
-static int __init twl4030_init(void)
+static int __init twl6030_init(void)
 {
 	int res;
-	res = i2c_add_driver(&twl4030_driver);
+	res = i2c_add_driver(&twl6030_driver);
 	if (res) {
-		printk(KERN_ERR "TWL4030: Driver registration failed \n");
+		printk(KERN_ERR "TWL6030: Driver registration failed \n");
 		return res;
 	}
 
-	pr_info(KERN_INFO "TWL4030: Driver registration complete.\n");
+	pr_info(KERN_INFO "TWL6030: Driver registration complete.\n");
 
 	return 0;
 }
-subsys_initcall(twl4030_init);
+subsys_initcall(twl6030_init);
 
-static void __exit twl4030_exit(void)
+static void __exit twl6030_exit(void)
 {
-	i2c_del_driver(&twl4030_driver);
+	i2c_del_driver(&twl6030_driver);
 }
-module_exit(twl4030_exit);
+module_exit(twl6030_exit);
 
 MODULE_AUTHOR("Texas Instruments, Inc.");
 MODULE_DESCRIPTION("I2C Core interface for TWL6030");

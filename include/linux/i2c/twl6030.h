@@ -68,17 +68,25 @@
 /*
  * Read and write single 8-bit registers
  */
-int twl4030_i2c_write_u8(u8 mod_no, u8 val, u8 reg);
-int twl4030_i2c_read_u8(u8 mod_no, u8 *val, u8 reg);
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define twl_i2c_write_u8	twl6030_i2c_write_u8
+#define twl_i2c_read_u8	twl6030_i2c_read_u8
+#endif
+int twl6030_i2c_write_u8(u8 mod_no, u8 val, u8 reg);
+int twl6030_i2c_read_u8(u8 mod_no, u8 *val, u8 reg);
 
 /*
  * Read and write several 8-bit registers at once.
  *
- * IMPORTANT:  For twl4030_i2c_write(), allocate num_bytes + 1
+ * IMPORTANT:  For twl6030_i2c_write(), allocate num_bytes + 1
  * for the value, and populate your data starting at offset 1.
  */
-int twl4030_i2c_write(u8 mod_no, u8 *value, u8 reg, u8 num_bytes);
-int twl4030_i2c_read(u8 mod_no, u8 *value, u8 reg, u8 num_bytes);
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define twl_i2c_write	twl6030_i2c_write
+#define twl_i2c_read	twl6030_i2c_read
+#endif
+int twl6030_i2c_write(u8 mod_no, u8 *value, u8 reg, u8 num_bytes);
+int twl6030_i2c_read(u8 mod_no, u8 *value, u8 reg, u8 num_bytes);
 
 /*----------------------------------------------------------------------*/
 
@@ -166,7 +174,7 @@ struct twl4030_usb_data {
 	enum twl4030_usb_mode	usb_mode;
 };
 
-struct twl4030_platform_data {
+struct twl6030_platform_data {
 	unsigned				irq_base, irq_end;
 	struct twl4030_bci_platform_data	*bci;
 	struct twl4030_madc_platform_data	*madc;
