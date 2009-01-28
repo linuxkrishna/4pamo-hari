@@ -468,7 +468,7 @@ static int add_children(struct twl6030_platform_data *pdata)
 	if (twl_has_rtc()) {
 		twl = &twl6030_modules[3];
 
-		pdev = platform_device_alloc("twl6030_rtc", -1);
+		pdev = platform_device_alloc("twlxxxx_rtc", -1);
 		if (!pdev) {
 			pr_debug("%s: can't alloc rtc dev\n", DRIVER_NAME);
 			status = -ENOMEM;

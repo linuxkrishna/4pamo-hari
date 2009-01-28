@@ -548,7 +548,7 @@ static struct platform_driver twl4030rtc_driver = {
 	.resume		= twl4030_rtc_resume,
 	.driver		= {
 		.owner	= THIS_MODULE,
-		.name	= "twl4030_rtc",
+		.name	= "twlxxxx_rtc",
 	},
 };
 
