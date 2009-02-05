@@ -120,7 +120,7 @@ static int __init sdp4430_soc_init(void)
 
 	platform_set_drvdata(sdp4430_snd_device, &sdp4430_snd_devdata);
 	sdp4430_snd_devdata.dev = &sdp4430_snd_device->dev;
-	*(unsigned int *)sdp4430_dai.cpu_dai->private_data = 1; /* McBSP2 */
+	*(unsigned int *)sdp4430_dai.cpu_dai->private_data = 0; /* McBSP1 */
 
 	ret = platform_device_add(sdp4430_snd_device);
 	if (ret)
