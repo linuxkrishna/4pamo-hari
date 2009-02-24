@@ -1,0 +1,35 @@
+
+
+menuconfig Sys_Link
+	bool "Sys_Link"
+	default y
+
+if Sys_Link
+
+
+config MPU_BRIDGE_NOTIFY
+	tristate "OMAP Notify Module"
+	default m 
+	help
+          Notify Module
+
+config  BRIDGE_MAILBOX  
+	tristate "OMAP MailBox Module"
+	default m
+	help
+ 	   MailBox Module 
+
+
+config  BRIDGE_DUCATI
+    tristate "Ducati Module"
+    default m
+    help
+       Ducati Module
+
+
+
+endif
+
+
+
+
