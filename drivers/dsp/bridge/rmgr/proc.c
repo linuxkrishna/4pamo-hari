@@ -1046,11 +1046,13 @@ DSP_STATUS PROC_Load(DSP_HPROCESSOR hProcessor, IN CONST s32 iArgc,
 	s32 nProcID = 0;	/* Anticipate MP version. */
 	struct DCD_MANAGER *hDCDHandle;
 	struct DMM_OBJECT *hDmmMgr;
+#ifdef OMAP_3430	
 	u32 dwExtEnd;
+#endif
 	u32 uProcId;
 #ifdef OMAP44XX
 	u32	dwDmmStart;
-	u32	dwDmmEnd;
+	
 #endif
 #ifdef DEBUG
 	BRD_STATUS uBrdState;

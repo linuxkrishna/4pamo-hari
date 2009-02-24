@@ -77,6 +77,12 @@ extern struct constraint_handle *dsp_constraint_handle;
 #endif
 #endif
 #endif
+/*------------------------------------- Noitfy */
+#include <dspbridge/notify.h>
+#include <dspbridge/notifytypes.h>
+#include <dspbridge/notify_driverdefs.h>
+#include <dspbridge/notify_mbxDriver.h>
+extern Notify_Handle handlePtr;
 
 /*  ----------------------------------- Defines, Data Structures, Typedefs */
 #ifndef DEBUG
@@ -87,6 +93,9 @@ extern struct constraint_handle *dsp_constraint_handle;
 extern struct MAILBOX_CONTEXT mboxsetting;
 extern DSP_STATUS DSP_PeripheralClocks_Enable(struct WMD_DEV_CONTEXT
 					     *pDevContext, IN void *pArgs);
+
+extern u32  NotifyMbxDrv_NonShmISR( void * refD);
+
 /*
  *  ======== CHNLSM_EnableInterrupt ========
  *      Enables interrupts from DSP.
@@ -94,13 +103,13 @@ extern DSP_STATUS DSP_PeripheralClocks_Enable(struct WMD_DEV_CONTEXT
 DSP_STATUS CHNLSM_EnableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 {
 	DSP_STATUS status = DSP_SOK;
-	HW_STATUS hwStatus;
 	struct WMD_DEV_CONTEXT *pDevContext = hDevContext;
-	u32 numMbxMsg;
-	u32 mbxValue;
 	struct CFG_HOSTRES resources;
 	u32 devType;
 	struct IO_MGR *hIOMgr;
+    Notify_Status Notifystatus;
+    u32 eventNo;
+
 
 	DBG_Trace(DBG_ENTER, "CHNLSM_EnableInterrupt(0x%x)\n", pDevContext);
 
@@ -111,6 +120,12 @@ DSP_STATUS CHNLSM_EnableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 			&resources);
 	status = DEV_GetDevType(pDevContext->hDevObject, &devType);
 	status = DEV_GetIOMgr(pDevContext->hDevObject, &hIOMgr);
+
+    eventNo = ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER);
+    Notifystatus = Notify_enableEvent(handlePtr,0,eventNo);
+
+
+#if 0
 	if (devType == DSP_UNIT) {
 		hwStatus = HW_MBOX_NumMsgGet(resources.dwMboxBase,
 					       MBOX_DSP2ARM, &numMbxMsg);
@@ -139,7 +154,7 @@ DSP_STATUS CHNLSM_EnableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 						 MBOX_ARM,
 						 HW_MBOX_INT_NEW_MSG);
 	}
-
+#endif
 	return status;
 }
 
@@ -150,16 +165,21 @@ DSP_STATUS CHNLSM_EnableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 DSP_STATUS CHNLSM_DisableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 {
 	DSP_STATUS status = DSP_SOK;
-	HW_STATUS hwStatus;
-	struct CFG_HOSTRES resources;
 
+	Notify_Status Notifystatus;
+    u32 eventNo;
+	
+	eventNo = ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER);
 	DBG_Trace(DBG_ENTER, "CHNLSM_DisableInterrupt(0x%x)\n", hDevContext);
+    Notifystatus = Notify_disableEvent(handlePtr,0,eventNo);
+#if 0
 
 	status = CFG_GetHostResources(
 			(struct CFG_DEVNODE *)DRV_GetFirstDevExtension(),
 			&resources);
 	hwStatus = HW_MBOX_EventDisable(resources.dwMboxBase, MBOX_DSP2ARM,
 					  MBOX_ARM, HW_MBOX_INT_NEW_MSG);
+#endif
 	return status;
 }
 
@@ -171,20 +191,19 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 {
 	DSP_STATUS status = DSP_SOK;
 	struct WMD_DEV_CONTEXT *pDevContext = hDevContext;
+    Notify_Status notifyStatus;
 
 #ifndef CONFIG_DISABLE_BRIDGE_PM
 #ifndef CONFIG_DISABLE_BRIDGE_DVFS
 	u32 opplevel;
 #endif
 #endif
-	HW_STATUS hwStatus;
-	u32 mbxFull;
+
 	struct CFG_HOSTRES resources;
-	u16 cnt = 10;
-	u32 temp;
-	volatile unsigned int i;
+	
 	/* We are waiting indefinitely here. This needs to be fixed in the
 	 * second phase */
+	CHNLSM_EnableInterrupt(hDevContext);
 	status = CFG_GetHostResources(
 			(struct CFG_DEVNODE *)DRV_GetFirstDevExtension(),
 			&resources);
@@ -238,8 +257,14 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 		DSP_PeripheralClocks_Enable(hDevContext, NULL);
 #endif
 #endif
-
 	}
+		notifyStatus = Notify_sendEvent( handlePtr,/*PROC_TESLA*/0,
+        ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER),
+          pDevContext->wIntrVal2Dsp,true);
+
+
+
+#if 0	
 	for (i = 0; i < 0x1000; i++)
 		;
 	while (--cnt) {
@@ -261,6 +286,7 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 	hwStatus = HW_MBOX_MsgWrite(resources.dwMboxBase, MBOX_ARM2DSP,
 				     pDevContext->wIntrVal2Dsp);
 	/* set the Mailbox interrupt to default value */
+#endif
 	pDevContext->wIntrVal2Dsp = MBX_PCPY_CLASS;
 	return status;
 }

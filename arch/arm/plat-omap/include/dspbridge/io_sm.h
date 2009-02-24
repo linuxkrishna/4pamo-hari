@@ -54,8 +54,11 @@
 
 #include <dspbridge/_chnl_sm.h>
 #include <dspbridge/host_os.h>
-
 #include <dspbridge/iodefs.h>
+#include <dspbridge/notifydefs.h>
+
+
+
 
 #define IO_INPUT            0
 #define IO_OUTPUT           1
@@ -63,6 +66,7 @@
 #define IO_MAXSERVICE       IO_SERVICE
 
 #define IO_MGRSIGNATURE     0x494f4D43	/* "IOGR" */
+#define NOTIFY_TESLA_EVENTNUMBER 0x00000000
 
 #define DSPFieldAddr(type, field, base, wordsize) \
     ((((s32)&(((type *)0)->field)) / wordsize) + (u32)base)
@@ -132,7 +136,13 @@
  *      Interrupts are disabled and EOI for this interrupt has been sent.
  *  Ensures:
  */
-	irqreturn_t IO_ISR(int irq, IN void *pRefData);
+void IO_ISR (IN   Processor_Id procId,
+                    IN void *     pRefData,
+                struct pt_regs *reg);
+
+
+
+
 /*
  *  ======== IO_RequestChnl ========
  *  Purpose:

@@ -167,6 +167,12 @@
 #include "_msg_sm.h"
 #include <dspbridge/gt.h>
 
+/*------------------------------------Notify */
+#include <dspbridge/notify.h>
+#include <dspbridge/notifytypes.h>
+#include <dspbridge/notify_driverdefs.h>
+#include <dspbridge/notify_mbxDriver.h>
+
 /*  ----------------------------------- Defines, Data Structures, Typedefs */
 #define OUTPUTNOTREADY  0xffff
 #define NOTENABLED      0xffff	/* channel(s) not enabled */
@@ -177,6 +183,15 @@
 #define ulPageAlignSize 0x10000   /* Page Align Size */
 
 #define MAX_PM_REQS 32
+
+
+Notify_Handle handlePtr;
+u32  eventNo;
+struct IO_MGR *ext_pIOMgr;
+extern irqreturn_t (*irq_handler)(int, void *, struct pt_regs *);
+void * external_piomgr;
+
+
 
 /* IO Manager: only one created per board: */
 struct IO_MGR {
@@ -282,6 +297,15 @@ DSP_STATUS WMD_IO_Create(OUT struct IO_MGR **phIOMgr,
 	struct CFG_DEVNODE *hDevNode;
 	struct CHNL_MGR *hChnlMgr;
 	u32 devType;
+
+    Notify_Config config;
+    char  driverName[32] = "NOTIFYMBXDRV";
+
+    NotifyShmDrv_Attrs  Shm_Config;
+    Notify_Status ntfystatus;
+    irq_handler = (void *) IO_ISR;
+
+
 	/* Check DBC requirements:  */
 	DBC_Require(phIOMgr != NULL);
 	DBC_Require(pMgrAttrs != NULL);
@@ -330,6 +354,19 @@ DSP_STATUS WMD_IO_Create(OUT struct IO_MGR **phIOMgr,
 		pIOMgr->iQuePowerHead = 0;
 		pIOMgr->iQuePowerTail = 0;
 	}
+
+        Shm_Config.shmBaseAddr=0x87F00000;
+        Shm_Config.shmSize = 0x4000;
+        Shm_Config.numEvents = 32;
+        Shm_Config.sendEventPollCount = (u32) -1;
+        config.driverAttrs = (u32*)&Shm_Config;
+        ntfystatus = Notify_driverInit(driverName, (Notify_Config *)&config, &handlePtr);
+        eventNo = ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER);
+        ntfystatus = Notify_registerEvent(handlePtr, /*PROC_TESLA*/0, eventNo,(void*)IO_ISR, NULL);
+        ntfystatus = Notify_disableEvent(handlePtr, 0, eventNo);
+        //hBridgeFault->handlePtr = handlePtr; // passing over the notify driverinit handle to the fault object
+
+
 	if (DSP_SUCCEEDED(status)) {
 		status = CFG_GetHostResources((struct CFG_DEVNODE *)
 				DRV_GetFirstDevExtension() , &hostRes);
@@ -337,15 +374,10 @@ DSP_STATUS WMD_IO_Create(OUT struct IO_MGR **phIOMgr,
 	if (DSP_SUCCEEDED(status)) {
 		pIOMgr->hWmdContext = hWmdContext;
 		pIOMgr->fSharedIRQ = pMgrAttrs->fShared;
-/*		IO_DisableInterrupt(hWmdContext);*/
-		if (devType == DSP_UNIT) {
-			/* Plug the channel ISR:. */
-			if ((request_irq(INT_MAIL_MPU_IRQ, IO_ISR, 0,
-					    "DspBridge", (void *)pIOMgr)) == 0)
-				status = DSP_SOK;
-			else
-				status = DSP_EFAIL;
-		}
+		//IO_DisableInterrupt(hWmdContext);
+		external_piomgr = pIOMgr;
+	
+
 		if (DSP_SUCCEEDED(status))
 			DBG_Trace(DBG_LEVEL1, "ISR_IRQ Object 0x%x \n",
 						 pIOMgr);
@@ -373,7 +405,11 @@ func_cont:
  */
 DSP_STATUS WMD_IO_Destroy(struct IO_MGR *hIOMgr)
 {
-	DSP_STATUS status = DSP_SOK;
+	Notify_Status status;
+
+    status = Notify_driverExit (handlePtr);
+
+#if 0
 	struct WMD_DEV_CONTEXT *hWmdContext;
 	if (MEM_IsValidHandle(hIOMgr, IO_MGRSIGNATURE)) {
 		/* Unplug IRQ:    */
@@ -396,6 +432,8 @@ DSP_STATUS WMD_IO_Destroy(struct IO_MGR *hIOMgr)
 	} else {
 		status = DSP_EHANDLE;
 	}
+#endif
+
 	return status;
 }
 
@@ -1082,39 +1120,40 @@ void IO_DPC(IN OUT void *pRefData)
  *      Calls the WMD's CHNL_ISR to determine if this interrupt is ours, then
  *      schedules a DPC to dispatch I/O.
  */
-irqreturn_t IO_ISR(int irq, IN void *pRefData)
+
+void IO_ISR (IN   Processor_Id procId,
+                    IN void *     pRefData,
+                struct pt_regs *reg)
+
 {
-	struct IO_MGR *hIOMgr = (struct IO_MGR *)pRefData;
-	bool fSchedDPC;
-	DBC_Require(irq == INT_MAIL_MPU_IRQ);
+	struct IO_MGR *hIOMgr;
+	pRefData = external_piomgr;
+	hIOMgr = (struct IO_MGR *)pRefData;
+	
+
 	DBC_Require(MEM_IsValidHandle(hIOMgr, IO_MGRSIGNATURE));
 	DBG_Trace(DBG_LEVEL3, "Entering IO_ISR(0x%x)\n", pRefData);
-	/* Call WMD's CHNLSM_ISR() to see if interrupt is ours, and process. */
-	if (IO_CALLISR(hIOMgr->hWmdContext, &fSchedDPC, &hIOMgr->wIntrVal)) {
-		{
-			DBG_Trace(DBG_LEVEL3, "IO_ISR %x\n", hIOMgr->wIntrVal);
-			if (hIOMgr->wIntrVal & MBX_PM_CLASS) {
+
+		if (hIOMgr->wIntrVal & MBX_PM_CLASS) {
 				hIOMgr->dQuePowerMbxVal[hIOMgr->iQuePowerHead] =
 					hIOMgr->wIntrVal;
 				hIOMgr->iQuePowerHead++;
+
 				if (hIOMgr->iQuePowerHead >= MAX_PM_REQS)
 					hIOMgr->iQuePowerHead = 0;
 
-			}
-			if (hIOMgr->wIntrVal == MBX_DEH_RESET) {
-				DBG_Trace(DBG_LEVEL6, "*** DSP RESET ***\n");
-				hIOMgr->wIntrVal = 0;
-			} else if (fSchedDPC) {
+		}
+
+		if (hIOMgr->wIntrVal == MBX_DEH_RESET) {
+			DBG_Trace(DBG_LEVEL6, "*** DSP RESET ***\n");
+			hIOMgr->wIntrVal = 0;
+
+			} else {
 				/* PROC-COPY defer i/o  */
 				DPC_Schedule(hIOMgr->hDPC);
 			}
-		}
-	} else
-		/* Ensure that, if WMD didn't claim it, the IRQ is shared. */
-		DBC_Ensure(hIOMgr->fSharedIRQ);
-	return IRQ_HANDLED;
 }
-
+EXPORT_SYMBOL(IO_ISR);
 /*
  *  ======== IO_RequestChnl ========
  *  Purpose:

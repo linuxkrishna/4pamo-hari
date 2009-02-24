@@ -278,8 +278,8 @@ static DSP_STATUS WMD_BRD_Monitor(struct WMD_DEV_CONTEXT *hDevContext)
 	DSP_STATUS status = DSP_SOK;
 	struct WMD_DEV_CONTEXT *pDevContext = hDevContext;
 	struct CFG_HOSTRES resources;
-	u32 temp;
-	enum HW_PwrState_t    pwrState;
+	
+	
 
 	DBG_Trace(DBG_ENTER, "Board in the monitor state  \n");
 	status = CFG_GetHostResources(
@@ -427,23 +427,14 @@ static DSP_STATUS WMD_BRD_Start(struct WMD_DEV_CONTEXT *hDevContext,
 	s32 itmpEntryNdx = 0;	/* DSP-MMU TLB entry base address */
 	struct CFG_HOSTRES resources;
 	u32 temp;
-	u32 ulDspClkRate;
-	u32 ulDspClkAddr;
-	u32 ulBiosGpTimer;
-	u32 uClkCmd;
 	struct IO_MGR *hIOMgr;
-	u32 ulLoadMonitorTimer;
-	u32 extClkId = 0;
-	u32 tmpIndex;
-	u32 clkIdIndex = MBX_PM_MAX_RESOURCES;
-
+	register u32 newAdress = ((u32)(dwDSPAddr));
+		
 	DBG_Trace(DBG_ENTER, "Entering WMD_BRD_Start:\n hDevContext: 0x%x\n\t "
 			     "dwDSPAddr: 0x%x\n", hDevContext, dwDSPAddr);
 	printk("Please break Virtio by typing 'y' in console and start CCS"
 		"set DSP  PC adress to below DSP Start address and Run using CCS\n");
 	printk("- - - DSP Start Address [0x%x]- - -\n", dwDSPAddr) ;
-
-	register u32 newAdress = ((u32)(dwDSPAddr));
 
 	 /* The device context contains all the mmu setup info from when the
 	 * last dsp base image was loaded. The first entry is always
@@ -625,10 +616,10 @@ static DSP_STATUS WMD_BRD_Stop(struct WMD_DEV_CONTEXT *hDevContext)
 	DSP_STATUS status = DSP_SOK;
 	struct WMD_DEV_CONTEXT *pDevContext = hDevContext;
 	struct CFG_HOSTRES resources;
-	struct PgTableAttrs *pPtAttrs;
-	u32 dspPwrState;
-	enum HW_PwrState_t pwrState;
-	DSP_STATUS clk_status;
+	
+	
+	
+	
 
 	DBG_Trace(DBG_ENTER, "Entering WMD_BRD_Stop:\nhDevContext: 0x%x\n",
 		  hDevContext);
@@ -681,7 +672,7 @@ static DSP_STATUS WMD_BRD_Delete(struct WMD_DEV_CONTEXT *hDevContext)
 	struct WMD_DEV_CONTEXT *pDevContext = hDevContext;
 	struct CFG_HOSTRES resources;
 	struct PgTableAttrs *pPtAttrs;
-	DSP_STATUS clk_status;
+	
 
 	DBG_Trace(DBG_ENTER, "Entering WMD_BRD_Delete:\nhDevContext: 0x%x\n",
 		  hDevContext);
@@ -1941,10 +1932,10 @@ func_cont:
 static DSP_STATUS run_IdleBoot(u32 prm_base, u32 cm1_base,
 			u32 cm2_base, u32 sysctrl_base)
 {
-	u32 temp;
+	
 	DSP_STATUS status = DSP_SOK;
-	DSP_STATUS clk_status = DSP_SOK;
-	enum HW_PwrState_t    pwrState;
+	
+	
 
 	/* Read PM_PWSTST_IVA2 */
 #ifdef OMAP_44XX

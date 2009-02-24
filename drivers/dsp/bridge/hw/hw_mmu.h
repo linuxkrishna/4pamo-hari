@@ -43,26 +43,12 @@
  *  Microsoft and GNU C compilers support the "__inline" keyword.  The
  *  native SUN OS 4.x C compiler doesn't understand either.
  */
-#ifdef _TI_
-#ifdef _LINT_
-#define __inline
-#else
-#define __inline inline
-#endif
-#endif
-
-#ifdef _SUN4_
-#define __inline
-#endif
 
 /*
  *  ======== inline ========
  *  Define "inline" so that all C code can optionally use the "inline"
  *  keyword.
  */
-#if !defined(inline) && !defined(__cplusplus) && !defined(_TI_)
-#define inline	__inline
-#endif
 
 /* ============================================================================
 * EXPORTED DEFINITIONS

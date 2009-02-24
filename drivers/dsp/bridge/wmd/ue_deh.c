@@ -62,6 +62,10 @@
 #include <hw_defs.h>
 #include <hw_mmu.h>
 
+/*--------------------------------------Notify*/
+#include <dspbridge/notifytypes.h>
+#include <dspbridge/notify.h>
+
 /*  ----------------------------------- This */
 #include "mmu_fault.h"
 #include "_tiomap.h"
@@ -70,6 +74,7 @@
 #include "_tiomap_pwr.h"
 #include <dspbridge/io_sm.h>
 
+extern Notify_Handle handlePtr;
 static struct HW_MMUMapAttrs_t  mapAttrs = { HW_LITTLE_ENDIAN,
 					HW_ELEM_SIZE_16BIT,
 					HW_MMU_CPUES} ;
@@ -203,6 +208,7 @@ void WMD_DEH_Notify(struct DEH_MGR *hDehMgr, u32 ulEventMask,
 	struct CFG_HOSTRES resources;
 	u32 dummyVaAddr;
 	HW_STATUS hwStatus;
+	Notify_Status NotifyStatus;
 
 	status = CFG_GetHostResources(
 			(struct CFG_DEVNODE *)DRV_GetFirstDevExtension(),
@@ -273,8 +279,10 @@ void WMD_DEH_Notify(struct DEH_MGR *hDehMgr, u32 ulEventMask,
 					HW_SET, HW_SET);
 			}
 			/* send an interrupt to DSP */
-			HW_MBOX_MsgWrite(resources.dwMboxBase, MBOX_ARM2DSP,
-					 MBX_DEH_CLASS | MBX_DEH_EMMU);
+
+		NotifyStatus = Notify_sendEvent(handlePtr,/*PROC_TESLA*/0,
+                                 /*eventNo*/4,MBX_DEH_CLASS | MBX_DEH_EMMU,true);
+
 			/* Clear MMU interrupt */
 			HW_MMU_EventAck(resources.dwDmmuBase,
 					 HW_MMU_TRANSLATION_FAULT);
