@@ -1,0 +1,23 @@
+
+
+libomap_mailbox = hal_mbox.o tmbx.o hal_ocp.o \
+                  notify_mbxDriver.o drv_notifymbxdrv.o
+
+
+
+
+obj-$(CONFIG_BRIDGE_MAILBOX) += notify_mailbox.o
+notify_mailbox-objs = $(libomap_mailbox) ../services/mem.o
+
+
+ccflags-y += -Wno-strict-prototypes
+
+#Machine dependent
+ccflags-y += -D_TI_ -D_DB_TIOMAP -DTMS32060 \
+                -DTICFG_PROC_VER -DTICFG_EVM_TYPE -DCHNL_SMCLASS \
+                -DCHNL_MESSAGES -DUSE_LEVEL_1_MACROS  \
+                -DCONFIG_DISABLE_BRIDGE_PM -DDSP_TRACEBUF_DISABLED
+
+#Header files
+ccflags-y += -Idrivers/dsp/syslink/inc
+
