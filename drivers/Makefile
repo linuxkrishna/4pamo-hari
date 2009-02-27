@@ -43,6 +43,7 @@ obj-$(CONFIG_ARCH_OMAP)		    += dsp/dspgateway/
 obj-$(CONFIG_MPU_BRIDGE)	    += dsp/bridge/
 obj-$(CONFIG_MPU_BRIDGE_NOTIFY) += dsp/syslink/omap_notify/
 obj-$(CONFIG_BRIDGE_MAILBOX)    += dsp/syslink/notify_mailbox/
+obj-$(CONFIG_BRIDGE_DUCATI)     += dsp/syslink/ducatienabler/
 
 obj-$(CONFIG_NUBUS)		+= nubus/
 obj-$(CONFIG_ATM)		+= atm/
