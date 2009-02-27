@@ -1,0 +1,474 @@
+Release notes for the Linux kernel for L24.0.5
+----------------------------------------------
+
+26 February 2009
+
+Copyright (C) 2009 Texas Instruments Incorporated.  All rights reserved.
+
+
+1.  Introduction
+----------------
+This document accompanies OMAP(TM) Software Release L24.0.5 for Linux 2.6.27 on
+OMAP4430 VPOM4430_1.05a_Patch11. The document specifies:
+	- Instructions for unpacking the release
+	- New features and features the release supports
+	- Planned future features
+	- Postponed features
+
+
+2. Release Summary
+------------------
+This is a Linux Baseport Release for SDP4430 on Virtio.
+The kernel is based on version 2.6.27 from open source.
+U-boot is based on open-source version 1.1.4.
+
+The kernel source can be obtained via GIT from:
+	omap4.omapzoom.org
+
+Virtio version used: VPOM4430_1.05a + VPOM4430_1.05a_Patch11.var
+
+All drivers planned for this release are working as expected on Modena and
+overall platform stability is good. Only basic kernel boot-up is functional on
+Chiron model with single-core enabled.
+
+Modena support:
+	OS Kernel boot-up, DMA, GPTimers, WDT, UART, NOR, OneNAND, GPIO, McBSP,
+	McSPI, Phoenix, RTC, Display, Audio playback.
+Chiron support:
+	OS Kernel boot-up on single core, UART, GPTimers.
+
+
+3.  Instructions
+----------------
+
+3.1 Virtio Setup
+
+This release works on VPOM4430_1.05a_Patch11.
+
+
+3.2 Virtio Installation Instructions
+
+a. Install to C:\Virtio
+b. Once installation for virtio is started, you will be prompted for installation
+   for virtual serial port. Say yes to it and give a port number (say 5 or 6).
+   Multiple serial ports can also be installed.
+c. Install C:\Virtio\Shared\Disassembler\Setup\VirtioDisassembler.exe. This is to
+   enable debugging using virtio
+d. License for virtio has to be set in the environment variables LM_LICENSE_FILE.
+e. Install VPOM4430_1.05a_Patch11.
+
+
+3.3 Virtio Configuration Instructions
+
+3.3.1 For Modena Platform
+
+Run virtio and if needed modify the following parameters
+a. On some versions SSM is generating error due to illegal instruction fetch.
+   To workaround this you can disable SsmDisableSecurity user parameter.
+   Params->User Parameters-> SsmDisableSecurity = yes
+   Right click on SsmDisableSecurity parameter and change properties to editable
+   mode. Then you can set this parameter to Yes. Default value is no.
+b. If IVAHD is enabled the image boot up takes lot of time. If IVAHD component
+   is not required it can be disabled.
+   Browse to VPOM4430::SDP::OMAP4430::TIOMAP4CORES and disable all the enabled
+   components under it
+c. Open the Params tab and look at the User Parameters. Set the UARTx_COM_PORT
+   to the virtual port number you had provided while installation.
+
+3.3.2 For Chiron Platform
+
+In addition to the parameters mentioned for Modena, modify the following
+parameters for Chiron bootup.
+a. Only single core Chiron support has been enabled. So the second core needs
+   to be disabled on Virtio. For this browse to
+   VPOM4430::SDP::OMAP4430::CPU_SS::Cortex_2 and set the disabled parameter to
+   yes. Also set VPOM4430::SDP::OMAP4430::CPU_SS::SCU  NumCPUs parameter to 1.
+b. L2 Cache is not enabled in software. This requires the cache to be turned off
+   in the Virtio parameter list too. For this browse to
+   VPOM4430::SDP::OMAP4430::CPU_SS::Cortex_1 and set the CacheDisabled parameter
+   to true. Browse to VPOM4430::SDP::OMAP4430::CPU_SS::Cortex_2 and set the
+   CacheDisabled parameter to true. Also browse to
+   VPOM4430::SDP::OMAP4430::CPU_SS::pl310_cache and set the CacheDisabled
+   parameter to true.
+
+
+3.4 Compiling U-Boot
+
+Set the environment variable PATH such that cross compile binaries point to the
+needed tool chain. Refer to section 5 for tool chain information.
+
+To select the default configuration for U-Boot type:
+	# make CROSS_COMPILE=arm-none-linux-gnueabi- omap4430sdp_config
+
+To build the U-Boot image type:
+	# make CROSS_COMPILE=arm-none-linux-gnueabi-
+
+Note: NOR booting is not enabled by default. To enable booting from NOR
+CONFIG_NOR_BOOT needs to be enabled in include/configs/omap4430sdp.h.
+
+
+3.5 Compiling X-Loader
+
+Not yet supported
+
+
+3.6 Compiling the Kernel
+
+Set the environment variable PATH such that cross-compile binaries point to the
+needed tool chain. Refer to section 5 for tool chain information.
+
+The default configuration file for Virtio4430 is present at
+arch/arm/configs/omap_4430sdp_defconfig for Modena and
+arch/arm/configs/omap_4430sdphigh_defconfig for Chiron.
+
+To work with the default configuration file, run following commands:
+For Modena:
+	# make CROSS_COMPILE=arm-none-linux-gnueabi- omap_4430sdp_defconfig
+	# make CROSS_COMPILE=arm-none-linux-gnueabi-
+	# make CROSS_COMPILE=arm-none-linux-gnueabi- modules
+For Chiron:
+	# make CROSS_COMPILE=arm-none-linux-gnueabi- omap_4430sdphigh_defconfig
+	# make CROSS_COMPILE=arm-none-linux-gnueabi-
+	# make CROSS_COMPILE=arm-none-linux-gnueabi- modules
+
+NOTE:	The above steps will create arch/arm/boot/Image in the kernel directory
+	which is the binary used for booting.
+
+Filesystem:
+NFS file system is not yet supported. Use ramdisk instead.
+The default configuration for ramdisk is in the 4430 defconfig.
+	Load address = 0x81600000
+	Default size = 8MB
+
+
+3.7 Running U-Boot boot loader on RAM
+
+Go to the design tab. Open Scripts-> configs/Native Apps/Native Apps.script.
+Replace it as shown below.
+Then launch HyperTerminal and connect to the virtual serial port installed.
+(e.g. COM5).
+Now choose Native Apps in the configuration tabs at the top and select run.
+The SDP4430 U-Boot prompt will appear in your terminal emulation program.
+
+----------------------- [start of Native Apps.script] --------------------------
+
+# Load the ROM vectors
+[VPOM4430::SDP::OMAP4430::OCM_ROM]l @0x0 -bin ..\..\..\..\Apps\PlatformTests\vectors.bin
+
+VPOM4430::SDP::OMAP4430::Logger]pe 0 on
+cc VPOM4430::SDP::OMAP4430::CortexA8
+
+# Allow access to the Trickbox coprocessor.
+c config.cpaccess=0x300
+
+# Configure DMM to allow SDRAM accesses during ELF load.
+# DMM_LISA_MAP[0]: 0x80000000 mapped to 0x0 on SDRC0 (128MiB, no interleaving)
+d 0x4E000100=0x80301000
+
+# Load up the u-boot
+l 0x80e80000 -bin D:\OMAP\OMAP4\virtio\1.05a\Modena\u-boot.bin
+
+# Set program counter
+r r15=0x80e80000
+
+# PRCM setup
+# WKUP Domain
+dp 0x4a307800 = 0x3
+dp 0x4a307830 = 0x2
+dp 0x4a307838 = 0x102
+dp 0x4a307840 = 0x01000002
+dp 0x4a307858 = 0x2
+dp 0x4a307878 = 0x2
+dp 0x4a307880 = 0x1
+
+# ABE Domain
+dp 0x4A004500 = 0x3
+dp 0x4A004528 = 0x2
+dp 0x4A004530 = 0x2
+dp 0x4A004538 = 0x2
+dp 0x4A004540 = 0x2
+dp 0x4A004548 = 0x2
+dp 0x4A004550 = 0x2
+dp 0x4A004558 = 0x2
+dp 0x4A004560 = 0xf02
+dp 0x4A004568 = 0x2
+dp 0x4A004570 = 0x2
+dp 0x4A004578 = 0x2
+dp 0x4A004580 = 0x2
+dp 0x4A004588 = 0x2
+
+# CORE Domain
+# WakeUp Module domains
+dp 0x4A008900 = 0x2
+dp 0x4A008a00 = 0x2
+dp 0x4A008b00 = 0x2
+dp 0x4A008c00 = 0x2
+
+dp 0x4A008900 = 0x3
+
+# SDMA No Sleep!!
+dp 0x4A008a00 = 0x0
+dp 0x4A008b00 = 0x3
+dp 0x4A008c00 = 0x3
+
+dp 0x4A008828 = 0x1
+dp 0x4A008920 = 0x1
+
+# IVAHD Domain
+dp 0x4A008F00 = 0x2
+dp 0x4A008F00 = 0x3
+dp 0x4A008F20 = 0x1
+dp 0x4A008F28 = 0x1
+
+# CAM Domain
+dp 0x4A009000 = 0x2
+dp 0x4A009000 = 0x3
+dp 0x4A009020 = 0x102
+dp 0x4A009028 = 0x2
+
+# DSS Domain
+dp 0x4A009100 = 0x2
+dp 0x4A009100 = 0x3
+dp 0x4A009120 = 0xf02
+dp 0x4A009128 = 0x2
+
+# GFX Domain
+dp 0x4A009200 = 0x2
+dp 0x4A009200 = 0x3
+dp 0x4A009220 = 0x2
+
+# L3INT Domain
+dp 0x4A009300 = 0x3
+dp 0x4A009328 = 0x2
+dp 0x4A009330 = 0x2
+dp 0x4A009338 = 0x2
+dp 0x4A009340 = 0x102
+dp 0x4A009358 = 0xff02
+dp 0x4A009360 = 0x102
+dp 0x4A009368 = 0x712
+dp 0x4A009380 = 0x2
+dp 0x4A009388 = 0x2
+dp 0x4A009390 = 0x2
+dp 0x4A009398 = 0x2
+dp 0x4A0093A8 = 0x2
+dp 0x4A0093C0 = 0x2
+dp 0x4A0093C8 = 0x2
+dp 0x4A0093D0 = 0x2
+dp 0x4A0093E0 = 0x2
+
+# L4PER Domain
+dp 0x4A009400 = 0x2
+dp 0x4A009580 = 0x2
+dp 0x4A009400 = 0x3
+dp 0x4A009580 = 0x3
+dp 0x4A009420 = 0x2
+dp 0x4A009428 = 0x2
+dp 0x4A009430 = 0x2
+dp 0x4A009438 = 0x2
+dp 0x4A009440 = 0x2
+dp 0x4A009448 = 0x2
+dp 0x4A009450 = 0x2
+dp 0x4A009458 = 0x2
+dp 0x4A009460 = 0x102
+dp 0x4A009468 = 0x102
+dp 0x4A009470 = 0x102
+dp 0x4A009478 = 0x102
+dp 0x4A009480 = 0x102
+dp 0x4A009488 = 0x2
+dp 0x4A009490 = 0x2
+dp 0x4A009498 = 0x2
+dp 0x4A0094A0 = 0x2
+dp 0x4A0094A8 = 0x2
+dp 0x4A0094B0 = 0x2
+dp 0x4A0094B8 = 0x2
+dp 0x4A0094D0 = 0x2
+dp 0x4A0094D8 = 0x2
+dp 0x4A0094E0 = 0x2
+dp 0x4A0094E8 = 0x2
+dp 0x4A0094F0 = 0x2
+dp 0x4A0094F8 = 0x2
+dp 0x4A009500 = 0x2
+dp 0x4A009508 = 0x2
+dp 0x4A009520 = 0x2
+dp 0x4A009528 = 0x2
+dp 0x4A009530 = 0x2
+dp 0x4A009538 = 0x702
+dp 0x4A009540 = 0x2
+dp 0x4A009548 = 0x2
+dp 0x4A009550 = 0x2
+dp 0x4A009558 = 0x2
+dp 0x4A009560 = 0x2
+dp 0x4A0095A0 = 0x2
+dp 0x4A0095A8 = 0x2
+dp 0x4A0095B0 = 0x2
+dp 0x4A0095B8 = 0x2
+dp 0x4A0095C0 = 0x2
+dp 0x4A0095C8 = 0x2
+
+# Route UART1 signals
+dp 0x4a10013C = 0x00010001
+
+
+# EMIF firewall bypass mode can now be turned off
+[VPOM4430::SDP::OMAP4430::L3FW_EMIF] bypass off
+
+# Open up the EMIF and OCMRAM firewalls to all accessors before anything runs
+d 0x4a20c08c=0xffffffff
+d 0x4a21208c=0xffffffff
+
+g
+
+------------------------- [End of Native Apps.script] ---------------------------
+
+
+3.8 Running U-Boot boot loader on NOR
+
+Set the following user parameters on virtio.
+Go to Params->User Parameters-> and change the following values.
+	Set CS0 Target value to 2
+	Set CS2 Target value to 0
+	Set BootMode value to 1
+
+Go to the design tab. Open Scripts-> configs/Native Apps/Native Apps.script.
+Replace it as described in Section 3.7, with the following changes:
+	#load up u-boot to NorFlash
+	cc VPOM4430::SDP::NorFlash
+	l 0x0 -bin M:\x0099946_omapsw_view2\OMAPSW_L\u-boot\u-boot.bin
+	r r15=0x0
+	g
+
+Launch HyperTerminal and connect to the virtual serial port installed. (say COM5)
+Now choose Native Apps in the configuration tabs at the top and select 'run'.
+The SDP4430 U-Boot prompt will appear in your terminal emulation program.
+
+
+3.9 Running Linux kernel
+
+The kernel binary used will be arch/arm/boot/Image.
+
+
+3.9.1 Loading the kernel image via Virtio
+
+Select 'break' in the VPOM4430 innovator window. This will halt the system.
+Use the following commands from the console window (will be open at the bottom
+of virtio innovator window) to load up Image and the file system
+        l 0x80008000 -bin <path where Image file is put>/Image
+        l 0x81600000 -bin <path where you have your ramdisk>
+
+Select 'go' in the virtio window.
+Go to the hyper terminal and execute the following
+	go 0x80008000
+You should see the kernel booting and ramdisk getting loaded in a few seconds
+
+
+3.9.2 Loading the kernel image via Trace32
+
+Launch the T32. If console window is already running t32.cmm script is
+automatically run and you will be attached to the system. If not you will have
+to manually run t32.cmm script file.
+Break the system through t32
+Use the following commands from T32 window to load up the kernel image and
+file system
+	Data.load.binary <your Image path>/Image 0x80008000
+	Data.load.binary <your ramdisk path> 0x81600000
+Select 'go' in the T32 window
+Go to the hyper terminal and execute the following
+	go 0x80008000
+You should see the kernel booting and ramdisk getting loaded in a few seconds
+
+NOTE: The kernel binary used is arch/arm/boot/Image and not arch/arm/boot/uImage.
+
+
+4. Features
+-----------
+
+4.1 New Features
+
+NA
+
+4.2 Supported Features
+
+U-boot boot loader
+Kernel boot-up on Modena with following drivers:
+	GP-Timers
+	32 KHz Sync timer
+	Watchdog timer
+	I2C
+	DMA
+	NOR
+	NAND
+	OneNAND
+	GPIO
+	McBSP
+	McSPI
+	Console UART (Uart 1, Uart 2, Uart 3)
+	Phoenix
+	RTC
+	Display (Simple framebuffer and video streaming validation)
+	Audio playback (in audio bypass mode - like 3430)
+
+Kernel boot-up on Chiron (single core selected) with following drivers:
+	GP-Timers
+	Console UART (UART1)
+
+
+4.3 Postponed Features
+
+None
+
+
+4.4 Future Planned Features
+
+Refer to Program schedule.
+
+
+4.5 Defects Fixed in This Release
+
+	- 'make menuconfig' warning related to Framebuffer driver.
+
+
+4.6 Open Defects
+
+None
+
+
+4.7 Open Change Requests
+
+None	
+
+
+4.8 Rejected Defects
+
+None
+
+
+4.9 Postponed Defects
+
+None
+
+4.10 Limitations
+
+None
+
+
+5. Tool Chain
+-------------
+The toolchain used to build the code can be obtained from CodeSourcery at the
+following URL:
+	http://www.codesourcery.com/gnu_toolchains/arm/portal/release644
+
+The tool chain version is Sourcery G++ Lite 2008q3-72 for ARM GNU/Linux.
+
+The tool chain requires glibc 2.3.0 or higher to compile the source code on
+the host machine.
+
+
+--------------------------------------------------------------------------------
+
+OMAP(TM) is a Trademark of Texas Instruments Incorporated
+Innovator(TM) is a Trademark of Texas Instruments Incorporated
+Code Composer Studio(TM) is a Trademark of Texas Instruments Incorporated
+DSP/BIOS(TM) is a Trademark of Texas Instruments Incorporated
+
+All other trademarks are the property of the respective owner.
+
