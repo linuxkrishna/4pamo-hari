@@ -45,7 +45,7 @@ obj-$(CONFIG_MACH_OMAP_3430SDP)		+= board-3430sdp.o \
 					   board-3430sdp-flash.o
 obj-$(CONFIG_MACH_OMAP_4430VIRTIO)      += board-4430sdp.o \
                                            board-4430sdp-flash.o
-obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o
+obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o localtimer.o
 
 # TUSB 6010 chips
 obj-$(CONFIG_MACH_OMAP2_TUSB6010)	+= usb-tusb6010.o

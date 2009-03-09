@@ -243,6 +243,12 @@
 #define	IRQ_GIC_START		0
 #endif
 
+#ifdef CONFIG_ARCH_CHIRON
+#define IRQ_LOCALTIMER		29
+#define IRQ_LOCALWDOG		30
+#endif
+
+
 #define INT_24XX_SYS_NIRQ	(7 + IRQ_GIC_START)
 #define INT_24XX_SDMA_IRQ0	(12 + IRQ_GIC_START)
 #define INT_24XX_SDMA_IRQ1	(13 + IRQ_GIC_START)
