@@ -77,6 +77,21 @@
 	.section ".text.head", "ax"
 	.type	stext, %function
 ENTRY(stext)
+#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#define ROM_CODE_SIMULATE
+#endif
+
+#if defined(ROM_CODE_SIMULATE)
+	/* Read MPIDR register*/
+	mrc p15, 0, r0, c0, c0, 5
+	/* Mask off CPU ID field */
+	and r0, r0, #0xFF
+	cmp r0, #0
+	beq Master
+	cmp r0, #1
+	beq Slave
+Master:
+#endif
 	msr	cpsr_c, #PSR_F_BIT | PSR_I_BIT | SVC_MODE @ ensure svc mode
 						@ and irqs disabled
 	mrc	p15, 0, r9, c0, c0		@ get processor id
@@ -100,6 +115,12 @@ ENTRY(stext)
 						@ mmu has been enabled
 	adr	lr, __enable_mmu		@ return (PIC) address
 	add	pc, r10, #PROCINFO_INITFUNC
+
+#if defined(ROM_CODE_SIMULATE)
+Slave:
+	b omap4_secondary_startup
+
+#endif
 
 #if defined(CONFIG_SMP)
 	.type   secondary_startup, #function
