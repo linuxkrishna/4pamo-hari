@@ -18,25 +18,35 @@
 
 #include "proc-macros.S"
 
-#define TTB_C		(1 << 0)
 #define TTB_S		(1 << 1)
+/*
+ * We use the IRGN encodings for V7: note non-intuitive ordering of bits...
+ */
+#define TTB_IRGN_NC	((0 << 0) |(0 << 6))
+#define TTB_IRGN_WT	((1 << 0) |(0 << 6))
+#define TTB_IRGN_WB	((1 << 0) |(1 << 6))
+#define TTB_IRGN_WBWA	((0 << 0) |(1 << 6))
 #define TTB_RGN_NC	(0 << 3)
 #define TTB_RGN_OC_WBWA	(1 << 3)
 #define TTB_RGN_OC_WT	(2 << 3)
 #define TTB_RGN_OC_WB	(3 << 3)
 
 #ifndef CONFIG_SMP
-#define TTB_FLAGS	TTB_C|TTB_RGN_OC_WB	@ mark PTWs cacheable,outer WB
+#define TTB_FLAGS	TTB_IRGN_WB   | TTB_RGN_OC_WB	@ mark PTWs cacheable,WB
+#define PMD_SECT_SMP	0
 #else
-#define TTB_FLAGS	TTB_C|TTB_S|TTB_RGN_OC_WBWA
-					@ mark PTWs cacheable,shared,outer WBWA
+#define TTB_FLAGS	TTB_IRGN_WBWA | TTB_RGN_OC_WBWA | TTB_S
+					@ mark PTWs shared, outer cacheable
+#define PMD_SECT_SMP	PMD_SECT_S
 #endif
 
 ENTRY(cpu_v7_proc_init)
 	mov	pc, lr
+ENDPROC(cpu_v7_proc_init)
 
 ENTRY(cpu_v7_proc_fin)
 	mov	pc, lr
+ENDPROC(cpu_v7_proc_fin)
 
 /*
  *	cpu_v7_reset(loc)
@@ -52,6 +62,7 @@ ENTRY(cpu_v7_proc_fin)
 	.align	5
 ENTRY(cpu_v7_reset)
 	mov	pc, r0
+ENDPROC(cpu_v7_reset)
 
 /*
  *	cpu_v7_do_idle()
@@ -61,8 +72,9 @@ ENTRY(cpu_v7_reset)
  *	IRQs are already disabled.
  */
 ENTRY(cpu_v7_do_idle)
-	.long	0xe320f003			@ ARM V7 WFI instruction
+	wfi
 	mov	pc, lr
+ENDPROC(cpu_v7_do_idle)
 
 ENTRY(cpu_v7_dcache_clean_area)
 #ifndef TLB_CAN_READ_FROM_L1_CACHE
@@ -74,6 +86,7 @@ ENTRY(cpu_v7_dcache_clean_area)
 	dsb
 #endif
 	mov	pc, lr
+ENDPROC(cpu_v7_dcache_clean_area)
 
 /*
  *	cpu_v7_switch_mm(pgd_phys, tsk)
@@ -89,10 +102,7 @@ ENTRY(cpu_v7_switch_mm)
 #ifdef CONFIG_MMU
 	mov	r2, #0
 	ldr	r1, [r1, #MM_CONTEXT_ID]	@ get mm->context.id
-#ifndef CONFIG_ARCH_CHIRON
-	orr	r0, r0, #TTB_RGN_OC_WB		@ mark PTWs outer cacheable, WB
-#else
-	and	r0, r0, #0xFFFFFF00
+	orr	r0, r0, #TTB_FLAGS
 #endif
 	mcr	p15, 0, r2, c13, c0, 1		@ set reserved context ID
 	isb
@@ -100,8 +110,8 @@ ENTRY(cpu_v7_switch_mm)
 	isb
 	mcr	p15, 0, r1, c13, c0, 1		@ set context ID
 	isb
-#endif
 	mov	pc, lr
+ENDPROC(cpu_v7_switch_mm)
 
 /*
  *	cpu_v7_set_pte_ext(ptep, pte)
@@ -152,8 +162,19 @@ ENTRY(cpu_v7_set_pte_ext)
 
 	str	r3, [r0]
 	mcr	p15, 0, r0, c7, c10, 1		@ flush_pte
+#if 0	/* Enable this with arm coherent feature */
+	/* Read the coherent walk feature variable to see if we
+	 * need to flush the new entry
+	 */
+	.globl arm_feature_coherent_walk
+	ldr r2, =arm_feature_coherent_walk
+	ldr r2, [r2]
+	cmp r2, #0
+	mcreq	p15, 0, r0, c7, c10, 1	@ flush_pte if CW==0
+#endif
 #endif
 	mov	pc, lr
+ENDPROC(cpu_v7_set_pte_ext)
 
 cpu_v7_name:
 	.ascii	"ARMv7 Processor"
@@ -177,10 +198,14 @@ cpu_v7_name:
  *	- cache type register is implemented
  */
 __v7_setup:
+	mrc	p15, 0, r0, c1, c0, 0
+	orr	r0, #0x400			@ SWP
+	mcr	p15, 0, r0, c1, c0, 0
 #ifdef CONFIG_SMP
 	mrc	p15, 0, r0, c1, c0, 1		@ Enable SMP/nAMP mode
-	orr	r0, r0, #(0x1 << 6)
-	mcr	p15, 0, r0, c1, c0, 1
+	tst	r0, #(0x1 << 6)			@ If it's already set,don't set
+	orreq	r0, r0, #(0x1 << 6)		@ FIX: Imple-dep A9 bit position
+	mcreq	p15, 0, r0, c1, c0, 1
 #endif
 	adr	r12, __v7_setup_stack		@ the local stack
 	stmia	r12, {r0-r5, r7, r9, r11, lr}
@@ -194,11 +219,7 @@ __v7_setup:
 #ifdef CONFIG_MMU
 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
 	mcr	p15, 0, r10, c2, c0, 2		@ TTB control register
-#ifndef CONFIG_ARCH_CHIRON
-	orr	r4, r4, #TTB_RGN_OC_WB		@ mark PTWs outer cacheable, WB
-#else
-	and	r4, r4, #0xFFFFFF00
-#endif
+	orr	r4, r4, #TTB_FLAGS
 	mcr	p15, 0, r4, c2, c0, 0		@ load TTB0
 	mcr	p15, 0, r4, c2, c0, 1		@ load TTB1
 	mov	r10, #0x1f			@ domains 0, 1 = manager
@@ -210,7 +231,7 @@ __v7_setup:
 	bic	r0, r0, r5			@ clear bits them
 	orr	r0, r0, r6			@ set them
 	mov	pc, lr				@ return to head.S:__ret
-
+ENDPROC(__v7_setup)
 	/*
 	 *         V X F   I D LR
 	 * .... ...E PUI. .T.T 4RVI ZFRS BLDP WCAM
@@ -262,7 +283,8 @@ __v7_proc_info:
 		PMD_SECT_BUFFERABLE | \
 		PMD_SECT_CACHEABLE | \
 		PMD_SECT_AP_WRITE | \
-		PMD_SECT_AP_READ
+		PMD_SECT_AP_READ  | \
+		PMD_SECT_SMP
 #else
 	.long   PMD_TYPE_SECT | \
                 PMD_SECT_BUFFERABLE | \
