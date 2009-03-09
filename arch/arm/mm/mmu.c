@@ -51,7 +51,11 @@ pmd_t *top_pmd;
 #ifdef CONFIG_CPU_DCACHE_DISABLE
 static unsigned int cachepolicy __initdata = CPOLICY_BUFFERED;
 #else
+#ifdef CONFIG_SMP
+static unsigned int cachepolicy __initdata = CPOLICY_WRITEALLOC;
+#else
 static unsigned int cachepolicy __initdata = CPOLICY_WRITEBACK;
+#endif
 #endif
 static unsigned int ecc_mask __initdata = 0;
 pgprot_t pgprot_user;
@@ -300,6 +304,18 @@ static void __init build_mem_type_table(void)
 		mem_types[MT_DEVICE_WC].prot_sect |= PMD_SECT_BUFFERABLE;
 	}
 
+#ifdef CONFIG_SMP
+	/* To ensure the cache coherency between multiple ARMv6 cores,
+	 * the cache policy has to be write-allocate i
+	 */
+	if ((cpu_arch == CPU_ARCH_ARMv6 || cpu_arch == CPU_ARCH_ARMv7)
+				&& cachepolicy >= CPOLICY_WRITEBACK)
+#if defined(CONFIG_CPU_DCACHE_DISABLE)
+	cachepolicy = CPOLICY_BUFFERED;
+#else
+	cachepolicy = CPOLICY_WRITEALLOC;
+#endif
+#endif
 	/*
 	 * ARMv5 and lower, bit 4 must be set for page tables.
 	 * (was: cache "update-able on write" bit on ARM610)

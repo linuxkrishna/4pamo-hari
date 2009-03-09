@@ -20,8 +20,17 @@
 
 #define TTB_C		(1 << 0)
 #define TTB_S		(1 << 1)
+#define TTB_RGN_NC	(0 << 3)
+#define TTB_RGN_OC_WBWA	(1 << 3)
 #define TTB_RGN_OC_WT	(2 << 3)
 #define TTB_RGN_OC_WB	(3 << 3)
+
+#ifndef CONFIG_SMP
+#define TTB_FLAGS	TTB_C|TTB_RGN_OC_WB	@ mark PTWs cacheable,outer WB
+#else
+#define TTB_FLAGS	TTB_C|TTB_S|TTB_RGN_OC_WBWA
+					@ mark PTWs cacheable,shared,outer WBWA
+#endif
 
 ENTRY(cpu_v7_proc_init)
 	mov	pc, lr
@@ -168,6 +177,11 @@ cpu_v7_name:
  *	- cache type register is implemented
  */
 __v7_setup:
+#ifdef CONFIG_SMP
+	mrc	p15, 0, r0, c1, c0, 1		@ Enable SMP/nAMP mode
+	orr	r0, r0, #(0x1 << 6)
+	mcr	p15, 0, r0, c1, c0, 1
+#endif
 	adr	r12, __v7_setup_stack		@ the local stack
 	stmia	r12, {r0-r5, r7, r9, r11, lr}
 	bl	v7_flush_dcache_all
