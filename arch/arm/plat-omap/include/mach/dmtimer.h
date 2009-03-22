@@ -50,6 +50,9 @@
 #define TIMER_32K_SYNCHRONIZED          0x48320010
 #endif
 
+#ifdef CONFIG_LOCAL_TIMERS
+extern void __iomem *twd_base;
+#endif
 struct omap_dm_timer;
 struct clk;
 

@@ -189,12 +189,15 @@ static void __init omap2_gp_clocksource_init(void)
 
 static void __init omap2_gp_timer_init(void)
 {
+#ifdef CONFIG_LOCAL_TIMERS
+	twd_base = IO_ADDRESS(OMAP44XX_LOCAL_TWD_BASE);
+#endif
 #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
 	/*
 	 * The dummy clock device has to be registered before the main device
 	 * so that the latter will broadcast the clock events
 	 */
-	local_timer_setup(smp_processor_id());
+	local_timer_setup();
 #endif
 	omap_dm_timer_init();
 

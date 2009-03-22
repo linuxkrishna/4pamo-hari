@@ -214,7 +214,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 	 * dummy (!CONFIG_LOCAL_TIMERS), it was already registers in
 	 * omap_timer_init
 	 */
-	local_timer_setup(cpu);
+	local_timer_setup();
 #endif
 
 	/*
