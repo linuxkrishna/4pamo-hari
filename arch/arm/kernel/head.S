@@ -77,7 +77,7 @@
 	.section ".text.head", "ax"
 	.type	stext, %function
 ENTRY(stext)
-#ifdef CONFIG_MACH_OMAP_4430VIRTIO
+#ifdef CONFIG_ARCH_CHIRON
 #define ROM_CODE_SIMULATE
 #endif
 
