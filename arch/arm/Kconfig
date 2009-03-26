@@ -1246,9 +1246,9 @@ source "drivers/regulator/Kconfig"
 
 source "drivers/uio/Kconfig"
 
-source "drivers/dsp/bridge/Kconfig"
-
 source "drivers/dsp/syslink/Kconfig"
+
+source "drivers/dsp/bridge/Kconfig"
 
 if ARCH_OMAP
 source "drivers/cbus/Kconfig"

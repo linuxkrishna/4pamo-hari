@@ -123,7 +123,7 @@ static void MEM_Check(void)
 	struct list_head *last = &mMan.lst.head;
 	struct list_head *curr = mMan.lst.head.next;
 
-	if (!list_empty((struct list_head*)&mMan.lst)) {
+	if (!list_empty((struct list_head *)&mMan.lst)) {
 		GT_0trace(MEM_debugMask, GT_7CLASS, "*** MEMORY LEAK ***\n");
 		GT_0trace(MEM_debugMask, GT_7CLASS,
 			  "Addr      Size      Caller\n");
@@ -147,9 +147,9 @@ static void MEM_Check(void)
 			}
 		}
 	}
-	DBC_Ensure(list_empty((struct list_head*)&mMan.lst));
+	DBC_Ensure(list_empty((struct list_head *)&mMan.lst));
 }
-
+EXPORT_SYMBOL(MEM_Check);
 #endif
 
 void MEM_ExtPhysPoolInit(u32 poolPhysBase, u32 poolSize)
@@ -177,6 +177,8 @@ void MEM_ExtPhysPoolInit(u32 poolPhysBase, u32 poolSize)
 			  poolPhysBase, poolSize, poolVirtBase);
 	}
 }
+EXPORT_SYMBOL(MEM_ExtPhysPoolInit);
+
 
 static void MEM_ExtPhysPoolRelease(void)
 {
@@ -187,6 +189,7 @@ static void MEM_ExtPhysPoolRelease(void)
 		extPhysMemPoolEnabled = false;
 	}
 }
+EXPORT_SYMBOL(MEM_ExtPhysPoolRelease);
 
 /*
  *  ======== MEM_ExtPhysMemAlloc ========
@@ -242,6 +245,8 @@ static void *MEM_ExtPhysMemAlloc(u32 bytes, u32 align, OUT u32 *pPhysAddr)
 		}
 	}
 }
+EXPORT_SYMBOL(MEM_ExtPhysMemAlloc);
+
 
 /*
  *  ======== MEM_Alloc ========
@@ -270,7 +275,10 @@ void *MEM_Alloc(u32 cBytes, enum MEM_POOLATTRS type)
 				pMem->dwSignature = memInfoSign;
 
 				spin_lock(&mMan.lock);
-				list_add_tail((struct list_head *)pMem, (struct list_head *)&mMan.lst);
+
+				list_add_tail((struct list_head *)pMem,
+					(struct list_head *)&mMan.lst);
+
 				spin_unlock(&mMan.lock);
 
 				pMem = (void *)((u32)pMem +
@@ -292,7 +300,8 @@ void *MEM_Alloc(u32 cBytes, enum MEM_POOLATTRS type)
 				pMem->dwSignature = memInfoSign;
 
 				spin_lock(&mMan.lock);
-				list_add_tail((struct list_head *) pMem, (struct list_head*)&mMan.lst);
+				list_add_tail((struct list_head *)
+					pMem, (struct list_head *)&mMan.lst);
 				spin_unlock(&mMan.lock);
 
 				pMem = (void *)((u32)pMem +
@@ -311,6 +320,7 @@ void *MEM_Alloc(u32 cBytes, enum MEM_POOLATTRS type)
 
 	return pMem;
 }
+EXPORT_SYMBOL(MEM_Alloc);
 
 /*
  *  ======== MEM_AllocPhysMem ========
@@ -346,6 +356,8 @@ void *MEM_AllocPhysMem(u32 cBytes, u32 ulAlign, OUT u32 *pPhysicalAddress)
 	}
 	return pVaMem;
 }
+EXPORT_SYMBOL(MEM_AllocPhysMem);
+
 
 /*
  *  ======== MEM_Calloc ========
@@ -380,7 +392,8 @@ void *MEM_Calloc(u32 cBytes, enum MEM_POOLATTRS type)
 				pMem->caller = __builtin_return_address(0);
 				pMem->dwSignature = memInfoSign;
 				spin_lock(&mMan.lock);
-				list_add_tail((struct list_head *) pMem, (struct list_head*)&mMan.lst);
+				list_add_tail((struct list_head *) pMem,
+					(struct list_head *)&mMan.lst);
 				spin_unlock(&mMan.lock);
 				pMem = (void *)((u32)pMem +
 					sizeof(struct memInfo));
@@ -405,7 +418,10 @@ void *MEM_Calloc(u32 cBytes, enum MEM_POOLATTRS type)
 				pMem->caller = __builtin_return_address(0);
 				pMem->dwSignature = memInfoSign;
 				spin_lock(&mMan.lock);
-				list_add_tail((struct list_head *)pMem, (struct list_head *)&mMan.lst);
+
+				list_add_tail((struct list_head *)pMem,
+					(struct list_head *)&mMan.lst);
+
 				spin_unlock(&mMan.lock);
 				pMem = (void *)((u32)pMem +
 					sizeof(struct memInfo));
@@ -422,6 +438,7 @@ void *MEM_Calloc(u32 cBytes, enum MEM_POOLATTRS type)
 
 	return pMem;
 }
+EXPORT_SYMBOL(MEM_Calloc);
 
 /*
  *  ======== MEM_Exit ========
@@ -443,6 +460,7 @@ void MEM_Exit(void)
 	MEM_ExtPhysPoolRelease();
 	DBC_Ensure(cRefs >= 0);
 }
+EXPORT_SYMBOL(MEM_Exit);
 
 /*
  *  ======== MEM_FlushCache ========
@@ -479,6 +497,7 @@ void MEM_FlushCache(void *pMemBuf, u32 cBytes, s32 FlushType)
 	}
 
 }
+EXPORT_SYMBOL(MEM_FlushCache);
 
 
 /*
@@ -518,7 +537,7 @@ void MEM_Free(IN void *pMemBuf)
 #endif
 	}
 }
-
+EXPORT_SYMBOL(MEM_Free);
 /*
  *  ======== MEM_FreePhysMem ========
  *  Purpose:
@@ -537,7 +556,7 @@ void MEM_FreePhysMem(void *pVirtualAddress, u32 pPhysicalAddress,
 		dma_free_coherent(NULL, cBytes, pVirtualAddress,
 				 pPhysicalAddress);
 }
-
+EXPORT_SYMBOL(MEM_FreePhysMem);
 /*
  *  ======== MEM_Init ========
  *  Purpose:
@@ -566,3 +585,4 @@ bool MEM_Init(void)
 
 	return true;
 }
+EXPORT_SYMBOL(MEM_Init);

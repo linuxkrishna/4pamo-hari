@@ -110,6 +110,7 @@ static int test_and_set(volatile void *ptr, int val)
 	asm volatile (" swp %0, %0, [%1]" : "+r" (ret) : "r"(ptr) : "memory");
 	return ret;
 }
+EXPORT_SYMBOL(test_and_set);
 
 static void timeout_callback(unsigned long hWaitObj);
 
@@ -145,6 +146,7 @@ signed long int SYNC_CloseEvent(struct SYNC_OBJECT *hEvent)
 
 	return status;
 }
+EXPORT_SYMBOL(SYNC_CloseEvent);
 
 /*
  *  ======== SYNC_Exit ========
@@ -155,7 +157,7 @@ void SYNC_Exit(void)
 {
 	GT_0trace(SYNC_debugMask, GT_5CLASS, "SYNC_Exit\n");
 }
-
+EXPORT_SYMBOL(SYNC_Exit);
 /*
  *  ======== SYNC_Init ========
  *  Purpose:
@@ -169,7 +171,7 @@ bool SYNC_Init(void)
 
 	return true;
 }
-
+EXPORT_SYMBOL(SYNC_Init);
 /*
  *  ======== SYNC_OpenEvent ========
  *  Purpose:
@@ -203,7 +205,7 @@ signed long int SYNC_OpenEvent(OUT struct SYNC_OBJECT **phEvent,
 
 	return status;
 }
-
+EXPORT_SYMBOL(SYNC_OpenEvent);
 /*
  *  ======== SYNC_ResetEvent ========
  *  Purpose:
@@ -229,7 +231,7 @@ signed long int SYNC_ResetEvent(struct SYNC_OBJECT *hEvent)
 
 	return status;
 }
-
+EXPORT_SYMBOL(SYNC_ResetEvent);
 /*
  *  ======== SYNC_SetEvent ========
  *  Purpose:
@@ -279,7 +281,7 @@ signed long int SYNC_SetEvent(struct SYNC_OBJECT *hEvent)
 	}
 	return status;
 }
-
+EXPORT_SYMBOL(SYNC_SetEvent);
 /*
  *  ======== SYNC_WaitOnEvent ========
  *  Purpose:
@@ -305,7 +307,7 @@ signed long int SYNC_WaitOnEvent(struct SYNC_OBJECT *hEvent, u32 dwTimeout)
 	}
 	return status;
 }
-
+EXPORT_SYMBOL(SYNC_WaitOnEvent);
 /*
  *  ======== SYNC_WaitOnMultipleEvents ========
  *  Purpose:
@@ -406,6 +408,7 @@ signed long int SYNC_WaitOnMultipleEvents(struct SYNC_OBJECT **hSyncEvents,
 		MEM_Free(Wp);
 	return status;
 }
+EXPORT_SYMBOL(SYNC_WaitOnMultipleEvents);
 
 static void timeout_callback(unsigned long hWaitObj)
 {
@@ -414,6 +417,7 @@ static void timeout_callback(unsigned long hWaitObj)
 		up(&pWaitObj->sem);
 
 }
+EXPORT_SYMBOL(timeout_callback);
 
 /*
  *  ======== SYNC_DeleteCS ========
@@ -452,7 +456,7 @@ signed long int SYNC_DeleteCS(struct SYNC_CSOBJECT *hCSObj)
 
 	return status;
 }
-
+EXPORT_SYMBOL(SYNC_DeleteCS);
 /*
  *  ======== SYNC_EnterCS ========
  */
@@ -499,7 +503,7 @@ signed long int SYNC_EnterCS(struct SYNC_CSOBJECT *hCSObj)
 
 	return status;
 }
-
+EXPORT_SYMBOL(SYNC_EnterCS);
 /*
  *  ======== SYNC_InitializeCS ========
  */
@@ -525,6 +529,7 @@ signed long int SYNC_InitializeCS(OUT struct SYNC_CSOBJECT **phCSObj)
 	DBC_Assert(DSP_FAILED(status) || (pCSObj));
 	return status;
 }
+EXPORT_SYMBOL(SYNC_InitializeCS);
 
 signed long int SYNC_InitializeDPCCS(OUT struct SYNC_CSOBJECT **phCSObj)
 {
@@ -562,7 +567,7 @@ signed long int SYNC_InitializeDPCCS(OUT struct SYNC_CSOBJECT **phCSObj)
 
 	return status;
 }
-
+EXPORT_SYMBOL(SYNC_InitializeDPCCS);
 /*
  *  ======== SYNC_LeaveCS ========
  */
@@ -601,4 +606,4 @@ signed long int SYNC_LeaveCS(struct SYNC_CSOBJECT *hCSObj)
 
 	return status;
 }
-
+EXPORT_SYMBOL(SYNC_LeaveCS);

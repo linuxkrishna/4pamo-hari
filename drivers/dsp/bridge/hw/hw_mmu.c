@@ -42,6 +42,8 @@
 #include <MMURegAcM.h>
 #include <hw_defs.h>
 #include <hw_mmu.h>
+#include<linux/kernel.h>
+#include<linux/module.h>
 
 /* ============================================================================
 * GLOBAL VARIABLES DECLARATIONS
@@ -64,6 +66,9 @@
 #define MMU_SMALL_PAGE_MASK      0xFFFFF000
 
 #define MMU_LOAD_TLB        0x00000001
+#define NUM_TLB_ENTRIES 32
+
+
 
 /* ----------------------------------------------------------------------------
 * TYPE:         HW_MMUPageSize_t
@@ -220,6 +225,7 @@ HW_STATUS HW_MMU_Enable(const u32 baseAddress)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_Enable);
 
 HW_STATUS HW_MMU_Disable(const u32 baseAddress)
 {
@@ -229,6 +235,7 @@ HW_STATUS HW_MMU_Disable(const u32 baseAddress)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_Disable);
 
 HW_STATUS HW_MMU_AutoIdleEnable(const u32 baseAddress)
 {
@@ -238,6 +245,7 @@ HW_STATUS HW_MMU_AutoIdleEnable(const u32 baseAddress)
 	status = RET_OK;
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_AutoIdleEnable);
 
 HW_STATUS HW_MMU_NumLockedGet(const u32 baseAddress, u32 *numLockedEntries)
 {
@@ -247,6 +255,8 @@ HW_STATUS HW_MMU_NumLockedGet(const u32 baseAddress, u32 *numLockedEntries)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_NumLockedGet);
+
 
 HW_STATUS HW_MMU_NumLockedSet(const u32 baseAddress, u32 numLockedEntries)
 {
@@ -256,6 +266,8 @@ HW_STATUS HW_MMU_NumLockedSet(const u32 baseAddress, u32 numLockedEntries)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_NumLockedSet);
+
 
 HW_STATUS HW_MMU_VictimNumGet(const u32 baseAddress, u32 *victimEntryNum)
 {
@@ -265,6 +277,8 @@ HW_STATUS HW_MMU_VictimNumGet(const u32 baseAddress, u32 *victimEntryNum)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_VictimNumGet);
+
 
 HW_STATUS HW_MMU_VictimNumSet(const u32 baseAddress, u32 victimEntryNum)
 {
@@ -274,6 +288,7 @@ HW_STATUS HW_MMU_VictimNumSet(const u32 baseAddress, u32 victimEntryNum)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_VictimNumSet);
 
 HW_STATUS HW_MMU_TLBFlushAll(const u32 baseAddress)
 {
@@ -283,6 +298,7 @@ HW_STATUS HW_MMU_TLBFlushAll(const u32 baseAddress)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_TLBFlushAll);
 
 HW_STATUS HW_MMU_EventAck(const u32 baseAddress, u32 irqMask)
 {
@@ -292,6 +308,7 @@ HW_STATUS HW_MMU_EventAck(const u32 baseAddress, u32 irqMask)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_EventAck);
 
 HW_STATUS HW_MMU_EventDisable(const u32 baseAddress, u32 irqMask)
 {
@@ -303,6 +320,7 @@ HW_STATUS HW_MMU_EventDisable(const u32 baseAddress, u32 irqMask)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_EventDisable);
 
 HW_STATUS HW_MMU_EventEnable(const u32 baseAddress, u32 irqMask)
 {
@@ -315,7 +333,7 @@ HW_STATUS HW_MMU_EventEnable(const u32 baseAddress, u32 irqMask)
 
 	return status;
 }
-
+EXPORT_SYMBOL(HW_MMU_EventEnable);
 
 HW_STATUS HW_MMU_EventStatus(const u32 baseAddress, u32 *irqMask)
 {
@@ -325,7 +343,7 @@ HW_STATUS HW_MMU_EventStatus(const u32 baseAddress, u32 *irqMask)
 
 	return status;
 }
-
+EXPORT_SYMBOL(HW_MMU_EventStatus);
 
 HW_STATUS HW_MMU_FaultAddrRead(const u32 baseAddress, u32 *addr)
 {
@@ -339,6 +357,8 @@ HW_STATUS HW_MMU_FaultAddrRead(const u32 baseAddress, u32 *addr)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_FaultAddrRead);
+
 
 HW_STATUS HW_MMU_TTBSet(const u32 baseAddress, u32 TTBPhysAddr)
 {
@@ -355,6 +375,7 @@ HW_STATUS HW_MMU_TTBSet(const u32 baseAddress, u32 TTBPhysAddr)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_TTBSet);
 
 HW_STATUS HW_MMU_TWLEnable(const u32 baseAddress)
 {
@@ -364,6 +385,7 @@ HW_STATUS HW_MMU_TWLEnable(const u32 baseAddress)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_TWLEnable);
 
 HW_STATUS HW_MMU_TWLDisable(const u32 baseAddress)
 {
@@ -373,6 +395,8 @@ HW_STATUS HW_MMU_TWLDisable(const u32 baseAddress)
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_TWLDisable);
+
 
 HW_STATUS HW_MMU_TWLIsEnabled (const u32 baseAddress,
 	u32 *twlIsEnabled)
@@ -383,6 +407,8 @@ HW_STATUS HW_MMU_TWLIsEnabled (const u32 baseAddress,
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_TWLIsEnabled);
+
 
 HW_STATUS HW_MMU_TWLIsRunning(const u32   baseAddress,
 	u32 *const  twlIsRunning)
@@ -399,6 +425,7 @@ HW_STATUS HW_MMU_TWLIsRunning(const u32   baseAddress,
 	return status;
 
 }
+EXPORT_SYMBOL(HW_MMU_TWLIsRunning);
 
 HW_STATUS HW_MMU_TLBFlush(const u32 baseAddress,
 	u32 virtualAddr,
@@ -438,6 +465,8 @@ HW_STATUS HW_MMU_TLBFlush(const u32 baseAddress,
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_TLBFlush);
+
 
 HW_STATUS HW_MMU_TLBAdd(const u32        baseAddress,
 	u32              physicalAddr,
@@ -509,6 +538,9 @@ HW_STATUS HW_MMU_TLBAdd(const u32        baseAddress,
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_TLBAdd);
+
+
 
 HW_STATUS HW_MMU_PteSet(const u32        pgTblVa,
 	u32              physicalAddr,
@@ -577,6 +609,7 @@ HW_STATUS HW_MMU_PteSet(const u32        pgTblVa,
 
 	return status;
 }
+EXPORT_SYMBOL(HW_MMU_PteSet);
 
 HW_STATUS HW_MMU_PteClear(const u32  pgTblVa,
 	u32        virtualAddr,
@@ -619,7 +652,7 @@ HW_STATUS HW_MMU_PteClear(const u32  pgTblVa,
 
 	return status;
 }
-
+EXPORT_SYMBOL(HW_MMU_PteClear);
 
 /* ============================================================================
 *  LOCAL FUNCTIONS
@@ -645,7 +678,7 @@ static HW_STATUS MMU_FlushEntry(const u32 baseAddress)
 
 	return status;
 }
-
+EXPORT_SYMBOL(MMU_FlushEntry);
 /*
 -----------------------------------------------------------------------------
  NAME        : MMU_SetCAMEntry                                                -
@@ -672,7 +705,7 @@ static HW_STATUS MMU_SetCAMEntry(const u32    baseAddress,
 
 	return status;
 }
-
+EXPORT_SYMBOL(MMU_SetCAMEntry);
  /*
 -----------------------------------------------------------------------------
  NAME        : MMU_SetRAMEntry                                                -
@@ -703,4 +736,86 @@ static HW_STATUS MMU_SetRAMEntry(const u32       baseAddress,
 	return status;
 
 }
+EXPORT_SYMBOL(MMU_SetRAMEntry);
+
+long HW_MMU_TLBDump(const u32 baseAddress, bool showInvEntries)
+{
+	u32                       i;
+	u32                       lockSave;
+	u32                       cam;
+	u32                       ram;
+
+
+	/*  Save off the lock register contents,
+	we'll restore it when we are done  */
+
+	lockSave = MMUMMU_LOCKReadRegister32(baseAddress);
+
+	printk(KERN_ALERT "TLB locked entries = %u, current victim = %u\n",
+		((lockSave & MMU_MMU_LOCK_BaseValue_MASK)
+		>> MMU_MMU_LOCK_BaseValue_OFFSET),
+		((lockSave & MMU_MMU_LOCK_CurrentVictim_MASK)
+		>> MMU_MMU_LOCK_CurrentVictim_OFFSET));
+
+	for (i = 0; i < NUM_TLB_ENTRIES; i++) {
+
+		MMUMMU_LOCKCurrentVictimWrite32(baseAddress, i);
+		cam = MMUMMU_CAMReadRegister32(baseAddress);
+		ram = MMUMMU_RAMReadRegister32(baseAddress);
+
+	if ((cam & 0x4) != 0) {
+
+		printk(KERN_ALERT "TLB Entry [0x%x]: VA = 0x%x   PA = 0x%x\
+		Protected = 0x%x\n)",
+						i,
+		(cam & MMU_ADDR_MASK),
+		(ram & MMU_ADDR_MASK),
+		(cam & 0x8) ? 1 : 0);
+
+	} else if (showInvEntries != FALSE) {
+			printk(KERN_ALERT "TLB Entry [0x%x]: <INVALID>\n", i);
+		}
+	}
+	MMUMMU_LOCKWriteRegister32(baseAddress, lockSave);
+	return RET_OK;
+}
+EXPORT_SYMBOL(HW_MMU_TLBDump);
+
+u32 HW_MMU_PtePhyAddr(u32 pteVal, u32 pteSize)
+{
+	u32	retVal = 0;
+
+	switch (pteSize) {
+
+	case HW_PAGE_SIZE_4KB:
+		retVal = pteVal & MMU_SMALL_PAGE_MASK;
+		break;
+	case HW_PAGE_SIZE_64KB:
+		retVal = pteVal & MMU_LARGE_PAGE_MASK;
+		break;
+
+	case HW_PAGE_SIZE_1MB:
+		retVal = pteVal & MMU_SECTION_ADDR_MASK;
+		break;
+	case HW_PAGE_SIZE_16MB:
+		retVal = pteVal & MMU_SSECTION_ADDR_MASK;
+		break;
+	default:
+		/*  Invalid  */
+		break;
+
+	}
+
+	return retVal;
+}
+EXPORT_SYMBOL(HW_MMU_PtePhyAddr);
+
+
+
+
+
+
+
+
+
 

@@ -37,10 +37,6 @@
 #include <osal.h>
 
 
-#if defined (__cplusplus)
-extern "C" {
-#endif /* defined (__cplusplus) */
-
 
 /** ============================================================================
  *  @macro  COMPONENT_ID
@@ -56,11 +52,11 @@ extern "C" {
  *  @desc   Sets failure reason.
  *  ============================================================================
  */
-#if defined (DDSP_DEBUG)
-#define SET_FAILURE_REASON   TRC_SetReason (status, FID_C_OSAL_PRINT, __LINE__)
+#if defined DDSP_DEBUG
+#define SET_FAILURE_REASON   TRC_SetReason(status, FID_C_OSAL_PRINT, __LINE__)
 #else
 #define SET_FAILURE_REASON
-#endif /* if defined (DDSP_DEBUG) */
+#endif /* if defined DDSP_DEBUG */
 
 
 /** ============================================================================
@@ -82,7 +78,7 @@ static unsigned long int  PRINT_IsInitialized  = FALSE   ;
  */
 
 signed long int
-PRINT_init (void)
+PRINT_init(void)
 {
     signed long int status = DSP_SOK ;
 
@@ -102,7 +98,7 @@ PRINT_init (void)
  */
 
 signed long int
-PRINT_exit (void)
+PRINT_exit(void)
 {
     signed long int status = DSP_SOK ;
 
@@ -121,25 +117,22 @@ PRINT_exit (void)
  *  ============================================================================
  */
 
-void
-PRINT_Printf (char * format, ...)
+static void
+PRINT_Printf(char *format, ...)
 {
     unsigned long int  bufCount     = 0 ;
     va_list args             ;
-    char    buffer [512 ]    ;
+    char    buffer[512]    ;
 
     buffer[0] = '<';
     buffer[1] = '1';
     buffer[2] = '>';
     bufCount  =  3 ;
 
-    va_start (args, format) ;
-    vsprintf (buffer + bufCount, format, args);
-    va_end   (args) ;
+    va_start(args, format) ;
+    vsprintf(buffer + bufCount, format, args);
+    va_end(args) ;
 
-    printk (buffer) ;
+    printk(buffer) ;
 }
 
-#if defined (__cplusplus)
-}
-#endif /* defined (__cplusplus) */
