@@ -125,7 +125,7 @@ DSP_STATUS WMD_DEH_Create(OUT struct DEH_MGR **phDehMgr,
 			pDehMgr->errInfo.dwVal2 = 0L;
 			pDehMgr->errInfo.dwVal3 = 0L;
 			/* Install ISR function for DSP MMU fault */
-			if ((request_irq(INT_DSP_MMU_IRQ, MMU_FaultIsr, 0,
+			if ((request_irq(INT_24XX_DSP_MMU, MMU_FaultIsr, 0,
 					    "DspBridge", (void *)pDehMgr)) == 0)
 				status = DSP_SOK;
 			else
@@ -160,7 +160,7 @@ DSP_STATUS WMD_DEH_Destroy(struct DEH_MGR *hDehMgr)
 		if (pDehMgr->hNtfy)
 			(void)NTFY_Delete(pDehMgr->hNtfy);
 		/* Disable DSP MMU fault */
-		free_irq(INT_DSP_MMU_IRQ, pDehMgr);
+		free_irq(INT_24XX_DSP_MMU, pDehMgr);
 		(void)DPC_Destroy(pDehMgr->hMmuFaultDpc);
 		/* Deallocate the DEH manager object */
 		MEM_FreeObject(pDehMgr);

@@ -26,6 +26,7 @@ stipulated in the agreement under which this program has been supplied.
 #include <hal_mbox.h>
 #include <hal_ocp.h>
 #include <linux/delay.h>
+#include <mach/irqs.h>
 
 
 
@@ -73,7 +74,7 @@ unsigned long int i_aIrqBit;
 /*DResourceHandler *Mailbx_iResourceHandler;*/
 #endif
 
-const unsigned long int KMboxMpuInterrupt = 26;
+const unsigned long int KMboxMpuInterrupt = INT_24XX_MAIL_U0_MPU ;
 
 const unsigned long int KMpuMailboxes = 2;
 

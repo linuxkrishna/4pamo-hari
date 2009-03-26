@@ -144,7 +144,7 @@
 /*  ----------------------------------- Define for This */
 #define USERMODE_ADDR   PAGE_OFFSET
 
-#define MAILBOX_IRQ INT_MAIL_MPU_IRQ
+#define MAILBOX_IRQ INT_24XX_MAIL_U0_MPU
 
 /*  ----------------------------------- Function Prototypes */
 static struct LST_LIST *CreateChirpList(u32 uChirps);

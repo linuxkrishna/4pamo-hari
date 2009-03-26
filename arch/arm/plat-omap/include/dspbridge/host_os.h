@@ -54,6 +54,7 @@
 #include <linux/ioport.h>
 #include <linux/platform_device.h>
 #include <dspbridge/dbtype.h>
+#include <mach/irqs.h>
 #if defined(OMAP_2430) || defined(OMAP_3430)
 #include <mach/clock.h>
 #ifdef OMAP_3430
