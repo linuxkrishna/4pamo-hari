@@ -1,21 +1,22 @@
+
 /** ============================================================================
- *  @file   _drvdefs.h
- *
- *  @path   $(NOTIFY)/gpp/src/inc
- *
- *  @desc   Defines internal data types and structures used by Linux Druver
- *
- *  @ver    1.00.00.01
- *  ============================================================================
- *  Copyright (c) Texas Instruments Incorporated 2002-2008
- *
- *  Use of this software is controlled by the terms and conditions found in the
- *  license agreement under which this software has been supplied or provided.
- *  ============================================================================
- */
+*  @file   _drvdefs.h
+*
+*  @path   $(NOTIFY)/gpp/src/inc
+*
+*  @desc   Defines internal data types and structures used by Linux Druver
+*
+*  @ver    1.00.00.01
+*  ============================================================================
+*  Copyright (c) Texas Instruments Incorporated 2002-2008
+*
+*  Use of this software is controlled by the terms and conditions found in the
+*  license agreement under which this software has been supplied or provided.
+*  ============================================================================
+*/
 
 
-#if !defined (_DRVDEFS_H)
+#if !defined _DRVDEFS_H
 #define _DRVDEFS_H
 
 /*  ----------------------------------- IPC Headers                 */
@@ -29,17 +30,17 @@
 /*  ----------------------------------- NOTIFY Headers*/
 #include <notify.h>
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 EXTERN "C" {
 #endif /* defined (__cplusplus) */
 
 
 /*  ============================================================================
- *  @macro  CMD_NOTIFY_XXXX
- *
- *  @desc   Command ids for NOTIFY functions.
- *  ============================================================================
- */
+*  @macro  CMD_NOTIFY_XXXX
+*
+*  @desc   Command ids for NOTIFY functions.
+*  ============================================================================
+*/
 #define NOTIFY_BASE_CMD                      (0x100)
 #define NOTIFY_DRV_CMD_DRIVERINIT            (NOTIFY_BASE_CMD + 1)
 #define NOTIFY_DRV_CMD_DRIVEREXIT            (NOTIFY_BASE_CMD + 2)
@@ -53,79 +54,79 @@ EXTERN "C" {
 
 
 /** ============================================================================
- *  @name   CMD_Args
- *
- *  @desc   Union defining arguments to be passed to ioctl calls. For the
- *          explanation of individual field please see the corresponding APIs.
+*  @name   CMD_Args
+*
+*  @desc   Union defining arguments to be passed to ioctl calls. For the
+*          explanation of individual field please see the corresponding APIs.
 
- *  @field  apiStatus
- *              Status returned by this API.
- *          apiArgs
- *              Union representing arguments for different APIs.
- *  ============================================================================
- */
+*  @field  apiStatus
+*              Status returned by this API.
+*          apiArgs
+*              Union representing arguments for different APIs.
+*  ============================================================================
+*/
 struct Notify_CmdArgs {
-    signed long int apiStatus ;
-    union {
-        struct {
-            void *   handle ;
-            struct Notify_Config * config ;
-            char *         driverName ;
-        } driverInitArgs ;
+signed long int apiStatus ;
+union {
+struct {
+void *handle ;
+struct Notify_Config *config ;
+char *driverName ;
+} driverInitArgs ;
 
-        struct {
-            void *   handle ;
-        } driverExitArgs ;
+struct {
+void *handle ;
+} driverExitArgs ;
 
-        struct {
-            void *   handle ;
-            unsigned long int          eventNo ;
-            unsigned long int     procId ;
-            FnNotifyCbck    fnNotifyCbck ;
-            void *          cbckArg ;
-        } unregisterEventArgs ;
+struct {
+void *handle ;
+unsigned long int          eventNo ;
+unsigned long int     procId ;
+FnNotifyCbck    fnNotifyCbck ;
+void *cbckArg ;
+} unregisterEventArgs ;
 
-        struct {
-            void *   handle ;
-            unsigned long int          eventNo ;
-            unsigned long int     procId ;
-            FnNotifyCbck    fnNotifyCbck ;
-            void *          cbckArg ;
-        } registerEventArgs ;
+struct {
+void *handle ;
+unsigned long int          eventNo ;
+unsigned long int     procId ;
+FnNotifyCbck    fnNotifyCbck ;
+void *cbckArg ;
+} registerEventArgs ;
 
-        struct {
-            void *   handle ;
-            unsigned long int          eventNo ;
-            unsigned long int    procId ;
-            unsigned long int          payload;
-            short int            waitClear;
-        } sendEventArgs ;
+struct {
+void *handle ;
+unsigned long int          eventNo ;
+unsigned long int    procId ;
+unsigned long int          payload;
+short int            waitClear;
+} sendEventArgs ;
 
-        struct {
-            void *          disableFlags ;
-        } disableArgs ;
+struct {
+void *disableFlags ;
+} disableArgs ;
 
-        struct {
-            void *          restoreFlags ;
-        } restoreArgs ;
+struct {
+void *restoreFlags ;
+} restoreArgs ;
 
-        struct {
-            void *   handle ;
-            unsigned long int          eventNo ;
-            unsigned long int     procId ;
-        } disableEventArgs ;
+struct {
+void *handle ;
+unsigned long int          eventNo ;
+unsigned long int     procId ;
+} disableEventArgs ;
 
-        struct {
-            void *   handle ;
-            unsigned long int          eventNo ;
-            unsigned long int     procId ;
-        } enableEventArgs ;
-    } apiArgs ;
+struct {
+void *handle ;
+unsigned long int          eventNo ;
+unsigned long int     procId ;
+} enableEventArgs ;
+} apiArgs ;
 };
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
-#endif /* defined (__cplusplus) */
+#endif /* defined __cplusplus */
 
 
-#endif  /* !defined (_DRVDEFS_H) */
+#endif  /* !defined _DRVDEFS_H */

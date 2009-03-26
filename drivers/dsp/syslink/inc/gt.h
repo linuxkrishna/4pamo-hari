@@ -1,3 +1,4 @@
+
 /*
  * gt.h
  *
@@ -241,7 +242,7 @@ extern struct GT_Config _GT_params;
 
 #define GT_assert(mask, expr) \
 	(!(expr) ? \
-	    printk("assertion violation: %s, line %d\n", \
+	    printk(KERN_ALERT "assertion violation: %s, line %d\n", \
 			    __FILE__, __LINE__), NULL : NULL)
 
 #define GT_config(config)     (_GT_params = *(config))

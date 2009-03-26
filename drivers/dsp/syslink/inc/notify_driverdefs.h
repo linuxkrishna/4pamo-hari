@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   notify_driverdefs.h
  *
@@ -15,7 +16,7 @@
  */
 
 
-#if !defined (NOTIFYDRIVERDEFS_H)
+#if !defined NOTIFYDRIVERDEFS_H
 #define NOTIFYDRIVERDEFS_H
 
 
@@ -28,7 +29,7 @@
 #include <notifydefs.h>
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 EXTERN "C" {
 #endif /* defined (__cplusplus) */
 
@@ -127,7 +128,7 @@ struct Notify_DriverProcInfo {
  */
  struct Notify_DriverAttrs {
     unsigned long int                numProc ;
-    struct Notify_DriverProcInfo procInfo [MAX_PROCESSORS] ;
+    struct Notify_DriverProcInfo procInfo[MAX_PROCESSORS] ;
 };
 
 /** ============================================================================
@@ -159,11 +160,11 @@ struct Notify_DriverProcInfo {
  */
 struct Notify_DriverHandle {
     short int                 isInit ;
-    char                name [NOTIFY_MAX_NAMELEN] ;
+    char                name[NOTIFY_MAX_NAMELEN] ;
     unsigned long int            notifyId ;
-    struct Notify_Interface *   fnTable ;
+    struct Notify_Interface *fnTable ;
     struct Notify_DriverAttrs   attrs ;
-    void *               driverObj ;
+    void *driverObj ;
 };
 
 
@@ -220,9 +221,9 @@ struct Notify_DriverHandle {
  */
 typedef
 signed long int
-(*FnNotifyDriverInit) (char *          driverName,
-                       struct Notify_Config *  config,
-                       void **          driverObj) ;
+(*FnNotifyDriverInit) (char *driverName,
+						struct Notify_Config *config,
+						void **driverObj) ;
 
 /** ============================================================================
  *  @name   FnNotifyDriverExit
@@ -309,11 +310,11 @@ signed long int
  */
 typedef
 signed long int
-(*FnNotifyRegisterEvent) (struct Notify_DriverHandle * handle,
-                          unsigned long int        procId,
-                          unsigned long int              eventNo,
-                          FnNotifyCbck        fnNotifyCbck,
-                          void *              cbckArg) ;
+(*FnNotifyRegisterEvent) (struct Notify_DriverHandle *handle,
+				unsigned long int        procId,
+				unsigned long int        eventNo,
+				FnNotifyCbck   fnNotifyCbck,
+				void *cbckArg) ;
 
 /** ============================================================================
  *  @func   FnNotifyUnregisterEvent
@@ -365,11 +366,11 @@ signed long int
  */
 typedef
 signed long int
-(*FnNotifyUnregisterEvent) (struct Notify_DriverHandle * handle,
-                            unsigned long int        procId,
-                            unsigned long int              eventNo,
-                            FnNotifyCbck        fnNotifyCbck,
-                            void *              cbckArg) ;
+(*FnNotifyUnregisterEvent) (struct Notify_DriverHandle *handle,
+				unsigned long int        procId,
+				unsigned long int        eventNo,
+				FnNotifyCbck        fnNotifyCbck,
+				void *cbckArg) ;
 
 /** ============================================================================
  *  @func   FnNotifySendEvent
@@ -422,11 +423,11 @@ signed long int
  */
 typedef
 signed long int
-(*FnNotifySendEvent) (struct Notify_DriverHandle * handle,
-                      unsigned long int        procId,
-                      unsigned long int              eventNo,
-                      unsigned long int              payload,
-                      short int                waitClear) ;
+(*FnNotifySendEvent) (struct Notify_DriverHandle *handle,
+				unsigned long int        procId,
+				unsigned long int              eventNo,
+				unsigned long int              payload,
+				short int                waitClear) ;
 
 /** ============================================================================
  *  @func   FnNotifyDisable
@@ -454,7 +455,7 @@ signed long int
  */
 typedef
 void *
-(*FnNotifyDisable) (struct Notify_DriverHandle * handle) ;
+(*FnNotifyDisable) (struct Notify_DriverHandle *handle) ;
 
 /** ============================================================================
  *  @func   FnNotifyRestore
@@ -495,8 +496,8 @@ void *
  */
 typedef
 signed long int
-(*FnNotifyRestore) (struct Notify_DriverHandle * handle,
-                    void *              flags) ;
+(*FnNotifyRestore) (struct Notify_DriverHandle *handle,
+						void *flags) ;
 
 /** ============================================================================
  *  @func   FnNotifyDisableEvent
@@ -535,9 +536,9 @@ signed long int
  */
 typedef
 signed long int
-(*FnNotifyDisableEvent) (struct Notify_DriverHandle * handle,
-                         unsigned long int        procId,
-                         unsigned long int              eventNo) ;
+(*FnNotifyDisableEvent) (struct Notify_DriverHandle *handle,
+				unsigned long int        procId,
+				unsigned long int              eventNo) ;
 
 /** ============================================================================
  *  @func   FnNotifyEnableEvent
@@ -576,11 +577,11 @@ signed long int
  */
 typedef
 signed long int
-(*FnNotifyEnableEvent) (struct Notify_DriverHandle * handle,
-                        unsigned long int        procId,
-                        unsigned long int              eventNo) ;
+(*FnNotifyEnableEvent) (struct Notify_DriverHandle *handle,
+				unsigned long int        procId,
+				unsigned long int              eventNo) ;
 
-#if defined (NOTIFY_DEBUG)
+#if defined NOTIFY_DEBUG
 /** ============================================================================
  *  @func   FnNotifyDebug
  *
@@ -612,7 +613,7 @@ signed long int
  */
 typedef
 signed long int
-(*FnNotifyDebug) (struct Notify_DriverHandle * handle) ;
+(*FnNotifyDebug) (struct Notify_DriverHandle *handle) ;
 #endif /* defined (NOTIFY_DEBUG) */
 
 
@@ -663,13 +664,13 @@ struct Notify_Interface {
     FnNotifyRestore         notifyRestore ;
     FnNotifyDisableEvent    notifyDisableEvent ;
     FnNotifyEnableEvent     notifyEnableEvent ;
-#if defined (NOTIFY_DEBUG)
+#if defined NOTIFY_DEBUG
     FnNotifyDebug           notifyDebug ;
 #endif /* defined (NOTIFY_DEBUG) */
 };
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif /* defined (__cplusplus) */
 

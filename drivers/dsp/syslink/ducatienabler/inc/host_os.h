@@ -30,10 +30,10 @@
 #include <linux/autoconf.h>
 #include <asm/system.h>
 #include <asm/atomic.h>
-//#include <asm/semaphore.h>
-#include <asm/uaccess.h>
+
+#include <linux/uaccess.h>
 #include <asm/irq.h>
-#include <asm/io.h>
+#include <linux/io.h>
 #include <linux/syscalls.h>
 #include <linux/version.h>
 #include <linux/kernel.h>
@@ -53,7 +53,7 @@
 #include <linux/vmalloc.h>
 #include <linux/ioport.h>
 #include <linux/platform_device.h>
-//#include <asm/arch/clock.h>
+
 #include <linux/clk.h>
 #include <linux/pagemap.h>
 #include <asm/cacheflush.h>

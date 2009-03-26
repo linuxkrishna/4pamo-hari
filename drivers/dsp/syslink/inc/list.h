@@ -1,3 +1,4 @@
+
 /*
  * list.h
  *
@@ -60,13 +61,13 @@ struct lst_list {
  *  @see    None.
  *  ==========================================================================*/
 
-typedef bool (*ListMatchFunc) (struct list_head *elem, void  *data);
+typedef bool (*ListMatchFunc)(struct list_head *elem, void  *data);
 
 
- 
-extern signed long int omap_list_search (IN  struct lst_list *list,
+
+extern signed long int omap_list_search(IN  struct lst_list *list,
 					IN  void  *data,
-					OUT struct list_head ** elem,
+					OUT struct list_head **elem,
 					IN  ListMatchFunc  matchFunc);
 
 #endif				/* LIST_ */

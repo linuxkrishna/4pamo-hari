@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   _notifydefs.h
  *
@@ -15,7 +16,7 @@
  */
 
 
-#if !defined (_NOTIFYDEFS_H)
+#if !defined _NOTIFYDEFS_H
 #define _NOTIFYDEFS_H
 
 
@@ -28,7 +29,7 @@
 #include <notifyerr.h>
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 EXTERN "C" {
 #endif /* defined (__cplusplus) */
 
@@ -50,12 +51,12 @@ EXTERN "C" {
  */
  struct Notify_State {
     unsigned short int               maxDrivers ;
-    struct Notify_DriverHandle  drivers [NOTIFY_MAX_DRIVERS] ;
-    void *               disableFlags [NOTIFY_MAX_DRIVERS] ;
+    struct Notify_DriverHandle  drivers[NOTIFY_MAX_DRIVERS] ;
+    void *disableFlags[NOTIFY_MAX_DRIVERS] ;
 };
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif /* defined (__cplusplus) */
 

@@ -28,10 +28,10 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
-#include <asm/uaccess.h>
-#include <asm/io.h>
+#include <linux/uaccess.h>
+#include <linux/io.h>
 
-#include <asm/io.h>
+#include <linux/io.h>
 #include <asm/pgtable.h>
 
 /*  ----------------------------------- IPC headers                 */
@@ -49,6 +49,7 @@
 
 /*  ----------------------------------- Notify headers              */
 #include <notify_mbxDriver.h>
+#include <global_var.h>
 
 
 
@@ -66,11 +67,7 @@
 #endif /* defined (CONFIG_PREEMPT_RT) */
 
 
-#if defined __cplusplus
-extern "C" {
-#endif /* defined (__cplusplus) */
 
-extern void NotifyMbxDrv_NonShmISR(IN void *refData);
 /** ============================================================================
  *  @macro  COMPONENT_ID
  *
@@ -93,11 +90,8 @@ extern void NotifyMbxDrv_NonShmISR(IN void *refData);
 #endif /* if defined (NOTIFY_DEBUG) */
 
 
-extern short int Notify_isInit;
-extern struct Notify_State Notify_StateObj;
 const unsigned long *LinearAddress;
 EXPORT_SYMBOL(LinearAddress);
-irqreturn_t Notify_Mailbox0User0_ISR(int temp, void *anArg, struct pt_regs *p);
 
 
 
@@ -140,9 +134,7 @@ static signed long int major = 233 ;
 
  *  ----------------------------------------------------------------------------
  */
-static
-int
-DRVMbx_open(struct inode *inode, struct file *filp) ;
+static int DRVMbx_open(struct inode *inode, struct file *filp);
 
 
 /** ----------------------------------------------------------------------------
@@ -193,7 +185,7 @@ static void  __exit DRVMbx_finalizeModule(void) ;
  *  ----------------------------------------------------------------------------
  */
 static struct file_operations driverOps = {
-open:    DRVMbx_open,
+.open = DRVMbx_open,
 } ;
 
 
@@ -289,7 +281,7 @@ void __exit DRVMbx_finalizeModule(void)
  *  @desc   Linux specific function to open the driver.
  *  ----------------------------------------------------------------------------
  */
-int DRVMbx_open(struct inode *inode, struct file *filp)
+static int DRVMbx_open(struct inode *inode, struct file *filp)
 {
 	return 0 ;
 }
@@ -308,7 +300,4 @@ module_init(DRVMbx_initializeModule) ;
 module_exit(DRVMbx_finalizeModule) ;
 
 
-#if defined __cplusplus
-}
-#endif /* defined (__cplusplus) */
 

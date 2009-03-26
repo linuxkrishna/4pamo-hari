@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   hal_platform.h
  *
@@ -15,7 +16,7 @@
  */
 
 
-#if !defined (HAL_PLATFORM_H)
+#if !defined HAL_PLATFORM_H
 #define HAL_PLATFORM_H
 
 
@@ -26,7 +27,7 @@
 #include <asm/arch/hardware.h>
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
 #endif /* defined (__cplusplus) */
 
@@ -51,7 +52,7 @@ extern "C" {
 #define HAL_MAILBOX_BASE              IO_ADDRESS(MAILBOX_BASE)
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif /* defined (__cplusplus) */
 

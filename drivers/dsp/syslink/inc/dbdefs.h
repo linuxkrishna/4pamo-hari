@@ -1,3 +1,4 @@
+
 /*
  * dbdefs.h
  *
@@ -140,8 +141,8 @@
 #define DSPWORDSIZE     sizeof(DSPWORD)
 
 /* Success & Failure macros  */
-//#define DSP_SUCCEEDED(Status)      likely((s32)(Status) >= 0)
-//#define DSP_FAILED(Status)         unlikely((s32)(Status) < 0)
+/*#define DSP_SUCCEEDED(Status)      likely((s32)(Status) >= 0)
+#define DSP_FAILED(Status)         unlikely((s32)(Status) < 0)*/
 
 /* Power control enumerations */
 #define PROC_PWRCONTROL             0x8070
@@ -361,7 +362,7 @@
 		u32 cbStruct;
 		enum DSP_CONNECTTYPE lType;
 		u32 uThisNodeStreamIndex;
-		void * hConnectedNode;
+		void *hConnectedNode;
 		struct DSP_UUID uiConnectedNodeID;
 		u32 uConnectedNodeStreamIndex;
 	} ;
@@ -411,7 +412,7 @@
 		struct DSP_NDBPROPS nbNodeDatabaseProps;
 		u32 uExecutionPriority;
 		enum NODE_STATE nsExecutionState;
-		void * hDeviceOwner;
+		void *hDeviceOwner;
 		u32 uNumberStreams;
 		struct DSP_STREAMCONNECT scStreamConnection[16];
 		u32 uNodeEnv;
@@ -432,7 +433,7 @@
  */
 	struct DSP_NOTIFICATION {
 		char *psName;
-		void * handle;
+		void *handle;
 	} ;
 
 /* The DSP_PROCESSORATTRIN structure describes the attributes of a processor */
@@ -525,7 +526,7 @@
 		u32 uNumberBufsAllowed;
 		u32 uNumberBufsInStream;
 		u32 ulNumberBytes;
-		void * hSyncObjectHandle;
+		void *hSyncObjectHandle;
 		enum DSP_STREAMSTATE ssStreamState;
 	} ;
 

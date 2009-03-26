@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   _intobject.h
  *
@@ -16,7 +17,7 @@
  */
 
 
-#if !defined (_INTOBJECT_H)
+#if !defined _INTOBJECT_H
 #define _INTOBJECT_H
 
 
@@ -24,7 +25,7 @@
 #include <gpptypes.h>
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
 #endif
 
@@ -43,7 +44,7 @@ extern "C" {
 } ;
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif
 

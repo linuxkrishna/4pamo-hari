@@ -22,9 +22,9 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 
-#include <asm/io.h>
+#include <linux/io.h>
 #include <asm/pgtable.h>
 MODULE_LICENSE("GPL");
 
@@ -47,6 +47,7 @@ MODULE_LICENSE("GPL");
 #include <gen_utils.h>
 #include <mem.h>
 #include <trc.h>
+#include <global_var.h>
 
 /* *============================================================================
 *@macro  COMPONENT_ID
@@ -90,7 +91,6 @@ MODULE_LICENSE("GPL");
 *@desc   Extern declaration to the Notify module initialization flag.
 *============================================================================
 */
-extern short int  Notify_isInit ;
 
 /* *============================================================================
 *@name  struct Notify_StateObj
@@ -98,7 +98,6 @@ extern short int  Notify_isInit ;
 *@desc   Extern declaration to the Notify state object instance.
 *============================================================================
 */
-extern struct Notify_State  Notify_StateObj ;
 
 
 /* *============================================================================
@@ -149,24 +148,25 @@ Notify_registerDriver(IN  char  *driverName,
 
 
 		for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-			drvHandle = &(Notify_StateObj.drivers [i]) ;
 
-			if ((drvHandle->fnTable != NULL)
-				&& (drvHandle->fnTable !=
+			drvHandle = &(Notify_StateObj.drivers[i]) ;
+
+			if ((drvHandle->fnTable != NULL) &&
+					(drvHandle->fnTable !=
 				(struct Notify_Interface *) TRUE)) {
 
 				if (GEN_strncmp(driverName,
-							drvHandle->name,
-							NOTIFY_MAX_NAMELEN)
-						== 0) {
-			/*Driver is already registered. Return error. */
+					drvHandle->name,
+					NOTIFY_MAX_NAMELEN)
+							== 0) {
+
 					status = NOTIFY_EALREADYEXISTS ;
 					break ;
 				}
 			}
 
 			if (drvHandle->fnTable == NULL) {
-			/*Found an empty slot, so block it. */
+				/*Found an empty slot, so block it. */
 				drvHandle->fnTable =
 					(struct Notify_Interface *) TRUE ;
 				status = NOTIFY_SOK ;

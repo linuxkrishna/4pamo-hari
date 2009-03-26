@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   notify_shmDriver.h
  *
@@ -21,17 +22,15 @@
 #define NOTIFY_SHMDRIVER_H_
 
 
-/*  ----------------------------------- IPC */
-//#include <ipctypes.h>
 
 /*  ----------------------------------- Notify       */
 #include <gpptypes.h>
 #include <notifyerr.h>
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 extern "C" {
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */
 
 
 /** ============================================================================
@@ -111,7 +110,7 @@ struct NotifyShmDrv_Attrs {
  */
 
 void
-NotifyMbxDrv_init (void) ;
+NotifyMbxDrv_init(void) ;
 
 /** ============================================================================
  *  @name   NotifyMbxDrv_exit
@@ -132,13 +131,13 @@ NotifyMbxDrv_init (void) ;
  */
 
 void
-NotifyMbxDrv_exit (void) ;
+NotifyMbxDrv_exit(void) ;
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 }
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */
 
 
-#endif  /* !defined (NOTIFY_SHMDRIVER_H_) */
+#endif  /* !defined  NOTIFY_SHMDRIVER_H_ */
 

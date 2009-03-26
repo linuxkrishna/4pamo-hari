@@ -65,6 +65,7 @@
 
 /*  ----------------------------------- This */
 #include <sync.h>
+#include <global_var.h>
 
 /*  ----------------------------------- Defines, Data Structures, Typedefs */
 #define SIGNATURE       0x434e5953	/* "SYNC" (in reverse) */
@@ -104,7 +105,7 @@ struct SYNC_DPCCSOBJECT {
 static struct GT_Mask SYNC_debugMask = { NULL, NULL };  /* GT trace variable */
 #endif
 
-static int test_and_set(volatile void *ptr, int val)
+static int test_and_set(REG void *ptr, int val)
 {
 	int ret = val;
 	asm volatile (" swp %0, %0, [%1]" : "+r" (ret) : "r"(ptr) : "memory");

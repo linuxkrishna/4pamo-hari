@@ -1,3 +1,4 @@
+
 /*
  * MMUAccInt.h
  *
@@ -76,7 +77,7 @@
 #define MMU_MMU_GFLUSH_GlobalFlush_MASK 0x1
 #define MMU_MMU_GFLUSH_GlobalFlush_OFFSET   0
 
-#define MMU_MMU_READ_CAM_OFFSET   0x68
-#define MMU_MMU_READ_RAM_OFFSET   0x6C
+#define MMU_MMU_READ_CAM_OFFSET  0x68
+#define MMU_MMU_READ_RAM_OFFSET  0x6C
 
 #endif /* _MMU_ACC_INT_H */

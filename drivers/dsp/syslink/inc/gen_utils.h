@@ -1,4 +1,5 @@
-/** ============================================================================
+
+/** =======================================================
  *  @file   gen_utils.h
  *
  *  @path   $(DSPLINK)/gpp/src/gen/
@@ -6,30 +7,30 @@
  *  @desc   Platform independent common library function interface.
  *
  *  @ver    1.51.00.08
- *  ============================================================================
+ *  =========================================================
  *  Copyright (c) Texas Instruments Incorporated 2002-2008
  *
  *  Use of this software is controlled by the terms and conditions found in the
  *  license agreement under which this software has been supplied or provided.
- *  ============================================================================
+ *  ==========================================================
  */
 
 
-#if !defined (GEN_H)
+#if !defined GEN_H
 #define GEN_H
 
 
-/*  ----------------------------------- DSP/BIOS Link               */
+/*  -------------- DSP/BIOS Link               */
 #include <ipc.h>
 #include <notifyerr.h>
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
 #endif /* defined (__cplusplus) */
 
 
-/** ============================================================================
+/** =============================================================
  *  @func   GEN_init
  *
  *  @desc   Initializes the GEN module's private state.
@@ -46,14 +47,14 @@ extern "C" {
  *  @leave  Subcomponent is initialized.
  *
  *  @see    GEN_Finalize
- *  ============================================================================
+ *  ==============================================================
  */
 
-signed long int
-GEN_init (void) ;
+		signed long int
+				GEN_init(void) ;
 
 
-/** ============================================================================
+/** ===============================================================
  *  @func   GEN_exit
  *
  *  @desc   Discontinues usage of the GEN module.
@@ -70,14 +71,14 @@ GEN_init (void) ;
  *  @leave  None
  *
  *  @see    GEN_Initialize
- *  ============================================================================
+ *  ================================================================
  */
 
-signed long int
-GEN_exit (void) ;
+		signed long int
+				GEN_exit(void) ;
 
 
-/** ============================================================================
+/** =================================================================
  *  @func   GEN_numToAscii
  *
  *  @desc   Converts a 1 or 2 digit number to a 2 digit string.
@@ -102,14 +103,15 @@ GEN_exit (void) ;
  *  @leave  The buffer to store output string is valid.
  *
  *  @see    None
- *  ============================================================================
+ *  =======================================================================
  */
 
-signed long int
-GEN_numToAscii (IN unsigned long int number, OUT char * strNumber) ;
+		signed long int
+				GEN_numToAscii(IN unsigned long int number,
+						OUT char *strNumber) ;
 
 
-/** ============================================================================
+/** ====================================================================
  *  @func   GEN_strncmp
  *
  *  @desc   Compares 2 ASCII strings.  Works the same way as stdio's strcmp.
@@ -135,17 +137,17 @@ GEN_numToAscii (IN unsigned long int number, OUT char * strNumber) ;
  *  @leave  None
  *
  *  @see    None
- *  ============================================================================
+ *  ====================================================================
  */
 
-signed long int
-GEN_strncmp (IN  CONST char * string1,
-             IN  CONST char * string2,
-             IN  unsigned long int        size) ;
+		signed long int
+				GEN_strncmp(IN  CONST char *string1,
+						IN  CONST char *string2,
+						IN  unsigned long int size) ;
 
-#define GEN_strcmp(string1,string2) GEN_Strncmp(string1,string2,0)
+#define GEN_strcmp(string1, string2) GEN_Strncmp(string1, string2, 0)
 
-/** ============================================================================
+/** ====================================================================
  *  @func   GEN_strncpy
  *
  *  @desc   Safe strcpy function.
@@ -172,16 +174,16 @@ GEN_strncmp (IN  CONST char * string1,
  *  @leave  None
  *
  *  @see    None
- *  ============================================================================
+ *  ==========================================================
  */
 
-signed long int
-GEN_strncpy (IN  char * destination,
-             IN  char * source,
-             IN  signed long int   maxNum) ;
+		signed long int
+				GEN_strncpy(IN  char *destination,
+						IN  char *source,
+						IN  signed long int maxNum) ;
 
 
-/** ============================================================================
+/** ==========================================================
  *  @func   GEN_strlen
  *
  *  @desc   Determines the length of a null terminated ASCI string.
@@ -205,14 +207,15 @@ GEN_strncpy (IN  char * destination,
  *  @leave  The pointer to the length field is valid.
  *
  *  @see    None
- *  ============================================================================
+ *  ======================================================
  */
 
-signed long int
-GEN_strlen (IN CONST char * strSrc, OUT unsigned long int * length) ;
+		signed long int
+				GEN_strlen(IN CONST char *strSrc,
+				OUT unsigned long int *length) ;
 
 
-/** ============================================================================
+/** =====================================================
  *  @func   GEN_wcharToAnsi
  *
  *  @desc   Converts a wide char string to an ansi string.
@@ -240,16 +243,16 @@ GEN_strlen (IN CONST char * strSrc, OUT unsigned long int * length) ;
  *  @leave  The destination buffer is valid.
  *
  *  @see    None
- *  ============================================================================
+ *  =====================================================
  */
 
-signed long int
-GEN_wcharToAnsi (OUT char  * destination,
-                 IN  short * source,
-                 IN  signed long int    numChars) ;
+		signed long int
+				GEN_wcharToAnsi(OUT char  *destination,
+						IN  short *source,
+						IN  signed long int numChars) ;
 
 
-/** ============================================================================
+/** =====================================================
  *  @func   GEN_ansiToWchar
  *
  *  @desc   Converts an ANSI string to a wide char string.
@@ -277,16 +280,16 @@ GEN_wcharToAnsi (OUT char  * destination,
  *  @leave  The destination buffer is valid.
  *
  *  @see    None
- *  ============================================================================
+ *  =====================================================
  */
 
-signed long int
-GEN_ansiToWchar (OUT short * destination,
-                 IN  char *  source,
-                 IN  signed long int    numChars) ;
+		signed long int
+				GEN_ansiToWchar(OUT short *destination,
+						IN  char *source,
+						IN  signed long int numChars) ;
 
 
-/** ============================================================================
+/** =====================================================
  *  @func   GEN_wstrlen
  *
  *  @desc   Determines the length of a null terminated wide character string.
@@ -310,14 +313,15 @@ GEN_ansiToWchar (OUT short * destination,
  *  @leave  The pointer to length of buffer is valid.
  *
  *  @see    None
- *  ============================================================================
+ *  =====================================================
  */
 
-signed long int
-GEN_wstrlen (IN short * strSrc, IN unsigned long int * length) ;
+		signed long int
+				GEN_wstrlen(IN short *strSrc,
+				IN unsigned long int *length) ;
 
 
-/** ============================================================================
+/** =====================================================
  *  @func   GEN_strncat
  *
  *  @desc   Safe strcat function.
@@ -343,19 +347,19 @@ GEN_wstrlen (IN short * strSrc, IN unsigned long int * length) ;
  *  @leave  None.
  *
  *  @see    None
- *  ============================================================================
+ *  ====================================================
  */
 
-signed long int
-GEN_strncat (OUT char * destination,
-             IN  char * source,
-             IN  signed long int   maxNum) ;
+		signed long int
+				GEN_strncat(OUT char *destination,
+						IN  char *source,
+						IN  signed long int maxNum) ;
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
-#endif /* defined (__cplusplus) */
+#endif /* defined (__cplusplus)*/
 
 
-#endif  /* !defined (GEN_H) */
+#endif  /* !defined (GEN_H)*/
 

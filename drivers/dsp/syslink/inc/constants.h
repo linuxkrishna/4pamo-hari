@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   constants.h
  *
@@ -15,11 +16,11 @@
  */
 
 
-#if !defined (CONSTANTS_H)
+#if !defined CONSTANTS_H
 #define CONSTANTS_H
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
 #endif /* defined (__cplusplus) */
 
@@ -33,7 +34,7 @@ extern "C" {
 #define DSP_MAX_STRLEN      32u
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif /* defined (__cplusplus) */
 

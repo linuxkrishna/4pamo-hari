@@ -15,7 +15,7 @@
  */
 
 
-#if !defined (IPC_H)
+#if !defined IPC_H
 #define IPC_H
 
 
@@ -27,7 +27,7 @@
 #include <shmdefs.h>
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
 #endif
 
@@ -58,7 +58,7 @@ extern "C" {
 #define IS_GPPID(id)        (id == ID_GPP)
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif
 

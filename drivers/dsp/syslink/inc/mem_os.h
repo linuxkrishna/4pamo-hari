@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   mem_os.h
  *
@@ -16,7 +17,7 @@
  */
 
 
-#if !defined (MEM_OS_H)
+#if !defined MEM_OS_H
 #define MEM_OS_H
 
 
@@ -26,7 +27,7 @@
 
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
 #endif /* defined (__cplusplus) */
 
@@ -51,7 +52,7 @@ extern "C" {
  *  ============================================================================
  */
 struct MemAllocAttrs {
-    unsigned long int *    physicalAddress ;
+    unsigned long int *physicalAddress ;
 };
 
 /** ============================================================================
@@ -66,7 +67,7 @@ struct MemAllocAttrs {
  *  ============================================================================
  */
  struct MemFreeAttrs {
-    unsigned long int *    physicalAddress ;
+    unsigned long int *physicalAddress ;
     unsigned long int      size ;
 } ;
 
@@ -112,7 +113,7 @@ struct MemUnmapInfo_tag {
 } ;
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif /* defined (__cplusplus) */
 

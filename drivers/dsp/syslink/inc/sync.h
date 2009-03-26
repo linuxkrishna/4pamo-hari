@@ -1,3 +1,4 @@
+
 /*
  * sync.h
  *
@@ -77,8 +78,8 @@ struct SYNC_CSOBJECT {
 
 /* SYNC object attributes: */
 	struct SYNC_ATTRS {
-		void * hUserEvent;    /* Platform's User Mode synch. object. */
-		void * hKernelEvent;  /* Platform's Kernel Mode sync. object. */
+		void *hUserEvent;    /* Platform's User Mode synch. object. */
+		void *hKernelEvent;  /* Platform's Kernel Mode sync. object. */
 		u32 dwReserved1;	/* For future expansion.   */
 		u32 dwReserved2;	/* For future expansion.   */
 	} ;
@@ -250,7 +251,7 @@ struct SYNC_CSOBJECT {
  *      SYNC initialized
  *  Ensures
  */
-	 signed long int SYNC_PostMessage(IN void * hWindow, IN u32 uMsg);
+	 signed long int SYNC_PostMessage(IN void *hWindow, IN u32 uMsg);
 
 /*
  *  ======== SYNC_ResetEvent ========

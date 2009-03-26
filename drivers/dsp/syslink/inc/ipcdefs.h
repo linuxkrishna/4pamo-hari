@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   ipcdefs.h
  *
@@ -15,7 +16,7 @@
  */
 
 
-#if !defined (IPCDEFS_H)
+#if !defined IPCDEFS_H
 #define IPCDEFS_H
 
 
@@ -24,7 +25,7 @@
 #include <ipctypes.h>
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
 #endif
 
@@ -49,7 +50,7 @@ enum Endianism {
 };
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif
 

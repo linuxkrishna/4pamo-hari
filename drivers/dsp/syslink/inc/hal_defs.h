@@ -1,3 +1,4 @@
+
 /*
  *  ======== hal_defs.h ========
  *  Description:
@@ -54,8 +55,8 @@ extern "C"
 *
 * -----------------------------------------------------------------------------
 */
-enum HAL_SetClear_t
-{
+enum HAL_SetClear_t {
+
     HAL_CLEAR,
     HAL_SET
 };
@@ -68,8 +69,8 @@ enum HAL_SetClear_t
 *
 * -----------------------------------------------------------------------------
 */
-enum HAL_Endianism_t
-{
+enum HAL_Endianism_t {
+
     HAL_LITTLE_ENDIAN,
     HAL_BIG_ENDIAN
 };
@@ -82,8 +83,8 @@ enum HAL_Endianism_t
 *
 * -----------------------------------------------------------------------------
 */
-enum HAL_ElementSize_t
-{
+enum HAL_ElementSize_t {
+
     HAL_ELEM_SIZE_8BIT,
     HAL_ELEM_SIZE_16BIT,
     HAL_ELEM_SIZE_32BIT,

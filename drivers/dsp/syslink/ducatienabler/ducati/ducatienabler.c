@@ -31,7 +31,7 @@
 #include <linux/cdev.h>
 
 #ifdef DEBUG_DUCATI_IPC
-#  define DPRINTK(fmt, args...) printk(KERN_INFO "%s: " fmt, __FUNCTION__ , \
+#  define DPRINTK(fmt, args...) printk(KERN_INFO "%s: " fmt, __func__ , \
 								## args)
 #else
 #  define DPRINTK(fmt, args...)
@@ -46,9 +46,14 @@ static int ducatidrv_open(struct inode *inode, struct file *filp) ;
 static int ducatidrv_close(struct inode *inode, struct file *filp) ;
 
 
-static int ducatidrv_read(struct file *filp, char *dst, size_t  size, loff_t *offset) ;
+static int ducatidrv_read(struct file *filp,
+							char *dst,
+							size_t  size,
+							loff_t *offset) ;
 
-int ducatidrv_ioctl(struct inode *inode, struct file *filp, unsigned int   cmd, unsigned long  args) ;
+static int ducatidrv_ioctl(struct inode *inode, struct file *filp,
+					unsigned int   cmd,
+					unsigned long  args) ;
 
 static int __init ducatidrv_initializeModule(void) ;
 
@@ -75,10 +80,10 @@ static struct class *ducati_class;
  */
 static struct file_operations ducati_fops = {
 
-	open :    ducatidrv_open,
-	ioctl:    ducatidrv_ioctl,
-	release:  ducatidrv_close,
-	read:     ducatidrv_read,
+.open  =  ducatidrv_open,
+.ioctl =  ducatidrv_ioctl,
+.release = ducatidrv_close,
+.read =  ducatidrv_read,
 
 } ;
 
@@ -172,14 +177,22 @@ static int __init ducatidrv_initializeModule(void)
 	retVal = initpage_attributes(0x4000, 14, 64) ;
 
 	if (retVal == 0) {
-		DPRINTK("  Allocating Physical Memory for Ducati Baseimage: Size [0x%x] Align [0x%x]", size, align);
+
+		DPRINTK("Allocating Physical Memory for Ducati Baseimage \
+		Size [0x%x] Align [0x%x]", size, align);
+
 		ducbaseimage.mpuVAaddr =
-			MEM_AllocPhysMem(ducbaseimage.size, ducbaseimage.align, &ducbaseimage.physAddr);
-		DPRINTK("  Allocated Memory: Physical Address [0x%x]", (u32)ducbaseimage.physAddr);
+		MEM_AllocPhysMem(ducbaseimage.size,
+		ducbaseimage.align,
+		&ducbaseimage.physAddr);
+
+		DPRINTK("  Allocated Memory: Physical Address [0x%x]",
+		(u32)ducbaseimage.physAddr);
 	}
 
 	retVal = MMUInit((u32)ducbaseimage.physAddr, size);
-	DPRINTK("  Leaving DDucatiEnablerLogicalDevice::Install [0x%x]", retVal);
+	DPRINTK("  Leaving DDucatiEnablerLogicalDevice \
+	Install [0x%x]", retVal);
 
 	return 0;
 }
@@ -224,7 +237,7 @@ static void __exit ducatidrv_finalizeModule(void)
  *@desc   Linux specific function to open the driver.
  *----------------------------------------------------------------------------
  */
-int ducatidrv_open(struct inode *inode, struct file *filp)
+static int ducatidrv_open(struct inode *inode, struct file *filp)
 {
 	return 0 ;
 }
@@ -236,7 +249,7 @@ int ducatidrv_open(struct inode *inode, struct file *filp)
  *@desc   Linux specific function to close the driver.
  *----------------------------------------------------------------------------
  */
-int ducatidrv_close(struct inode *inode, struct file *filp)
+static int ducatidrv_close(struct inode *inode, struct file *filp)
 {
 	return 0 ;
 }
@@ -248,7 +261,8 @@ int ducatidrv_close(struct inode *inode, struct file *filp)
  *@desc   Linux specific function to read data from the driver.
  *============================================================================
  */
-int ducatidrv_read(struct file *filp, char *dst, size_t size, loff_t *offset)
+static int ducatidrv_read(struct file *filp, char *dst,
+				size_t size, loff_t *offset)
 {
 	return 0 ;
 }
@@ -260,7 +274,7 @@ int ducatidrv_read(struct file *filp, char *dst, size_t size, loff_t *offset)
  *@desc   ioctl function for of Linux Notify driver.
  *----------------------------------------------------------------------------
  */
-int ducatidrv_ioctl(struct inode *inode,
+ int ducatidrv_ioctl(struct inode *inode,
 		struct file *filp,
 		unsigned int   cmd,
 		unsigned long  args)

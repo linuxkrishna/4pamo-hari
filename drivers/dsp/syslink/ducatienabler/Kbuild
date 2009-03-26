@@ -19,6 +19,7 @@ ccflags-y += -D_TI_ -D_DB_TIOMAP -DTMS32060 \
 
 ccflags-y += -Idrivers/dsp/syslink/ducatienabler/inc
 ccflags-y += -Iarch/arm/plat-omap/include
+ccflags-y += -Idrivers/dsp/syslink/inc
 
 
 

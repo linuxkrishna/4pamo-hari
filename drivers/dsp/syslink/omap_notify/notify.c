@@ -1,3 +1,4 @@
+
 /**============================================================================
 *@file   notify.c
 *
@@ -22,9 +23,8 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
-#include <asm/uaccess.h>
-
-#include <asm/io.h>
+#include <linux/uaccess.h>
+#include <linux/io.h>
 #include <asm/pgtable.h>
 
 
@@ -45,6 +45,7 @@
 /*----------------------------------- Generic Headers             */
 #include <trc.h>
 #include<gen_utils.h>
+#include<global_var.h>
 
 
 /**============================================================================
@@ -111,9 +112,6 @@
 *----------------------------------------------------------------------------
 */
 
-signed long int
-_Notify_findDriver(IN  char *driverName,
-		OUT void  **handle) ;
 
 /**----------------------------------------------------------------------------
 *@func   _Notify_isSupportedProc
@@ -198,9 +196,9 @@ Notify_init(IN struct Notify_Attrs  *attrs)
 	} else {
 		Notify_StateObj.maxDrivers = attrs->maxDrivers ;
 		for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-			drvHandle = &(Notify_StateObj.drivers [i]) ;
+			drvHandle = &(Notify_StateObj.drivers[i]) ;
 			drvHandle->isInit = FALSE ;
-			drvHandle->name [0] = '\0' ;
+			drvHandle->name[0] = '\0' ;
 			drvHandle->notifyId = i ;
 			drvHandle->fnTable = NULL ;
 			drvHandle->driverObj = NULL ;
@@ -294,15 +292,14 @@ Notify_driverInit(IN  char *driverName,
 					(driverName, config,
 					&(drvHandle->driverObj)) ;
 
-			if (NOTIFY_SUCCEEDED(status)) {
-
+			if (NOTIFY_SUCCEEDED(status))
 				drvHandle->isInit = TRUE ;
-			} else {
+			 else
 				SET_FAILURE_REASON(status) ;
-			}
-		} else {
+
+		} else
 			SET_FAILURE_REASON(status) ;
-		}
+
 	}
 
 	DBC_ensure((NOTIFY_SUCCEEDED(status) && (*handle != NULL))
@@ -409,7 +406,7 @@ Notify_registerEvent(IN     void  *handle,
 
 	DBC_require((drvHandle != NULL)
 		&& ((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo [procId].maxEvents));
+		< drvHandle->attrs.procInfo[procId].maxEvents));
 
 	if (Notify_isInit == FALSE) {
 		status = NOTIFY_EINIT ;
@@ -422,26 +419,24 @@ Notify_registerEvent(IN     void  *handle,
 	} else if (drvHandle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
-	}
 
-	   else if (drvHandle->isInit == FALSE) {
-	   status = NOTIFY_EDRIVERINIT ;
-	   SET_FAILURE_REASON(status) ;
-	   }
+	} else if (drvHandle->isInit == FALSE) {
+		status = NOTIFY_EDRIVERINIT ;
+		SET_FAILURE_REASON(status) ;
 
-	else if (_Notify_isSupportedProc
+	} else if (_Notify_isSupportedProc
 			(drvHandle, procId)	== FALSE) {
 
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 	} else if ((eventNo & NOTIFY_EVENT_MASK)
-			>= drvHandle->attrs.procInfo [procId].maxEvents) {
+			>= drvHandle->attrs.procInfo[procId].maxEvents) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 	}
 	/*
 	   else if (((eventNo & NOTIFY_EVENT_MASK)
-	   <  drvHandle->attrs.procInfo [procId].reservedEvents)
+	   <  drvHandle->attrs.procInfo[procId].reservedEvents)
 	   && (((eventNo & NOTIFY_SYSTEM_KEY_MASK)
 		>> sizeof(unsigned short int))
 		!= NOTIFY_SYSTEM_KEY)) {
@@ -507,7 +502,7 @@ Notify_unregisterEvent(IN     void  *handle,
 
 	DBC_require((drvHandle != NULL)
 		&& ((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo [procId].maxEvents));
+		< drvHandle->attrs.procInfo[procId].maxEvents));
 
 	if (Notify_isInit == FALSE) {
 		status = NOTIFY_EINIT ;
@@ -520,24 +515,22 @@ Notify_unregisterEvent(IN     void  *handle,
 	} else if (drvHandle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
-	}
 
-	   else if (drvHandle->isInit == FALSE) {
-	   status = NOTIFY_EDRIVERINIT ;
-	   SET_FAILURE_REASON(status) ;
-	   }
+	} else if (drvHandle->isInit == FALSE) {
+		status = NOTIFY_EDRIVERINIT ;
+		SET_FAILURE_REASON(status) ;
 
-	else if (_Notify_isSupportedProc(drvHandle, procId) == FALSE) {
+	} else if (_Notify_isSupportedProc(drvHandle, procId) == FALSE) {
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 
 	} else if ((eventNo & NOTIFY_EVENT_MASK)
-			>= drvHandle->attrs.procInfo [procId].maxEvents) {
+			>= drvHandle->attrs.procInfo[procId].maxEvents) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 
 	} else if (((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo [procId].reservedEvents)
+		< drvHandle->attrs.procInfo[procId].reservedEvents)
 		&& (((eventNo & NOTIFY_SYSTEM_KEY_MASK)
 			>> sizeof(unsigned short int))
 				!= NOTIFY_SYSTEM_KEY)) {
@@ -602,7 +595,7 @@ Notify_sendEvent(IN void  *handle,
 
 	DBC_require((drvHandle != NULL)
 	&& ((eventNo & NOTIFY_EVENT_MASK)
-	< drvHandle->attrs.procInfo [procId].maxEvents)) ;
+	< drvHandle->attrs.procInfo[procId].maxEvents)) ;
 
 	if (Notify_isInit == FALSE) {
 		status = NOTIFY_EINIT ;
@@ -611,28 +604,24 @@ Notify_sendEvent(IN void  *handle,
 	} else if (drvHandle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
-	}
 
+	} else if (drvHandle->isInit == FALSE) {
+		status = NOTIFY_EDRIVERINIT ;
+		SET_FAILURE_REASON(status) ;
 
-
-	   else if (drvHandle->isInit == FALSE) {
-	   status = NOTIFY_EDRIVERINIT ;
-	   SET_FAILURE_REASON(status) ;
-	   }
-
-	  else if (_Notify_isSupportedProc
-				(drvHandle, procId) == FALSE) {
+	} else if (_Notify_isSupportedProc
+			(drvHandle, procId) == FALSE) {
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 
 	} else if ((eventNo & NOTIFY_EVENT_MASK)
-		>= drvHandle->attrs.procInfo [procId].maxEvents) {
+		>= drvHandle->attrs.procInfo[procId].maxEvents) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 	}
 
 	/*else if (((eventNo & NOTIFY_EVENT_MASK)
-	  <  drvHandle->attrs.procInfo [procId].reservedEvents)
+	  <  drvHandle->attrs.procInfo[procId].reservedEvents)
 	  && (((eventNo & NOTIFY_SYSTEM_KEY_MASK)
 		>> sizeof(unsigned short int))
 	  != NOTIFY_SYSTEM_KEY)) {
@@ -683,22 +672,22 @@ Notify_disable(void)
 
 	if (Notify_isInit == TRUE) {
 		for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-			drvHandle = &(Notify_StateObj.drivers [i]) ;
+			drvHandle = &(Notify_StateObj.drivers[i]) ;
 		/*TBD: Current implementation only supports single non-nested
 		 *disable/restore pair. To support nested calls, will need to
 		 *have a first-in-last-out queue of disableFlags.
 		 */
 
-			Notify_StateObj.disableFlags [i] =
+			Notify_StateObj.disableFlags[i] =
 				drvHandle->fnTable->notifyDisable(drvHandle) ;
 		}
 	}
 
-	TRC_1PRINT(TRC_LEVEL1, "    flags [%d]",
+	TRC_1PRINT(TRC_LEVEL1, "    flags[%d]",
 				&(Notify_StateObj.disableFlags)) ;
 	TRC_0LEAVE("Notify_disable") ;
 
-	return(void *) &(Notify_StateObj.disableFlags) ;
+	return (void *) &(Notify_StateObj.disableFlags) ;
 }
 EXPORT_SYMBOL(Notify_disable);
 
@@ -744,14 +733,14 @@ Notify_restore(IN void *flags)
 		driverFlags = (void **) flags ;
 
 		for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-			drvHandle = &(Notify_StateObj.drivers [i]) ;
+			drvHandle = &(Notify_StateObj.drivers[i]) ;
 		/*TBD: Current implementation only supports single non-nested
 		 *disable/restore pair. To support nested calls, will need to
 		 *have a first-in-last-out queue of disableFlags.
 		 */
 			tmpStatus = drvHandle->fnTable->notifyRestore
 					(drvHandle,
-					driverFlags [i]) ;
+					driverFlags[i]) ;
 	/*Save the failure status even if any of the driver calls fail */
 			if (NOTIFY_SUCCEEDED(status)
 						&& NOTIFY_FAILED(tmpStatus)) {
@@ -797,7 +786,7 @@ Notify_disableEvent(IN void  *handle,
 
 	DBC_require((drvHandle != NULL)
 		&& ((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo [procId].maxEvents)) ;
+		< drvHandle->attrs.procInfo[procId].maxEvents)) ;
 
 	if (Notify_isInit == FALSE) {
 		status = NOTIFY_EINIT ;
@@ -806,25 +795,23 @@ Notify_disableEvent(IN void  *handle,
 	} else if (drvHandle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
-	}
 
-	   else if (drvHandle->isInit == FALSE) {
-	   status = NOTIFY_EDRIVERINIT ;
-	   SET_FAILURE_REASON(status) ;
-	   }
+	} else if (drvHandle->isInit == FALSE) {
+		status = NOTIFY_EDRIVERINIT ;
+		SET_FAILURE_REASON(status) ;
 
-	else if (_Notify_isSupportedProc
+	} else if (_Notify_isSupportedProc
 			(drvHandle, procId) == FALSE) {
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 
 	} else if ((eventNo & NOTIFY_EVENT_MASK)
-		>= drvHandle->attrs.procInfo [procId].maxEvents) {
+		>= drvHandle->attrs.procInfo[procId].maxEvents) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 
 	} else if (((eventNo & NOTIFY_EVENT_MASK)
-			<  drvHandle->attrs.procInfo [procId].reservedEvents)
+			<  drvHandle->attrs.procInfo[procId].reservedEvents)
 			&& (((eventNo & NOTIFY_SYSTEM_KEY_MASK) >>
 			sizeof(unsigned short int))
 				!= NOTIFY_SYSTEM_KEY)) {
@@ -880,7 +867,7 @@ Notify_enableEvent(IN void  *handle,
 
 	DBC_require((drvHandle != NULL)
 		&& ((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo [procId].maxEvents));
+		< drvHandle->attrs.procInfo[procId].maxEvents));
 
 	if (Notify_isInit == FALSE) {
 		status = NOTIFY_EINIT ;
@@ -888,26 +875,24 @@ Notify_enableEvent(IN void  *handle,
 	} else if (drvHandle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
-	}
 
-	   else if (drvHandle->isInit == FALSE) {
-	   status = NOTIFY_EDRIVERINIT ;
-	   SET_FAILURE_REASON(status) ;
-	   }
+	} else if (drvHandle->isInit == FALSE) {
+		status = NOTIFY_EDRIVERINIT ;
+		SET_FAILURE_REASON(status) ;
 
-	  else if (_Notify_isSupportedProc
+	} else if (_Notify_isSupportedProc
 				(drvHandle, procId) == FALSE) {
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 
 	} else if ((eventNo & NOTIFY_EVENT_MASK)
-		>= drvHandle->attrs.procInfo [procId].maxEvents) {
+		>= drvHandle->attrs.procInfo[procId].maxEvents) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 	}
 	/*
 	   else if (((eventNo & NOTIFY_EVENT_MASK)
-	   <  drvHandle->attrs.procInfo [procId].reservedEvents)
+	   <  drvHandle->attrs.procInfo[procId].reservedEvents)
 	   && (((eventNo & NOTIFY_SYSTEM_KEY_MASK)
 		>> sizeof(unsigned short int))
 	   != NOTIFY_SYSTEM_KEY)) {
@@ -982,7 +967,7 @@ _Notify_findDriver(IN  char *driverName,
 
 	*handle = NULL ;
 	for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-		drvHandle = &(Notify_StateObj.drivers [i]) ;
+		drvHandle = &(Notify_StateObj.drivers[i]) ;
 	/*The function table pointer is used to define whether any driver
 	 *is registered in this slot. It is set to TRUE when slot is reserved,
 	 *but not yet filled.
@@ -1033,14 +1018,14 @@ _Notify_isSupportedProc(IN  struct Notify_DriverHandle *drvHandle,
 
 	attrs = &(drvHandle->attrs) ;
 	for (i = 0 ; i < attrs->numProc ; i++) {
-		if (attrs->procInfo [i].procId == procId) {
+		if (attrs->procInfo[i].procId == procId) {
 			found = TRUE ;
 			break ;
 		}
 	}
 
 	TRC_1PRINT(TRC_LEVEL1,
-			"isSupportedProc [%d]", found) ;
+			"isSupportedProc[%d]", found) ;
 
 	TRC_0LEAVE("_Notify_isSupportedProc") ;
 

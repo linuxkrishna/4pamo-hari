@@ -94,7 +94,7 @@ extern struct MAILBOX_CONTEXT mboxsetting;
 extern DSP_STATUS DSP_PeripheralClocks_Enable(struct WMD_DEV_CONTEXT
 					     *pDevContext, IN void *pArgs);
 
-extern u32  NotifyMbxDrv_NonShmISR( void * refD);
+extern u32  NotifyMbxDrv_NonShmISR(void *refD);
 
 /*
  *  ======== CHNLSM_EnableInterrupt ========
@@ -107,8 +107,10 @@ DSP_STATUS CHNLSM_EnableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 	struct CFG_HOSTRES resources;
 	u32 devType;
 	struct IO_MGR *hIOMgr;
-    Notify_Status Notifystatus;
-    u32 eventNo;
+	Notify_Status Notifystatus;
+	u32 eventNo;
+	u32 hwStatus;
+
 
 
 	DBG_Trace(DBG_ENTER, "CHNLSM_EnableInterrupt(0x%x)\n", pDevContext);
@@ -122,39 +124,15 @@ DSP_STATUS CHNLSM_EnableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 	status = DEV_GetIOMgr(pDevContext->hDevObject, &hIOMgr);
 
     eventNo = ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER);
-    Notifystatus = Notify_enableEvent(handlePtr,0,eventNo);
+    Notifystatus = Notify_enableEvent(handlePtr, 0, eventNo);
 
 
-#if 0
 	if (devType == DSP_UNIT) {
-		hwStatus = HW_MBOX_NumMsgGet(resources.dwMboxBase,
-					       MBOX_DSP2ARM, &numMbxMsg);
-		while (numMbxMsg != 0) {
-			hwStatus = HW_MBOX_MsgRead(resources.dwMboxBase,
-						     MBOX_DSP2ARM,
-						     &mbxValue);
-			numMbxMsg--;
-		}
-		/* clear the DSP mailbox as well...*/
-		hwStatus = HW_MBOX_NumMsgGet(resources.dwMboxBase,
-					       MBOX_ARM2DSP, &numMbxMsg);
-		while (numMbxMsg != 0) {
-			hwStatus = HW_MBOX_MsgRead(resources.dwMboxBase,
-						    MBOX_ARM2DSP, &mbxValue);
-			numMbxMsg--;
-			UTIL_Wait(10);
-
-			HW_MBOX_EventAck(resources.dwMboxBase, MBOX_ARM2DSP,
-					  HW_MBOX_U1_DSP1,
-					  HW_MBOX_INT_NEW_MSG);
-		}
-		/* Enable the new message events on this IRQ line */
 		hwStatus = HW_MBOX_EventEnable(resources.dwMboxBase,
 						 MBOX_DSP2ARM,
 						 MBOX_ARM,
 						 HW_MBOX_INT_NEW_MSG);
 	}
-#endif
 	return status;
 }
 
@@ -167,19 +145,20 @@ DSP_STATUS CHNLSM_DisableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 	DSP_STATUS status = DSP_SOK;
 
 	Notify_Status Notifystatus;
-    u32 eventNo;
-	
+	u32 eventNo;
+	struct CFG_HOSTRES resources;
+	u32 hwStatus;
+
+
 	eventNo = ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER);
 	DBG_Trace(DBG_ENTER, "CHNLSM_DisableInterrupt(0x%x)\n", hDevContext);
-    Notifystatus = Notify_disableEvent(handlePtr,0,eventNo);
-#if 0
+	Notifystatus = Notify_disableEvent(handlePtr, 0, eventNo);
 
 	status = CFG_GetHostResources(
 			(struct CFG_DEVNODE *)DRV_GetFirstDevExtension(),
 			&resources);
 	hwStatus = HW_MBOX_EventDisable(resources.dwMboxBase, MBOX_DSP2ARM,
 					  MBOX_ARM, HW_MBOX_INT_NEW_MSG);
-#endif
 	return status;
 }
 
@@ -200,7 +179,7 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 #endif
 
 	struct CFG_HOSTRES resources;
-	
+
 	/* We are waiting indefinitely here. This needs to be fixed in the
 	 * second phase */
 	CHNLSM_EnableInterrupt(hDevContext);
@@ -258,35 +237,11 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 #endif
 #endif
 	}
-		notifyStatus = Notify_sendEvent( handlePtr,/*PROC_TESLA*/0,
-        ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER),
-          pDevContext->wIntrVal2Dsp,true);
+		notifyStatus = Notify_sendEvent(handlePtr,/*PROC_TESLA*/0,
+		((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER),
+		pDevContext->wIntrVal2Dsp, true);
 
 
-
-#if 0	
-	for (i = 0; i < 0x1000; i++)
-		;
-	while (--cnt) {
-		hwStatus = HW_MBOX_IsFull(resources.dwMboxBase,
-					   MBOX_ARM2DSP, &mbxFull);
-		if (mbxFull)
-			UTIL_Wait(1000);	/* wait for 1 ms)      */
-		else
-			break;
-	}
-	if (!cnt) {
-		DBG_Trace(DBG_LEVEL7, "Timed out waiting for DSP mailbox \n");
-		status = WMD_E_TIMEOUT;
-		return status;
-	}
-	DBG_Trace(DBG_LEVEL3, "writing %x to Mailbox\n",
-		 pDevContext->wIntrVal2Dsp);
-
-	hwStatus = HW_MBOX_MsgWrite(resources.dwMboxBase, MBOX_ARM2DSP,
-				     pDevContext->wIntrVal2Dsp);
-	/* set the Mailbox interrupt to default value */
-#endif
 	pDevContext->wIntrVal2Dsp = MBX_PCPY_CLASS;
 	return status;
 }

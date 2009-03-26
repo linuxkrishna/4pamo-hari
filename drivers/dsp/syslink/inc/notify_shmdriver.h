@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   notify_shmDriver.h
  *
@@ -17,7 +18,7 @@
  */
 
 
-#if !defined (NOTIFY_SHMDRIVER_H_)
+#if !defined NOTIFY_SHMDRIVER_H_
 #define NOTIFY_SHMDRIVER_H_
 
 
@@ -28,9 +29,9 @@
 #include <notifyerr.h>
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 extern "C" {
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */
 
 
 /** ============================================================================
@@ -110,7 +111,7 @@ struct NotifyShmDrv_Attrs {
  */
 EXPORT_API
 void
-NotifyShmDrv_init (void) ;
+NotifyShmDrv_init(void) ;
 
 /** ============================================================================
  *  @name   NotifyShmDrv_exit
@@ -131,13 +132,13 @@ NotifyShmDrv_init (void) ;
  */
 EXPORT_API
 void
-NotifyShmDrv_exit (void) ;
+NotifyShmDrv_exit(void) ;
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 }
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */
 
 
-#endif  /* !defined (NOTIFY_SHMDRIVER_H_) */
+#endif  /* !defined  NOTIFY_SHMDRIVER_H_ */
 

@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   errbase.h
  *
@@ -16,7 +17,7 @@
  */
 
 
-#if !defined (ERRBASE_H)
+#if !defined ERRBASE_H
 #define ERRBASE_H
 
 
@@ -24,24 +25,25 @@
 #include <gpptypes.h>
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
-#endif /* defined (__cplusplus) */
+#endif /* defined __cplusplus */
 
 
 
 /* Success & Failure macros*/
-#define DSP_SUCCEEDED(status)   (    ((signed long int) (status) >= (DSP_SBASE))   \
-                                 &&  ((signed long int) (status) <= (DSP_SLAST)))
+#define DSP_SUCCEEDED(status)   (((signed long int)(status) >= (DSP_SBASE)) \
+				&&  ((signed long int)(status) <= (DSP_SLAST)))
 
-#define DSP_FAILED(status)      (!DSP_SUCCEEDED (status))
+#define DSP_FAILED(status)      (!DSP_SUCCEEDED(status))
 
 /* Success & Failure macros*/
-#define RINGIO_SUCCEEDED(status) (    ((signed long int) (status) >= (RINGIO_SBASE))  \
-                                  &&  ((signed long int) (status) <= (RINGIO_SLAST)))
+#define RINGIO_SUCCEEDED(status) (((signed long int) \
+						(status) >= (RINGIO_SBASE)) \
+&&  ((signed long int) (status) <= (RINGIO_SLAST)))
 
-#define RINGIO_FAILED(status)    (    (!RINGIO_SUCCEEDED (status))          \
-                                  &&  (DSP_FAILED (status)))
+#define RINGIO_FAILED(status)    ((!RINGIO_SUCCEEDED(status))  \
+		&&  (DSP_FAILED(status)))
 
 
 /* Base and range of generic success codes. */
@@ -62,14 +64,14 @@ extern "C" {
 
 
 /*  ============================================================================
- *  SUCCESS Codes
- *  ============================================================================
- */
+*  SUCCESS Codes
+*  ============================================================================
+*/
 
 /*  ----------------------------------------------------------------------------
- *  SUCCESS codes: Generic
- *  ----------------------------------------------------------------------------
- */
+*  SUCCESS codes: Generic
+*  ----------------------------------------------------------------------------
+*/
 /* Generic success code */
 #define DSP_SOK                     (DSP_SBASE + 0x0l)
 
@@ -93,8 +95,8 @@ extern "C" {
 #define DSP_SFREE                   (DSP_SBASE + 0x6l)
 
 /* The DSPLINK driver has already been setup by some other
- * application/process.
- */
+* application/process.
+*/
 #define DSP_SALREADYSETUP           (DSP_SBASE + 0x7l)
 
 /* The DSPLINK driver has been finalized. */
@@ -116,28 +118,28 @@ extern "C" {
 #define DSP_SCLOSED                 (DSP_SBASE + 0xDl)
 
 /*  ----------------------------------------------------------------------------
- *  SUCCESS codes: RINGIO
- *  ----------------------------------------------------------------------------
- */
+*  SUCCESS codes: RINGIO
+*  ----------------------------------------------------------------------------
+*/
 
 /* Success code for RingIO component */
 #define RINGIO_SUCCESS              (RINGIO_SBASE + 0x0l)
 
 /* Indicates that either: 1) The amount of data requested could not be
-                             serviced due to the presence of an attribute
-                          2) During an attribute read if another is also present
-                             at the same offset  */
+serviced due to the presence of an attribute
+2) During an attribute read if another is also present
+at the same offset  */
 #define RINGIO_SPENDINGATTRIBUTE    (RINGIO_SBASE + 0x1l)
 
 
 /*  ============================================================================
- *  FAILURE Codes
- *  ============================================================================
- */
+*  FAILURE Codes
+*  ============================================================================
+*/
 /*  ----------------------------------------------------------------------------
- *  FAILURE codes: Generic
- *  ----------------------------------------------------------------------------
- */
+*  FAILURE codes: Generic
+*  ----------------------------------------------------------------------------
+*/
 /* The caller does not have access privileges to call this function */
 #define DSP_EACCESSDENIED           (DSP_EBASE + 0x0l)
 
@@ -148,8 +150,8 @@ extern "C" {
 #define DSP_EATTACHED               (DSP_EBASE + 0x2l)
 
 /* During enumeration a change in the number or properties of the objects
- * has occurred.
- */
+* has occurred.
+*/
 #define DSP_ECHANGEDURINGENUM       (DSP_EBASE + 0x3l)
 
 /* An error occurred while parsing the DSP executable file */
@@ -162,9 +164,9 @@ extern "C" {
 #define DSP_EDIRECTION              (DSP_EBASE + 0x6l)
 
 /* A stream has been issued the maximum number of buffers allowed in the
- * stream at once.  buffers must be reclaimed from the stream before any
- * more can be issued.
- */
+* stream at once.  buffers must be reclaimed from the stream before any
+* more can be issued.
+*/
 #define DSP_ESTREAMFULL             (DSP_EBASE + 0x7l)
 
 /* A general failure occurred */
@@ -216,8 +218,8 @@ extern "C" {
 #define DSP_ETIMEOUT                (DSP_EBASE + 0x17l)
 
 /* A data truncation occurred, e.g., when requesting a descriptive error
- * string, not enough space was allocated for the complete error message.
- */
+* string, not enough space was allocated for the complete error message.
+*/
 #define DSP_ETRUNCATED              (DSP_EBASE + 0x18l)
 
 /* The resource (e.g. MSGQ transport) is not opened. */
@@ -227,8 +229,8 @@ extern "C" {
 #define DSP_EVALUE                  (DSP_EBASE + 0x1Al)
 
 /* The state of the specified object is incorrect for the requested
- * operation.
- */
+* operation.
+*/
 #define DSP_EWRONGSTATE             (DSP_EBASE + 0x1Bl)
 
 /* The DSPLINK driver is already setup in this process. */
@@ -321,14 +323,14 @@ extern "C" {
 #define DSP_EALREADYEXISTS          (DSP_EBASE + 0x50l)
 
 /* Timeout parameter was "NO_WAIT", yet the operation was
- * not completed.
- */
+* not completed.
+*/
 #define DSP_ENOTCOMPLETE            (DSP_EBASE + 0x51l)
 
 /* Invalid configuration. This indicates that configuration information
- * provided is incorrect, or the DSP configuration does not match the
- * configuration expected by the GPP-side.
- */
+* provided is incorrect, or the DSP configuration does not match the
+* configuration expected by the GPP-side.
+*/
 #define DSP_ECONFIG                 (DSP_EBASE + 0x52l)
 
 /* Feature is not supported */
@@ -339,16 +341,16 @@ extern "C" {
 
 
 /*  ----------------------------------------------------------------------------
- *  FAILURE codes: RINGIO
- *  ----------------------------------------------------------------------------
- */
+*  FAILURE codes: RINGIO
+*  ----------------------------------------------------------------------------
+*/
 #define RINGIO_EBASE                (DSP_EBASE + 0x55l)
 
 /* Generic RingIO error code */
 #define RINGIO_EFAILURE             (RINGIO_EBASE + 0x00l)
 
 /* Indicates that the amount of data requested could not be serviced due to the
-   ring buffer getting wrapped */
+ring buffer getting wrapped */
 #define RINGIO_EBUFWRAP             (RINGIO_EBASE + 0x01l)
 
 /* Indicates that there is no data in the buffer for reading */
@@ -358,19 +360,19 @@ extern "C" {
 #define RINGIO_EBUFFULL             (RINGIO_EBASE + 0x03l)
 
 /* Indicates that there is no attribute at the current, but attributes are
-   present at a future offset */
+present at a future offset */
 #define RINGIO_EPENDINGDATA         (RINGIO_EBASE + 0x04l)
 
 /* Indicates that attibute get() failed, need to extract variable length message
-   getv() */
+getv() */
 #define RINGIO_EVARIABLEATTRIBUTE   (RINGIO_EBASE + 0x05l)
 
 /* Indicates that the RingIO being created already exists */
 #define RINGIO_EALREADYEXISTS       (RINGIO_EBASE + 0x06l)
 
 /* Indicates that the valid data is present in the RingIO
- * but it is not contiguous.
- */
+* but it is not contiguous.
+*/
 #define RINGIO_ENOTCONTIGUOUSDATA   (RINGIO_EBASE + 0x07l)
 
 /* Indicates that the RingIO is in a wrong state */
@@ -386,9 +388,9 @@ extern "C" {
 
 
 /*  ----------------------------------------------------------------------------
- *  FAILURE codes: CHNL
- *  ----------------------------------------------------------------------------
- */
+*  FAILURE codes: CHNL
+*  ----------------------------------------------------------------------------
+*/
 #define CHNL_EBASE                  (DSP_COMP_EBASE + 0x500l)
 
 /* Attempt to create too many channels. */
@@ -410,8 +412,8 @@ extern "C" {
 #define CHNL_E_BADMODE              (CHNL_EBASE + 0x05l)
 
 /* Timeout parameter was "NO_WAIT", yet no I/O completions
- * were queued.
- */
+* were queued.
+*/
 #define CHNL_E_NOIOC                (CHNL_EBASE + 0x06l)
 
 /* I/O has been cancelled on this channel. */
@@ -473,9 +475,9 @@ extern "C" {
 
 
 /*  ----------------------------------------------------------------------------
- *  FAILURE codes: SYNC
- *  ----------------------------------------------------------------------------
- */
+*  FAILURE codes: SYNC
+*  ----------------------------------------------------------------------------
+*/
 #define SYNC_EBASE                  (DSP_COMP_EBASE + 0x600l)
 
 /* Wait on a kernel event failed. */
@@ -490,7 +492,7 @@ extern "C" {
 #define DSP_ERESERVED_BASE_7        (DSP_COMP_EBASE + 0x800l)
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif /* defined (__cplusplus) */
 

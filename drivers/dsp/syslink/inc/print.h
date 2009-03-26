@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   print.h
  *
@@ -15,9 +16,9 @@
  */
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 extern "C" {
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */
 
 
 /*  ----------------------------------- IPC headers */
@@ -26,7 +27,7 @@ extern "C" {
 #include <notifyerr.h>
 
 
-/** ============================================================================
+/** ===========================================================================
  *  @func   PRINT_init
  *
  *  @desc   Initializes the PRINT sub-component.
@@ -43,11 +44,11 @@ extern "C" {
  *  @leave  None
  *
  *  @see    None
- *  ============================================================================
+ *  ===========================================================================
  */
 
 signed long int
-PRINT_init (void) ;
+PRINT_init(void) ;
 
 /** ============================================================================
  *  @deprecated The deprecated function PRINT_Initialize has been replaced
@@ -78,7 +79,7 @@ PRINT_init (void) ;
  */
 
 signed long int
-PRINT_exit (void) ;
+PRINT_exit(void) ;
 
 /** ============================================================================
  *  @deprecated The deprecated function PRINT_Finalize has been replaced
@@ -107,23 +108,23 @@ PRINT_exit (void) ;
  *  @see    None
  *  ============================================================================
  */
-#if defined (TRACE_KERNEL)
+#if defined  TRACE_KERNEL
 
 void
-PRINT_Printf (char * format, ...) ;
+PRINT_Printf(char *format, ...) ;
 #endif
 
-#if defined (TRACE_USER)
+#if defined  TRACE_USER
 /*  ----------------------------------------------------------------------------
  *  Extern declaration for printf to avoid compiler warning.
  *  ----------------------------------------------------------------------------
  */
-extern int printf (const char * format, ...) ;
+extern int printf(const char *format, ...) ;
 
 #define PRINT_Printf printf
 #endif
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 }
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */

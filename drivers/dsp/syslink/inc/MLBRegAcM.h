@@ -1,3 +1,4 @@
+
 /*
  * MLBRegAcM.h
  *
@@ -67,7 +68,8 @@
     register u32 data =\
     RD_MEM_32_VOLATILE(((u32)(baseAddress))+offset);\
     register u32 newValue = ((u32)(value));\
-   printk(KERN_ALERT "In SYSCONFIG MACOR line %i    file %s", __LINE__, __FILE__);\
+   printk(KERN_ALERT "In SYSCONFIG MACOR line %i    file %s",  \
+   __LINE__, __FILE__);\
    _DEBUG_LEVEL_1_EASI(EASIL1_MLBMAILBOX_SYSCONFIGSoftResetWrite32);\
    printk(KERN_ALERT "******************BEFORE DATA WRITE");\
    data &= ~(MLB_MAILBOX_SYSCONFIG_SoftReset_MASK);\

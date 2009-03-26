@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   version.h
  *
@@ -15,11 +16,11 @@
  */
 
 
-#if !defined (VERSION_H)
+#if !defined  VERSION_H
 #define VERSION_H
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 extern "C" {
 #endif
 
@@ -33,7 +34,7 @@ extern "C" {
 #define NOTIFY_VERSION        "1.00.00.01"
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif
 

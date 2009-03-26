@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   platform.h
  *
@@ -15,13 +16,13 @@
  */
 
 
-#if !defined (PLATFORM_H)
+#if !defined PLATFORM_H
 #define PLATFORM_H
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 extern "C" {
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */
 
 
 /** ============================================================================
@@ -49,10 +50,10 @@ extern "C" {
 #define ID_GPP                1
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
-#endif /* defined (__cplusplus) */
+#endif /* defined __cplusplus */
 
 
-#endif /* if !defined (PLATFORM_H) */
+#endif /* if !defined PLATFORM_H */
 

@@ -1,27 +1,28 @@
-//  ===========================================================================
-//  File    hal_mbox.h
-//
-//  Path    $ (PROJROOT)\driver\mailbox
-//
-//  Desc    HAL Mailbox API and types definitions.
-//
-//  Rev     0.1.0
-//
-//  This computer program is copyright to Texas Instruments Incorporated.
-//  The program may not be used without the written permission of
-//  Texas Instruments Incorporated or against the terms and conditions
-//  stipulated in the agreement under which this program has been supplied.
-//
-//  (c) Texas Instruments Incorporated 2008
-//
-//  ===========================================================================
 
+/*  ==================================================
+  File    hal_mbox.h
+
+  Path    $ (PROJROOT)\driver\mailbox
+
+  Desc    HW Mailbox API and types definitions.
+
+  Rev     0.1.0
+
+  This computer program is copyright to Texas Instruments Incorporated.
+  The program may not be used without the written permission of
+  Texas Instruments Incorporated or against the terms and conditions
+  stipulated in the agreement under which this program has been supplied.
+
+  (c) Texas Instruments Incorporated 2008
+
+  ======================================================
+*/
 #ifndef __MBOX_H
 #define __MBOX_H
 
-/* ============================================================================
+/* =======================================================
 * INCLUDE FILES (only if necessary)
-* =============================================================================
+* ========================================================
 */
 #include <hal_defs.h>
 
@@ -30,101 +31,99 @@ extern "C"
 {
 #endif
 
-/* ============================================================================
+/* =========================================================
 * EXPORTED DEFINITIONS
-* =============================================================================
+* ==========================================================
 */
-/* ----------------------------------------------------------------------------
-* DEFINITION:         
+/* ---------------------------------------------------------
+* DEFINITION:
 *
 * DESCRIPTION:  Bitmasks for Mailbox interrupt sources
 *
-* -----------------------------------------------------------------------------
+* ----------------------------------------------------------
 */
 
-#define HAL_MBOX_INT_NEW_MSG    0x1
-#define HAL_MBOX_INT_NOT_FULL   0x2
-#define HAL_MBOX_INT_ALL        0x3
+#define HW_MBOX_INT_NEW_MSG    0x1
+#define HW_MBOX_INT_NOT_FULL   0x2
+#define HW_MBOX_INT_ALL        0x3
 
-/* ----------------------------------------------------------------------------
-* DEFINITION:   HAL_MBOX_MAX_NUM_MESSAGES
+/* ---------------------------------------------------------
+* DEFINITION:   HW_MBOX_MAX_NUM_MESSAGES
 *
 * DESCRIPTION:  Maximum number of messages that mailbox can hald at a time.
 *
-* -----------------------------------------------------------------------------
+* ----------------------------------------------------------
 */
 
-#define HAL_MBOX_MAX_NUM_MESSAGES   4
+#define HW_MBOX_MAX_NUM_MESSAGES   4
 
 
 /* width in bits of MBOX Id */
-#define HAL_MBOX_ID_WIDTH           2
+#define HW_MBOX_ID_WIDTH           2
 
 
-/* ============================================================================
+/* =============================================================
 * EXPORTED TYPES
-* =============================================================================
+* ==============================================================
 */
 
-/* ----------------------------------------------------------------------------
-* TYPE:         enum HAL_MBOX_Id_t
+/* --------------------------------------------------------------
+* TYPE:         enum HW_MBOX_Id_t
 *
 * DESCRIPTION:  Enumerated Type used to specify Mail Box Sub Module Id Number
 *
-* -----------------------------------------------------------------------------
+* -----------------------------------------------------------------
 */
- enum HAL_MBOX_Id_t
-{
-    HAL_MBOX_ID_0,
-    HAL_MBOX_ID_1,
-    HAL_MBOX_ID_2,
-    HAL_MBOX_ID_3,
-    HAL_MBOX_ID_4,
-    HAL_MBOX_ID_5
+enum HW_MBOX_Id_t {
+HW_MBOX_ID_0,
+HW_MBOX_ID_1,
+HW_MBOX_ID_2,
+HW_MBOX_ID_3,
+HW_MBOX_ID_4,
+HW_MBOX_ID_5
 };
 
-/* ----------------------------------------------------------------------------
-* TYPE:         enum HAL_MBOX_UserId_t
+/* -------------------------------------------------------------------
+* TYPE:         enum HW_MBOX_UserId_t
 *
 * DESCRIPTION:  Enumerated Type used to specify Mail box User Id
 *
-* -----------------------------------------------------------------------------
+* ---------------------------------------------------------------------
 */
-enum HAL_MBOX_UserId_t
-{
-    HAL_MBOX_U0_ARM11,
-    HAL_MBOX_U1_UMA,
-    HAL_MBOX_U2_IVA,
-    HAL_MBOX_U3_ARM11
+enum HW_MBOX_UserId_t {
+HW_MBOX_U0_ARM11,
+HW_MBOX_U1_UMA,
+HW_MBOX_U2_IVA,
+HW_MBOX_U3_ARM11
 };
 
 #if defined(OMAP3430)
-/* ----------------------------------------------------------------------------
+/* ----------------------------------------------------------------------
 * TYPE:         MAILBOX_CONTEXT
 *
 * DESCRIPTION:  Mailbox context settings
 *
-* -----------------------------------------------------------------------------
+* ------------------------------------------------------------------------
 */
 struct MAILBOX_CONTEXT {
-    unsigned long sysconfig;
-    unsigned long irqEnable0;
-    unsigned long irqEnable1;
+unsigned long sysconfig;
+unsigned long irqEnable0;
+unsigned long irqEnable1;
 };
-#endif// defined(OMAP3430)
+#endif/* defined(OMAP3430)*/
 
-/* ============================================================================
+/* ======================================================================
 * EXPORTED VARIABLES
-* =============================================================================
+* =======================================================================
 */
 
-/* ============================================================================
+/* ======================================================================
 * EXPORTED FUNCTIONS
-* =============================================================================
+* =======================================================================
 */
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_MsgRead
+/* -----------------------------------------------------------------------
+* FUNCTION      : HW_MBOX_MsgRead
 *
 * INPUTS:
 *
@@ -133,7 +132,7 @@ struct MAILBOX_CONTEXT {
 *   Description : Base Address of instance of Mailbox module
 *
 *   Identifier  : mailBoxId
-*   Type        : const enum HAL_MBOX_Id_t
+*   Type        : const enum HW_MBOX_Id_t
 *   Description : Mail Box Sub module Id to read
 *
 * OUTPUTS:
@@ -146,24 +145,24 @@ struct MAILBOX_CONTEXT {
 *
 *   Type        : ReturnCode_t
 *   Description : RET_OK              No errors occured
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
-*                 RET_INVALID_ID      Invalid Id used
-*                 RET_EMPTY           Mailbox empty
+*   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*   RET_INVALID_ID      Invalid Id used
+*   RET_EMPTY           Mailbox empty
 *
-* PURPOSE:      : this function reads a unsigned long from the sub module message
-*                 box Specified. if there are no messages in the mailbox
-*                 then and error is returned.
-*
-* -----------------------------------------------------------------------------
+* PURPOSE:
+*     : this function reads a unsigned long from the sub module message
+*     box Specified. if there are no messages in the mailbox
+*    then and error is returned.
+* ----------------------------------------------------------------
 */
-extern long HAL_MBOX_MsgRead(
-                      const unsigned long         baseAddress,
-                      const enum HAL_MBOX_Id_t   mailBoxId,
-                      unsigned long *const        pReadValue
-                  );
+extern long HW_MBOX_MsgRead(
+	const unsigned long         baseAddress,
+	const enum HW_MBOX_Id_t   mailBoxId,
+	unsigned long *const        pReadValue
+);
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_MsgWrite
+/* ---------------------------------------------------------------
+* FUNCTION      : HW_MBOX_MsgWrite
 *
 * INPUTS:
 *
@@ -172,7 +171,7 @@ extern long HAL_MBOX_MsgRead(
 *   Description : Base Address of instance of Mailbox module
 *
 *   Identifier  : mailBoxId
-*   Type        : const enum HAL_MBOX_Id_t
+*   Type        : const enum HW_MBOX_Id_t
 *   Description : Mail Box Sub module Id to write
 *
 *   Identifier  : writeValue
@@ -183,22 +182,22 @@ extern long HAL_MBOX_MsgRead(
 *
 *   Type        : ReturnCode_t
 *   Description : RET_OK              No errors occured
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
-*                 RET_INVALID_ID      Invalid Id used
+*   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*   RET_INVALID_ID      Invalid Id used
 *
-* PURPOSE:      : this function writes a unsigned long from the sub module message
-*                 box Specified.
+* PURPOSE:: this function writes a unsigned long from the sub module message
+*           box Specified.
 *
-* -----------------------------------------------------------------------------
+* ---------------------------------------------------------------
 */
-extern long HAL_MBOX_MsgWrite(
-                      const unsigned long         baseAddress,
-                      const enum HAL_MBOX_Id_t   mailBoxId,
-                      const unsigned long         writeValue
-                  );
+extern long HW_MBOX_MsgWrite(
+	const unsigned long         baseAddress,
+	const enum HW_MBOX_Id_t   mailBoxId,
+	const unsigned long         writeValue
+);
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_IsFull
+/* ------------------------------------------------------------------
+* FUNCTION      : HW_MBOX_IsFull
 *
 * INPUTS:
 *
@@ -207,7 +206,7 @@ extern long HAL_MBOX_MsgWrite(
 *   Description : Base Address of instance of Mailbox module
 *
 *   Identifier  : mailBoxId
-*   Type        : const enum HAL_MBOX_Id_t
+*   Type        : const enum HW_MBOX_Id_t
 *   Description : Mail Box Sub module Id to check
 *
 * OUTPUTS:
@@ -221,21 +220,21 @@ extern long HAL_MBOX_MsgWrite(
 *
 *   Type        : ReturnCode_t
 *   Description : RET_OK              No errors occured
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
-*                 RET_INVALID_ID      Invalid Id used
+*   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*   RET_INVALID_ID      Invalid Id used
 *
 * PURPOSE:      : this function reads the full status register for mailbox.
 *
-* -----------------------------------------------------------------------------
+* ----------------------------------------------------------------
 */
-extern long HAL_MBOX_IsFull(
-                      const unsigned long         baseAddress,
-                      const enum HAL_MBOX_Id_t   mailBoxId,
-                      unsigned long *const        pIsFull
-                  );
+extern long HW_MBOX_IsFull(
+	const unsigned long         baseAddress,
+	const enum HW_MBOX_Id_t   mailBoxId,
+	unsigned long *const        pIsFull
+);
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_NumMsgGet
+/* -----------------------------------------------------------------
+* FUNCTION      : HW_MBOX_NumMsgGet
 *
 * INPUTS:
 *
@@ -244,7 +243,7 @@ extern long HAL_MBOX_IsFull(
 *   Description : Base Address of instance of Mailbox module
 *
 *   Identifier  : mailBoxId
-*   Type        : const enum HAL_MBOX_Id_t
+*   Type        : const enum HW_MBOX_Id_t
 *   Description : Mail Box Sub module Id to get num messages
 *
 * OUTPUTS:
@@ -257,34 +256,35 @@ extern long HAL_MBOX_IsFull(
 *
 *   Type        : ReturnCode_t
 *   Description : RET_OK              No errors occured
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
-*                 RET_INVALID_ID      Inavlid ID input at parameter
+*   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*   RET_INVALID_ID      Inavlid ID input at parameter
 *
-* PURPOSE:      : this function gets number of messages in a specified mailbox.
+* PURPOSE:
+*    : this function gets number of messages in a specified mailbox.
 *
-* -----------------------------------------------------------------------------
+* ----------------------------------------------------------------
 */
-extern long HAL_MBOX_NumMsgGet(
-                      const unsigned long         baseAddress,
-                      const enum HAL_MBOX_Id_t   mailBoxId,
-                      unsigned long *const        pNumMsg
-                  );
+extern long HW_MBOX_NumMsgGet(
+	const unsigned long         baseAddress,
+	const enum HW_MBOX_Id_t   mailBoxId,
+	unsigned long *const        pNumMsg
+);
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_EventEnable
+/* -----------------------------------------------------------------
+* FUNCTION      : HW_MBOX_EventEnable
 *
 * INPUTS:
 *
 *   Identifier  : baseAddress
 *   Type        : const unsigned long
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
 *
 *   Identifier  : mailBoxId
-*   Type        : const enum HAL_MBOX_Id_t
+*   Type        : const enum HW_MBOX_Id_t
 *   Description : Mail Box Sub module Id to enable
 *
 *   Identifier  : userId
-*   Type        : const enum HAL_MBOX_UserId_t
+*   Type        : const enum HW_MBOX_UserId_t
 *   Description : Mail box User Id to enable
 *
 *   Identifier  : enableIrq
@@ -295,35 +295,35 @@ extern long HAL_MBOX_NumMsgGet(
 *
 *   Type        : ReturnCode_t
 *   Description : RET_OK              No errors occured
-*                 RET_BAD_NULL_PARAM  A Pointer Paramater was set to NULL
-*                 RET_INVALID_ID      Invalid Id used
+*    RET_BAD_NULL_PARAM  A Pointer Paramater was set to NULL
+*    RET_INVALID_ID      Invalid Id used
 *
 * PURPOSE:      : this function enables the specified IRQ.
 *
-* -----------------------------------------------------------------------------
+* --------------------------------------------------------------------
 */
-extern long HAL_MBOX_EventEnable(
-                      const unsigned long             baseAddress,
-                      const enum HAL_MBOX_Id_t       mailBoxId,
-                      const enum HAL_MBOX_UserId_t   userId,
-                      const unsigned long             events
-                  );
+extern long HW_MBOX_EventEnable(
+	const unsigned long             baseAddress,
+	const enum HW_MBOX_Id_t       mailBoxId,
+	const enum HW_MBOX_UserId_t   userId,
+	const unsigned long             events
+);
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_EventDisable
+/* ------------------------------------------------------------------
+* FUNCTION      : HW_MBOX_EventDisable
 *
 * INPUTS:
 *
 *   Identifier  : baseAddress
 *   Type        : const unsigned long
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*  RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
 *
 *   Identifier  : mailBoxId
-*   Type        : const enum HAL_MBOX_Id_t
+*   Type        : const enum HW_MBOX_Id_t
 *   Description : Mail Box Sub module Id to disable
 *
 *   Identifier  : userId
-*   Type        : const enum HAL_MBOX_UserId_t
+*   Type        : const enum HW_MBOX_UserId_t
 *   Description : Mail box User Id to disable
 *
 *   Identifier  : enableIrq
@@ -339,17 +339,17 @@ extern long HAL_MBOX_EventEnable(
 *
 * PURPOSE:      : this function disables the specified IRQ.
 *
-* -----------------------------------------------------------------------------
+* ------------------------------------------------------------------
 */
-extern long HAL_MBOX_EventDisable(
-                      const unsigned long             baseAddress,
-                      const enum HAL_MBOX_Id_t       mailBoxId,
-                      const enum HAL_MBOX_UserId_t   userId,
-                      const unsigned long             events
-                  );
+extern long HW_MBOX_EventDisable(
+	const unsigned long             baseAddress,
+	const enum HW_MBOX_Id_t       mailBoxId,
+	const enum HW_MBOX_UserId_t   userId,
+	const unsigned long             events
+);
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_EventStatus
+/* ------------------------------------------------------------------
+* FUNCTION      : HW_MBOX_EventStatus
 *
 * INPUTS:
 *
@@ -358,11 +358,11 @@ extern long HAL_MBOX_EventDisable(
 *   Description : Base Address of instance of Mailbox module
 *
 *   Identifier  : mailBoxId
-*   Type        : const enum HAL_MBOX_Id_t
+*   Type        : const enum HW_MBOX_Id_t
 *   Description : Mail Box Sub module Id to clear
 *
 *   Identifier  : userId
-*   Type        : const enum HAL_MBOX_UserId_t
+*   Type        : const enum HW_MBOX_UserId_t
 *   Description : Mail box User Id to clear
 *
 * OUTPUTS:
@@ -375,22 +375,22 @@ extern long HAL_MBOX_EventDisable(
 *
 *   Type        : ReturnCode_t
 *   Description : RET_OK              No errors occured
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
-*                 RET_INVALID_ID      Invalid Id used
+*   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*   RET_INVALID_ID      Invalid Id used
 *
 * PURPOSE:      : this function gets the status of the specified IRQ.
 *
-* -----------------------------------------------------------------------------
+* --------------------------------------------------------------
 */
-extern long HAL_MBOX_EventStatus(
-                      const unsigned long             baseAddress,
-                      const enum HAL_MBOX_Id_t       mailBoxId,
-                      const enum HAL_MBOX_UserId_t   userId,
-                      unsigned long *const            pEventStatus
-                  );
+extern long HW_MBOX_EventStatus(
+	const unsigned long             baseAddress,
+	const enum HW_MBOX_Id_t       mailBoxId,
+	const enum HW_MBOX_UserId_t   userId,
+	unsigned long *const            pEventStatus
+);
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_EventAck
+/* ----------------------------------------------------------------
+* FUNCTION      : HW_MBOX_EventAck
 *
 * INPUTS:
 *
@@ -399,11 +399,11 @@ extern long HAL_MBOX_EventStatus(
 *   Description : Base Address of instance of Mailbox module
 *
 *   Identifier  : mailBoxId
-*   Type        : const enum HAL_MBOX_Id_t
+*   Type        : const enum HW_MBOX_Id_t
 *   Description : Mail Box Sub module Id to set
 *
 *   Identifier  : userId
-*   Type        : const enum HAL_MBOX_UserId_t
+*   Type        : const enum HW_MBOX_UserId_t
 *   Description : Mail box User Id to set
 *
 *   Identifier  : irqStatus
@@ -421,18 +421,18 @@ extern long HAL_MBOX_EventStatus(
 *
 * PURPOSE:      : this function sets the status of the specified IRQ.
 *
-* -----------------------------------------------------------------------------
+* --------------------------------------------------------------
 */
-extern long HAL_MBOX_EventAck(
-                      const unsigned long              baseAddress,
-                      const enum HAL_MBOX_Id_t        mailBoxId,
-                      const enum HAL_MBOX_UserId_t    userId,
-                      const unsigned long              event
-                  );
+extern long HW_MBOX_EventAck(
+	const unsigned long              baseAddress,
+	const enum HW_MBOX_Id_t        mailBoxId,
+	const enum HW_MBOX_UserId_t    userId,
+	const unsigned long              event
+);
 
 #if defined(OMAP3430)
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_saveSettings
+/* ---------------------------------------------------------------
+* FUNCTION      : HW_MBOX_saveSettings
 *
 * INPUTS:
 *
@@ -440,23 +440,23 @@ extern long HAL_MBOX_EventAck(
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
-*  
+*
 * RETURNS:
 *
 *   Type        : ReturnCode_t
 *   Description : RET_OK              No errors occured
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
-*                 RET_INVALID_ID      Invalid Id used
-*                 RET_EMPTY           Mailbox empty
+*   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*   RET_INVALID_ID      Invalid Id used
+*    RET_EMPTY           Mailbox empty
 *
 * PURPOSE:      : this function saves the context of mailbox
 *
-* -----------------------------------------------------------------------------
+* ----------------------------------------------------------------
 */
-extern long HAL_MBOX_saveSettings(unsigned long    baseAddres );
+extern long HW_MBOX_saveSettings(unsigned long  baseAddres);
 
-/* ----------------------------------------------------------------------------
-* FUNCTION      : HAL_MBOX_restoreSettings
+/* -----------------------------------------------------------------
+* FUNCTION      : HW_MBOX_restoreSettings
 *
 * INPUTS:
 *
@@ -464,21 +464,21 @@ extern long HAL_MBOX_saveSettings(unsigned long    baseAddres );
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
-*  
+*
 * RETURNS:
 *
 *   Type        : ReturnCode_t
 *   Description : RET_OK              No errors occured
-*                 RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
-*                 RET_INVALID_ID      Invalid Id used
-*                 RET_EMPTY           Mailbox empty
+*   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
+*   RET_INVALID_ID      Invalid Id used
+*   RET_EMPTY           Mailbox empty
 *
 * PURPOSE:      : this function restores the context of mailbox
 *
-* -----------------------------------------------------------------------------
+* -------------------------------------------------------------------
 */
-extern long HAL_MBOX_restoreSettings(unsigned long    baseAddres );
-#endif// defined(OMAP3430)
+extern long HW_MBOX_restoreSettings(unsigned long  baseAddres);
+#endif/* defined(OMAP3430)*/
 
 #ifdef __cplusplus
 }

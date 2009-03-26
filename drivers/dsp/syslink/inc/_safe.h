@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   _safe.h
  *
@@ -15,7 +16,7 @@
  */
 
 
-#if !defined (_SAFE_H)
+#if !defined  _SAFE_H
 #define _SAFE_H
 
 
@@ -26,9 +27,9 @@
 #include <mem.h>
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 extern "C" {
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */
 
 
 /** ============================================================================
@@ -47,7 +48,7 @@ extern "C" {
  *  @desc   Checks if a value lies in given range.
  *  ============================================================================
  */
-#define IS_RANGE_VALID(x,min,max) (((x) < (max)) && ((x) >= (min)))
+#define IS_RANGE_VALID(x, min, max) (((x) < (max)) && ((x) >= (min)))
 
 /** ============================================================================
  *  @macro  MIN
@@ -55,7 +56,7 @@ extern "C" {
  *  @desc   Returns minumum of the two arguments
  *  ============================================================================
  */
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 
 /** ============================================================================
@@ -65,13 +66,13 @@ extern "C" {
  *          status of MEM_Free function call
  *  ============================================================================
  */
-#define FREE_PTR(ptr)  MEM_Free ((Pvoid *) ((Pvoid) &ptr), MEM_DEFAULT)
+#define FREE_PTR(ptr)  MEM_Free((Pvoid *) ((Pvoid) &ptr), MEM_DEFAULT)
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 }
-#endif /* defined (__cplusplus) */
+#endif /* defined  __cplusplus */
 
 
-#endif /* !defined (_SAFE_H) */
+#endif /* !defined  _SAFE_H */
 

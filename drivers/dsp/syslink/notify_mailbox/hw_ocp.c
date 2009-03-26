@@ -1,4 +1,3 @@
-
 /*===========================================================================
   File    hal_ocp.c
 
@@ -63,14 +62,15 @@ MODULE_LICENSE("GPL");
 *=============================================================================
 */
 
-long HAL_OCP_SoftReset(const unsigned long baseAddress)
+long HW_OCP_SoftReset(const unsigned long baseAddress)
 {
     long status = RET_OK;
     MLBMAILBOX_SYSCONFIGSoftResetWrite32(baseAddress, HAL_SET);
     return status;
 }
 
-long HAL_OCP_SoftResetIsDone(const unsigned long baseAddress, unsigned long *resetIsDone)
+long HW_OCP_SoftResetIsDone(const unsigned long baseAddress,
+					unsigned long *resetIsDone)
 {
     long status = RET_OK;
 
@@ -79,7 +79,8 @@ long HAL_OCP_SoftResetIsDone(const unsigned long baseAddress, unsigned long *res
     return status;
 }
 
-long HAL_OCP_IdleModeSet(const unsigned long baseAddress, enum HAL_OCPIdleMode_t idleMode)
+long HW_OCP_IdleModeSet(const unsigned long baseAddress,
+			enum HAL_OCPIdleMode_t idleMode)
 {
     long status = RET_OK;
 
@@ -89,16 +90,19 @@ long HAL_OCP_IdleModeSet(const unsigned long baseAddress, enum HAL_OCPIdleMode_t
 }
 
 
-long HAL_OCP_IdleModeGet(const unsigned long baseAddress, enum HAL_OCPIdleMode_t *idleMode)
+long HW_OCP_IdleModeGet(const unsigned long baseAddress,
+			enum HAL_OCPIdleMode_t *idleMode)
 {
     long status = RET_OK;
 
-    *idleMode = (enum HAL_OCPIdleMode_t)MLBMAILBOX_SYSCONFIGSIdleModeRead32(baseAddress);
+    *idleMode = (enum HAL_OCPIdleMode_t)
+			MLBMAILBOX_SYSCONFIGSIdleModeRead32(baseAddress);
 
     return status;
 }
 
-long HAL_OCP_AutoIdleSet(const unsigned long baseAddress, enum HAL_SetClear_t autoIdle)
+long HW_OCP_AutoIdleSet(const unsigned long baseAddress,
+				enum HAL_SetClear_t autoIdle)
 {
     long status = RET_OK;
 
@@ -107,11 +111,13 @@ long HAL_OCP_AutoIdleSet(const unsigned long baseAddress, enum HAL_SetClear_t au
     return status;
 }
 
-long HAL_OCP_AutoIdleGet(const unsigned long baseAddress, enum HAL_SetClear_t *autoIdle)
+long HW_OCP_AutoIdleGet(const unsigned long baseAddress,
+				enum HAL_SetClear_t *autoIdle)
 {
     long status = RET_OK;
 
-    *autoIdle = (enum HAL_SetClear_t)MLBMAILBOX_SYSCONFIGAutoIdleRead32(baseAddress);
+    *autoIdle = (enum HAL_SetClear_t)
+			MLBMAILBOX_SYSCONFIGAutoIdleRead32(baseAddress);
 
     return status;
 }

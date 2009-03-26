@@ -1,4 +1,5 @@
 
+
 /** ============================================================================
  *  @file   osal.h
  *
@@ -16,7 +17,7 @@
  */
 
 
-#if !defined (OSAL_H)
+#if !defined OSAL_H
 #define OSAL_H
 
 
@@ -33,7 +34,7 @@
 #include <errbase.h>
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 extern "C" {
 #endif
 
@@ -61,7 +62,7 @@ extern "C" {
  */
 
 signed long int
-OSAL_init (void) ;
+OSAL_init(void) ;
 
 /** ============================================================================
  *  @deprecated The deprecated function OSAL_Initialize has been replaced
@@ -95,7 +96,7 @@ OSAL_init (void) ;
  */
 
 signed long int
-OSAL_exit (void) ;
+OSAL_exit(void) ;
 
 /** ============================================================================
  *  @deprecated The deprecated function OSAL_Finalize has been replaced
@@ -105,9 +106,9 @@ OSAL_exit (void) ;
 #define OSAL_Finalize OSAL_exit
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif
 
 
-#endif /* !defined (OSAL_H) */
+#endif /* !defined OSAL_H */

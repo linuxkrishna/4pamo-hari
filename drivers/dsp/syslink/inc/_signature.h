@@ -1,22 +1,23 @@
+
 /** ============================================================================
- *  @file   _signature.h
- *
- *  @path   $(DSPLINK)/gpp/inc/
- *
- *  @desc   Defines the file and object signatures used in DSP/BIOS Link
- *          These signatures are used in object validation and error reporting.
- *
- *  @ver    1.51.00.08
- *  ============================================================================
- *  Copyright (c) Texas Instruments Incorporated 2002-2008
- *
- *  Use of this software is controlled by the terms and conditions found in the
- *  license agreement under which this software has been supplied or provided.
- *  ============================================================================
- */
+*  @file   _signature.h
+*
+*  @path   $(DSPLINK)/gpp/inc/
+*
+*  @desc   Defines the file and object signatures used in DSP/BIOS Link
+*          These signatures are used in object validation and error reporting.
+*
+*  @ver    1.51.00.08
+*  ============================================================================
+*  Copyright (c) Texas Instruments Incorporated 2002-2008
+*
+*  Use of this software is controlled by the terms and conditions found in the
+*  license agreement under which this software has been supplied or provided.
+*  ============================================================================
+*/
 
 
-#if !defined (_SIGNATURE_H)
+#if !defined  _SIGNATURE_H
 #define _SIGNATURE_H
 
 
@@ -24,25 +25,25 @@
 #include <gpptypes.h>
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 extern "C" {
 #endif /* defined (__cplusplus) */
 
 
 /*  ============================================================================
- *  @const  File identifiers
- *
- *  @desc   File identifiers used in TRC_SetReason ()
- *  ============================================================================
- */
+*  @const  File identifiers
+*
+*  @desc   File identifiers used in TRC_SetReason ()
+*  ============================================================================
+*/
 
 /*  ============================================================================
- *  IPCBASE File identifiers
- *  ============================================================================
- */
+*  IPCBASE File identifiers
+*  ============================================================================
+*/
 #define FID_BASE_IPCBASE        0x0200u
 
- /*  GEN File identifiers */
+/*  GEN File identifiers */
 #define FID_BASE_GEN            (FID_BASE_IPCBASE + 0x0000u)
 #define FID_C_GEN_UTILS         (FID_BASE_GEN  + 0u)
 #define FID_C_GEN_LIST          (FID_BASE_GEN  + 1u)
@@ -63,24 +64,24 @@ extern "C" {
 
 
 /*  ============================================================================
- *  Notify File identifiers
- *  ============================================================================
- */
+*  Notify File identifiers
+*  ============================================================================
+*/
 #define FID_BASE_NOTIFY         0x0300u
 
- /*  Notify File identifiers */
+/*  Notify File identifiers */
 #define FID_C_KNL_NOTIFY        (FID_BASE_NOTIFY  + 0u)
 #define FID_C_KNL_NOTIFY_DRIVER (FID_BASE_NOTIFY  + 1u)
 #define FID_C_DRV_IPCNOTIFY     (FID_BASE_NOTIFY  + 2u)
 
 
 /*  ============================================================================
- *  Drivers File identifiers
- *  ============================================================================
- */
+*  Drivers File identifiers
+*  ============================================================================
+*/
 #define FID_BASE_DRIVERS        0x0400u
 
- /*  NotifyShmDrv File identifiers */
+/*  NotifyShmDrv File identifiers */
 #define FID_C_BASE_NOTIFYSHMDRV    (FID_BASE_DRIVERS  + 0x0000u)
 #define FID_C_KNL_NOTIFY_SHMDRIVER (FID_C_BASE_NOTIFYSHMDRV  + 0u)
 #define FID_C_DRV_NOTIFYSHMDRV     (FID_C_BASE_NOTIFYSHMDRV  + 1u)
@@ -91,22 +92,22 @@ extern "C" {
 
 
 /*  ============================================================================
- *  Sample applications File identifiers
- *  ============================================================================
- */
+*  Sample applications File identifiers
+*  ============================================================================
+*/
 #define FID_BASE_SAMPLES        0x0500u
 
- /*  Notify sample applications File identifiers */
+/*  Notify sample applications File identifiers */
 #define FID_BASE_SAMPLES_NOTIFY (FID_BASE_SAMPLES + 0x0000u)
 #define FID_C_KNL_NOTIFYXFER    (FID_BASE_SAMPLES_NOTIFY  + 0u)
 
 
 /*  ============================================================================
- *  @const  Object signatures
- *
- *  @desc   Object signatures used to validate objects.
- *  ============================================================================
- */
+*  @const  Object signatures
+*
+*  @desc   Object signatures used to validate objects.
+*  ============================================================================
+*/
 #define SIGN_NULL                0x00000000u      /* NULL signature */
 
 /*  OS Adaptation Layer          hex value       String (in reverse) */
@@ -128,20 +129,20 @@ extern "C" {
 
 
 /*  ============================================================================
- *  @const  MAXIMUM_COMPONENTS
- *
- *  @desc   Maximum number of components
- *  ============================================================================
- */
+*  @const  MAXIMUM_COMPONENTS
+*
+*  @desc   Maximum number of components
+*  ============================================================================
+*/
 #define MAXIMUM_COMPONENTS         16u
 
 /*  ============================================================================
- *  @const  Component IDs
- *
- *  @desc   Component Identifiers. These must match corresponding bit
- *          position in component map
- *  ============================================================================
- */
+*  @const  Component IDs
+*
+*  @desc   Component Identifiers. These must match corresponding bit
+*          position in component map
+*  ============================================================================
+*/
 #define ID_GEN_BASE             0x00010000u
 #define ID_OSAL_BASE            0x00020000u
 #define ID_IPCBASEDRV_BASE      0x00040000u
@@ -151,85 +152,87 @@ extern "C" {
 #define ID_SAMPLES              0x00400000u
 #define ID_USR                  0x80000000u
 
-#define MIN_COMPONENT  ID_GEN_BASE    >> 16u
-#define MAX_COMPONENT  ID_SAMPLES     >> 16u
+#define MIN_COMPONENT  (ID_GEN_BASE    >> 16u)
+#define MAX_COMPONENT  (ID_SAMPLES     >> 16u)
 
 
 /*  ============================================================================
- *  GEN subcomponent map
- *  ============================================================================
- */
-#define ID_GEN_UTILS        ID_GEN_BASE | 0x0001u
-#define ID_GEN_LIST         ID_GEN_BASE | 0x0002u
-#define ID_GEN_ALL          ID_GEN_UTILS | ID_GEN_LIST
+*  GEN subcomponent map
+*  ============================================================================
+*/
+#define ID_GEN_UTILS        (ID_GEN_BASE | 0x0001u)
+#define ID_GEN_LIST         (ID_GEN_BASE | 0x0002u)
+#define ID_GEN_ALL          (ID_GEN_UTILS | ID_GEN_LIST)
 
 /*  ============================================================================
- *  OSAL Subcomponent map
- *  ============================================================================
- */
-#define ID_OSAL            ID_OSAL_BASE | 0x0001u
-#define ID_OSAL_DPC        ID_OSAL_BASE | 0x0002u
-#define ID_OSAL_ISR        ID_OSAL_BASE | 0x0004u
-#define ID_OSAL_KFILE      ID_OSAL_BASE | 0x0008u
-#define ID_OSAL_MEM        ID_OSAL_BASE | 0x0010u
-#define ID_OSAL_PRCS       ID_OSAL_BASE | 0x0020u
-#define ID_OSAL_SYNC       ID_OSAL_BASE | 0x0040u
-#define ID_OSAL_TRC        ID_OSAL_BASE | 0x0080u
-#define ID_OSAL_PRINT      ID_OSAL_BASE | 0x0100u
-#define ID_OSAL_ALL        ID_OSAL      | ID_OSAL_DPC  | ID_OSAL_ISR      \
-                         | ID_OSAL_KFILE| ID_OSAL_MEM  | ID_OSAL_PRCS     \
-                         | ID_OSAL_SYNC | ID_OSAL_TRC  | ID_OSAL_PRINT
+*  OSAL Subcomponent map
+*  ============================================================================
+*/
+#define ID_OSAL            (ID_OSAL_BASE | 0x0001u)
+#define ID_OSAL_DPC        (ID_OSAL_BASE | 0x0002u)
+#define ID_OSAL_ISR        (ID_OSAL_BASE | 0x0004u)
+#define ID_OSAL_KFILE      (ID_OSAL_BASE | 0x0008u)
+#define ID_OSAL_MEM        (ID_OSAL_BASE | 0x0010u)
+#define ID_OSAL_PRCS       (ID_OSAL_BASE | 0x0020u)
+#define ID_OSAL_SYNC       (ID_OSAL_BASE | 0x0040u)
+#define ID_OSAL_TRC        (ID_OSAL_BASE | 0x0080u)
+#define ID_OSAL_PRINT      (ID_OSAL_BASE | 0x0100u)
+
+#define ID_OSAL_ALL        (ID_OSAL      | ID_OSAL_DPC  | ID_OSAL_ISR      \
+| ID_OSAL_KFILE | ID_OSAL_MEM  | ID_OSAL_PRCS     \
+| ID_OSAL_SYNC | ID_OSAL_TRC  | ID_OSAL_PRINT)
 
 /*  ============================================================================
- *  IPCBASEDRV Subcomponent map
- *  ============================================================================
- */
-#define ID_DRV_IPCBASE     ID_IPCBASEDRV_BASE | 0x0001u
+*  IPCBASEDRV Subcomponent map
+*  ============================================================================
+*/
+#define ID_DRV_IPCBASE     (ID_IPCBASEDRV_BASE | 0x0001u)
 #define ID_IPCBASEDRV_ALL  ID_DRV_IPCBASE
 
 /*  ============================================================================
- *  Notify KNL Subcomponent map
- *  ============================================================================
- */
-#define ID_KNL_NOTIFY        ID_KNL_NOTIFY_BASE | 0x0001u
-#define ID_KNL_NOTIFY_DRIVER ID_KNL_NOTIFY_BASE | 0x0002u
-#define ID_DRV_IPCNOTIFY     ID_KNL_NOTIFY_BASE | 0x0004u
-#define ID_KNL_NOTIFY_ALL    ID_KNL_NOTIFY      | ID_KNL_NOTIFY_DRIVER    \
-                           | ID_DRV_IPCNOTIFY
+*  Notify KNL Subcomponent map
+*  ============================================================================
+*/
+#define ID_KNL_NOTIFY        (ID_KNL_NOTIFY_BASE | 0x0001u)
+#define ID_KNL_NOTIFY_DRIVER (ID_KNL_NOTIFY_BASE | 0x0002u)
+#define ID_DRV_IPCNOTIFY     (ID_KNL_NOTIFY_BASE | 0x0004u)
+
+#define ID_KNL_NOTIFY_ALL    (ID_KNL_NOTIFY      | ID_KNL_NOTIFY_DRIVER    \
+| ID_DRV_IPCNOTIFY)
 
 /*  ============================================================================
- *  NotifyShmDrv KNL Subcomponent map
- *  ============================================================================
- */
-#define ID_KNL_NOTIFY_SHMDRIVER ID_NOTIFYSHMDRV_BASE | 0x0001u
-#define ID_DRV_NOTIFYSHMDRV     ID_NOTIFYSHMDRV_BASE | 0x0002u
-#define ID_NOTIFYSHMDRV_ALL     ID_KNL_NOTIFY_SHMDRIVER  | ID_DRV_NOTIFYSHMDRV
+*  NotifyShmDrv KNL Subcomponent map
+*  ============================================================================
+*/
+#define ID_KNL_NOTIFY_SHMDRIVER (ID_NOTIFYSHMDRV_BASE | 0x0001u)
+#define ID_DRV_NOTIFYSHMDRV     (ID_NOTIFYSHMDRV_BASE | 0x0002u)
+#define ID_NOTIFYSHMDRV_ALL     (ID_KNL_NOTIFY_SHMDRIVER  | ID_DRV_NOTIFYSHMDRV)
 
 /*  ============================================================================
- *  HAL Subcomponent map
- *  ============================================================================
- */
-#define ID_HAL_INTERRUPT    ID_HAL_BASE | 0x0001u
+*  HAL Subcomponent map
+*  ============================================================================
+*/
+#define ID_HAL_INTERRUPT    (ID_HAL_BASE | 0x0001u)
 #define ID_HAL_ALL          ID_HAL_INTERRUPT
 
 /*  ============================================================================
- *  Samples Subcomponent map
- *  ============================================================================
- */
-#define ID_KNL_NOTIFYXFER   ID_SAMPLES | 0x0001u
+*  Samples Subcomponent map
+*  ============================================================================
+*/
+#define ID_KNL_NOTIFYXFER   (ID_SAMPLES | 0x0001u)
 #define ID_SAMPLES_ALL      ID_KNL_NOTIFYXFER
 
 /*  ============================================================================
- *  Samples Subcomponent map
- *  ============================================================================
- */
+*  Samples Subcomponent map
+*  ============================================================================
+*/
 #define ID_USR_NOTIFY       (ID_USR | 0x0001u)
 #define ID_USR_DRVNOTIFY    (ID_USR | 0x0002u)
 #define ID_USR__NOTIFY      (ID_USR | 0x0003u)
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
-#endif /* defined (__cplusplus) */
+#endif /* defined __cplusplus */
 
 
-#endif  /* !defined (_SIGNATURE_H) */
+#endif  /* !defined _SIGNATURE_H */

@@ -1,3 +1,4 @@
+
 /** ============================================================================
  *  @file   dbc.h
  *
@@ -15,7 +16,7 @@
  */
 
 
-#if !defined (DBC_H)
+#if !defined DBC_H
 #define DBC_H
 
 
@@ -26,62 +27,63 @@
 #include <print.h>
 
 
-#if defined (__cplusplus)
+#if defined  __cplusplus
 extern "C" {
 #endif /* defined (__cplusplus) */
 
 
-/*  ============================================================================
- *  @macro  DBC_PRINTF
- *
- *  @desc   This macro expands to the print function. It makes the DBC
- *          macros portable across OSes.
- *  ============================================================================
- */
+/*  ========================================================+=
+*  @macro DBC_PRINTF
+*
+*  @desc  This macro expands to the print function. It makes the DBC
+*         macros portable across OSes.
+*  ==========================================================
+*/
 #define  DBC_PRINTF     PRINT_Printf
 
 
-#if defined (DDSP_DEBUG)
+#if defined DDSP_DEBUG
 
-/** ============================================================================
- *  @macro  DBC_Assert
- *
- *  @desc   Assert on expression.
- *  ============================================================================
- */
-#define DBC_assert(exp)                                                        \
-        if (!(exp)) {                                                          \
-            DBC_PRINTF ("Assertion failed ("#exp"). File : "__FILE__           \
-                        " Line : %d\n", __LINE__) ;                            \
-        }
+/** =======================================================
+*  @macro  DBC_Assert
+*
+*  @desc   Assert on expression.
+*  ========================================================
+*/
+#define DBC_assert(exp)                          \
+		if (!(exp)) {                             \
+				DBC_PRINTF("Assertion failed ("#exp").\
+				File : "__FILE__ \
+				" Line : %d\n", __LINE__) ; \
+		}
 #define DBC_Assert DBC_assert
 
-/** ============================================================================
- *  @macro  DBC_Require
- *
- *  @desc   Function Precondition.
- *  ============================================================================
- */
-#define DBC_require    DBC_Assert
+/** =======================================================
+*  @macro  DBC_Require
+*
+*  @desc   Function Precondition.
+*  =====================================================+=
+*/
+#define DBC_require DBC_Assert
 #define DBC_Require DBC_require
 
-/** ============================================================================
- *  @macro  DBC_Ensure
- *
- *  @desc   Function Postcondition.
- *  ============================================================================
- */
-#define DBC_ensure     DBC_Assert
+/** =======================================================
+*  @macro  DBC_Ensure
+*
+*  @desc   Function Postcondition.
+*  =======================================================
+*/
+#define DBC_ensure DBC_Assert
 #define DBC_Ensure DBC_ensure
 
 #else /* defined (DDSP_DEBUG) */
 
-/*  ============================================================================
- *  @macro  DBC_Assert/DBC_Require/DBC_Ensure
- *
- *  @desc   Asserts defined out.
- *  ============================================================================
- */
+/*  =======================================================
+*  @macro  DBC_Assert/DBC_Require/DBC_Ensure
+*
+*  @desc   Asserts defined out.
+*  ======================================================+
+*/
 #define DBC_assert(exp)
 #define DBC_Assert(exp)
 
@@ -94,7 +96,7 @@ extern "C" {
 #endif /* defined (DDSP_DEBUG) */
 
 
-#if defined (__cplusplus)
+#if defined __cplusplus
 }
 #endif /* defined (__cplusplus) */
 
