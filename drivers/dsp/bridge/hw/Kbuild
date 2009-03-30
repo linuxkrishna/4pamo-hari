@@ -1,0 +1,44 @@
+
+
+ifeq ($(CONFIG_MPU_BRIDGE),y)
+obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+endif
+ifeq ($(CONFIG_MPU_BRIDGE),m)
+obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+endif
+
+ifeq ($(CONFIG_MPU_BRIDGE_NOTIFY),y)
+obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+endif
+ifeq ($(CONFIG_MPU_BRIDGE_NOTIFY),m)
+obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+endif
+
+ifeq ($(CONFIG_BRIDGE_MAILBOX),y)
+obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+endif
+ifeq ($(CONFIG_BRIDGE_MAILBOX),m)
+obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+endif
+
+
+ccflags-y += -Wno-strict-prototypes
+
+#Machine dependent
+ccflags-y += -D_TI_ -D_DB_TIOMAP -DTMS32060 \
+		-DTICFG_PROC_VER -DTICFG_EVM_TYPE -DCHNL_SMCLASS \
+		-DCHNL_MESSAGES -DUSE_LEVEL_1_MACROS -DOMAP44XX \
+		-DCONFIG_DISABLE_BRIDGE_PM -DDSP_TRACEBUF_DISABLED \
+
+#Header files
+ccflags-y += -Iarch/arm/plat-omap/include
+ccflags-y += -Idrivers/dsp/bridge/hw
+ccflags-y += -Idrivers/dsp/syslink/inc
+ccflags-y += -Idrivers/dsp/bridge/services
+ccflags-y += -Idrivers/dsp/bridge/wmd
+ccflags-y += -Idrivers/dsp/bridge/pmgr
+ccflags-y += -Idrivers/dsp/bridge/rmgr
+ccflags-y += -Idrivers/dsp/bridge/hw
+ccflags-y += -Iarch/arm/plat-omap/include
+
+

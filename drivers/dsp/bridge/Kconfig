@@ -4,6 +4,7 @@
 
 menuconfig MPU_BRIDGE
 	tristate "DSP Bridge driver"
+	depends on BRIDGE_MAILBOX && MPU_BRIDGE_NOTIFY
 	default n
 	help
 	  DSP/BIOS Bridge is designed for platforms that contain a GPP and

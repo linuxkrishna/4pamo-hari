@@ -15,6 +15,7 @@ config MPU_BRIDGE_NOTIFY
 
 config  BRIDGE_MAILBOX  
 	tristate "OMAP MailBox Module"
+	depends on MPU_BRIDGE_NOTIFY
 	default m
 	help
  	   MailBox Module 

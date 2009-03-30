@@ -1,6 +1,5 @@
-libservices = ../services/print.o ../services/mem.o ../services/gen_utils.o  \
+libservices = ../services/print.o  ../services/gen_utils.o  \
 		      ../services/dpc.o   ../services/osal.o \
-			  ../services/sync.o  
 
 libomap_notify = notify_driver.o notify.o drv_notify.o
 
