@@ -270,7 +270,7 @@ long HW_MBOX_EventEnable(
 #endif
 	return status;
 }
-
+EXPORT_SYMBOL(HW_MBOX_EventEnable);
 
 /* ==================== Function Separator =============================*/
 
@@ -326,7 +326,7 @@ long HW_MBOX_EventDisable(
 #endif
 	return status;
 }
-
+EXPORT_SYMBOL(HW_MBOX_EventDisable);
 
 /* ==================== Function Separator =============================*/
 

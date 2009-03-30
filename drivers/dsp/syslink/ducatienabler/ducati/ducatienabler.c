@@ -45,6 +45,8 @@ static int ducatidrv_open(struct inode *inode, struct file *filp) ;
 
 static int ducatidrv_close(struct inode *inode, struct file *filp) ;
 
+static void ducatidrv_free(struct device *dev);
+
 
 static int ducatidrv_read(struct file *filp,
 							char *dst,
@@ -103,7 +105,7 @@ static struct platform_device omap_ducati_dev = {
 		.id = -1,
 		.num_resources = 0,
 		.dev = {
-		.release = ducatidrv_close,
+		.release = ducatidrv_free,
 		},
 		.resource = NULL,
 };
@@ -115,7 +117,7 @@ struct ducatiBaseImage {
 	u32 align;
 };
 
-static struct ducatiBaseImage ducbaseimage = {NULL, NULL, 0x100000, 0x100000};
+static struct ducatiBaseImage ducbaseimage = {0, NULL, 0x100000, 0x100000};
 
 /**----------------------------------------------------------------------------
  *@func   ducatidrv_initializeModule
@@ -125,10 +127,10 @@ static struct ducatiBaseImage ducbaseimage = {NULL, NULL, 0x100000, 0x100000};
  */
 static int __init ducatidrv_initializeModule(void)
 {
-	int retVal;
+	int retVal = 0;
 	int size = 0;
-	int align;
-	int status;
+	int align = 0;
+	int status = 0;
 	dev_t   dev = 0 ;
 	int     result;
 
@@ -265,6 +267,14 @@ static int ducatidrv_read(struct file *filp, char *dst,
 				size_t size, loff_t *offset)
 {
 	return 0 ;
+}
+
+
+static void ducatidrv_free(struct device *dev)
+{
+
+	/*Dont Do AnyThings*/
+
 }
 
 

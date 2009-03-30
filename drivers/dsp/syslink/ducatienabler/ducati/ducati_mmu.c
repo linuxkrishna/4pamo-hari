@@ -185,7 +185,8 @@ u32 initpage_attributes(u32 L1Size, u32 L1Align, u32 L2NumOfPages)
 			 pPtAttrs->L2BasePa, pPtAttrs->L2BaseVa,
 			 pPtAttrs->L2size);
 		DPRINTK("pPtAttrs %x L2 NumPages %x pgInfo %x\n",
-			 pPtAttrs, pPtAttrs->L2NumPages, (u32)pPtAttrs->pgInfo);
+			 (u32)pPtAttrs, pPtAttrs->L2NumPages,
+			(u32)pPtAttrs->pgInfo);
 	}
 	return 0;
 }
