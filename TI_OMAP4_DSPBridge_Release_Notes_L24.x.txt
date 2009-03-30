@@ -3,7 +3,7 @@ DSPBridge List Handoff
 ================================================================================
 
 Author		: Ramesh Gupta G
-Date		: Feb 27 2009
+Date		: March 30 2009
 
 ===================
 MPU Bridge Sources
@@ -21,7 +21,7 @@ For Tesla and Ducati images please contact TI counter part.
 
 
 Setup:
-Virtio  : VPOM4430_1.05 + VPOM4430_1.05a_Patch11.var
+Virtio  : VPOM4430_1.06a + VPOM4430_1.06a_Patch3.var
 CCS	: Version 3.3 with VPOM simulator. For more information on CCS availability
 please contact TI.
 
@@ -49,7 +49,7 @@ From the Kernel sources run below commands.
 
 	make distclean
 	
-	make CROSS_COMPILE=arm-none-linux-gnueabi- omap_4430sdp_defconfig
+	make CROSS_COMPILE=arm-none-linux-gnueabi- omap_4430sdphigh_defconfig
 
 ================================================================================
 Important Note1:  Currently the Consistent DMA Memory Size is set to 8 which is
@@ -65,12 +65,7 @@ please follow below steps to change Consistent DMA Memory Size
 	4. Save Configuration.
 
 ================================================================================
-Important Note2: Due to duplication of some function names the bridgedriver,
-notify driver, notify mailbox and ducatienabler driver cannot be build as part
-of the kernel, this will be fixed soon. One has to select all the drivers as
-Module for building.
-================================================================================
-	
+
 	Follow below steps for building bridgedriver, omap_notify driver,
 	notify_mailbox and ducati enabler drivers.
 
@@ -120,8 +115,16 @@ Module for building.
 	18. Ducati enabler module (ducatienabler.ko) is built under folder
 	    drivers/dsp/syslink/ducatienabler
 
-	19. copy all these drivers to the target file system(ram disk file system)
-	    along with the dsp binaries
+	19. copy all these drivers to the target file system
+		(ram disk file system)along with the dsp binaries
+
+	20. To build all of the above drivers as part of the Kernel, 
+		select the drivers and run "make Image"
+	
+=================================================================================
+Important Note: bridgedriver depends on omap_notify 
+and omap_notify_mailbox drivers.
+=================================================================================
 
 =======================================
 Building Brisge API library and samples
@@ -224,9 +227,11 @@ Running Tesla Samples
 
 Running Bridge Samples in Dynamic loading mode:
 
-	1.Boot Virtio
+	1. Boot Virtio
 
-	2.Install all the 3 driver using the script as mentioned in above section.
+	2. Install all the 3 driver using the script as mentioned in above section. 
+		This step is not required if all the drivers are build as part of the 
+		kernel.
 	
 	3. load dynbase image.
 		./cexec.out dynbase_tiomap4430.dof64T
@@ -255,9 +260,9 @@ One can validate the Ducati enabler driver by running below steps.
 -------------------------------------------------------------------------------
 Important Note4: CCS need to be configured for "VPOMAP 4 Platform Simulator"
 
-Remove the IVAHD-iCONT1, IVAHD-iCONT2, Modena and Ducati-ARM-M3-2
+Remove the IVAHD-iCONT1, IVAHD-iCONT2, and Modena.
 
-The System Configuration must have only Tesla and Duati-ARM-M3-1
+The System Configuration must have only Tesla and Duati-ARM-M3-1, Ducati-ARM-M3-2
 -------------------------------------------------------------------------------
 
 
@@ -280,7 +285,11 @@ to boot the Core1 as well.
 
 	4. The driver programs MMU and updates page table entries.
 
-	5. Open CCS and select Ducati core.
+	5. install omap_notify and notify_mailbox drivers.
+
+	8. Break the Virtio by typing y in console.
+	
+	9. Open CCS and select Ducati core.
 	
 	6. Load the base image into Ducati core0.
 	
@@ -292,10 +301,10 @@ to boot the Core1 as well.
 
 	8. Press F11 once to have the Reset release become effective.
 	   Note that the PC does not change here and the SP is updated.
-	   Press F11 couple more times to make sure Ducati is executing and
-	   thereafter you can press F5.
+	   Press F11 couple more times to make sure Ducati is executing
+	   and thereafter you can press F5.
 
-	9. Limited testing is done with the ducatienabler driver.
+Limited testing is done with the ducatienabler driver.
 
 	
 ================================================================================
@@ -307,10 +316,13 @@ Tesla Bridge
 ==============
 Features Introduced
 --------------------------
+- All modules now can be built alng with the Kernel.
+- Fixed checkpatch errors and warnings for all modules under syslink.
 - Dynamic Loading Support has been added.
 - Bridge Trace Support has been added.
 - All basic bridge features, messaging, processor copy streaming, dmmcopy,
   zerocopy messaging in static and dynamic loading are validated.
+
 ==============
 Ducati IPC
 ==============
@@ -331,6 +343,6 @@ Important Notes
       * Please contact your TI representative for further information on
 	  Code Composer Studio (CCS)
 
-  - Basic Validation was done with samples in Static mode: Dmmcopy, Zcmsg,
-    Strmcopy, Scale and Ping
+  - Basic Validation was done with samples in Static and dynamic mode: 
+	Dmmcopy, Zcmsg, Strmcopy, Scale and Ping
 
