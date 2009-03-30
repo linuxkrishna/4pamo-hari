@@ -346,3 +346,12 @@ Important Notes
   - Basic Validation was done with samples in Static and dynamic mode: 
 	Dmmcopy, Zcmsg, Strmcopy, Scale and Ping
 
+==================================
+Known Issues
+==================================
+	1. Few checkpatch warnings are observed, this will be fixed
+		in coming releases. Ref: TI Internal Defect ID:OMAPS00197712
+	2. Running dynamic samples second time failing, one has to restart
+		Virtio for running another dyncamic sample.
+	3. Due to mailbox changes in Virtio1.06a version, Bridge 24.0.6 release
+		is not backward compatible.
