@@ -1,15 +1,15 @@
-Release notes for the Linux kernel for L24.0.5
+Release notes for the Linux kernel for L24.0.6
 ----------------------------------------------
 
-26 February 2009
+30 March 2009
 
 Copyright (C) 2009 Texas Instruments Incorporated.  All rights reserved.
 
 
 1.  Introduction
 ----------------
-This document accompanies OMAP(TM) Software Release L24.0.5 for Linux 2.6.27 on
-OMAP4430 VPOM4430_1.05a_Patch11. The document specifies:
+This document accompanies OMAP(TM) Software Release L24.0.6 for Linux 2.6.27 on
+OMAP4430 VPOM4430_1.06a + VPOM4430_1.06a_Patch3.var. The document specifies:
 	- Instructions for unpacking the release
 	- New features and features the release supports
 	- Planned future features
@@ -23,9 +23,10 @@ The kernel is based on version 2.6.27 from open source.
 U-boot is based on open-source version 1.1.4.
 
 The kernel source can be obtained via GIT from:
-	omap4.omapzoom.org
+	omap4.omapzoom.org, OR
+	ti-2.6.27-omap4 branch of omapkernel.git repo from git.omapzoom.org
 
-Virtio version used: VPOM4430_1.05a + VPOM4430_1.05a_Patch11.var
+Virtio version used: VPOM4430_1.06a + VPOM4430_1.06a_Patch3.var
 
 All drivers planned for this release are working as expected on Modena and
 overall platform stability is good. Only basic kernel boot-up is functional on
@@ -35,7 +36,7 @@ Modena support:
 	OS Kernel boot-up, DMA, GPTimers, WDT, UART, NOR, OneNAND, GPIO, McBSP,
 	McSPI, Phoenix, RTC, Display, Audio playback.
 Chiron support:
-	OS Kernel boot-up on single core, UART, GPTimers.
+	OS Kernel boot-up on dual core, SMP, DMA, UART, GPTimers.
 
 
 3.  Instructions
@@ -43,19 +44,19 @@ Chiron support:
 
 3.1 Virtio Setup
 
-This release works on VPOM4430_1.05a_Patch11.
+This release works on Virtio version VPOM4430_1.06a + VPOM4430_1.06a_Patch3.var
 
 
 3.2 Virtio Installation Instructions
 
-a. Install to C:\Virtio
+a. Install Virtio .exe to C:\Virtio
 b. Once installation for virtio is started, you will be prompted for installation
    for virtual serial port. Say yes to it and give a port number (say 5 or 6).
    Multiple serial ports can also be installed.
 c. Install C:\Virtio\Shared\Disassembler\Setup\VirtioDisassembler.exe. This is to
    enable debugging using virtio
 d. License for virtio has to be set in the environment variables LM_LICENSE_FILE.
-e. Install VPOM4430_1.05a_Patch11.
+e. Install the Virtio Patch (.var) file.
 
 
 3.3 Virtio Configuration Instructions
@@ -79,10 +80,7 @@ c. Open the Params tab and look at the User Parameters. Set the UARTx_COM_PORT
 
 In addition to the parameters mentioned for Modena, modify the following
 parameters for Chiron bootup.
-a. Only single core Chiron support has been enabled. So the second core needs
-   to be disabled on Virtio. For this browse to
-   VPOM4430::SDP::OMAP4430::CPU_SS::Cortex_2 and set the disabled parameter to
-   yes. Also set VPOM4430::SDP::OMAP4430::CPU_SS::SCU  NumCPUs parameter to 1.
+a. Both CPU cores support has been enabled.
 b. L2 Cache is not enabled in software. This requires the cache to be turned off
    in the Virtio parameter list too. For this browse to
    VPOM4430::SDP::OMAP4430::CPU_SS::Cortex_1 and set the CacheDisabled parameter
@@ -90,17 +88,21 @@ b. L2 Cache is not enabled in software. This requires the cache to be turned off
    CacheDisabled parameter to true. Also browse to
    VPOM4430::SDP::OMAP4430::CPU_SS::pl310_cache and set the CacheDisabled
    parameter to true.
-
+c. Once booted with two CPU, you can see two penguins on LCD instead on one.
+   Linux kernel shows one penguin per CPU.
 
 3.4 Compiling U-Boot
 
 Set the environment variable PATH such that cross compile binaries point to the
 needed tool chain. Refer to section 5 for tool chain information.
 
-To select the default configuration for U-Boot type:
+To select the default configuration for U-Boot, run following commands:
+For Modena:
 	# make CROSS_COMPILE=arm-none-linux-gnueabi- omap4430sdp_config
+For Chiron:
+	# make CROSS_COMPILE=arm-none-linux-gnueabi- omap4430sdphigh_config
 
-To build the U-Boot image type:
+To build the U-Boot image, run following commands:
 	# make CROSS_COMPILE=arm-none-linux-gnueabi-
 
 Note: NOR booting is not enabled by default. To enable booting from NOR
@@ -150,26 +152,28 @@ Then launch HyperTerminal and connect to the virtual serial port installed.
 Now choose Native Apps in the configuration tabs at the top and select run.
 The SDP4430 U-Boot prompt will appear in your terminal emulation program.
 
------------------------ [start of Native Apps.script] --------------------------
+----------------------- [start of Native Apps.script : Modena] --------------------------
 
-# Load the ROM vectors
+# EMIF and GPMC firewall bypass mode must be enabled to load code through interconnects
+[VPOM4430::SDP::OMAP4430::L3FW_GPMC] bypass on
+[VPOM4430::SDP::OMAP4430::L3FW_EMIF] bypass on
+
+g #10
+
+#Load the ROM vectors
 [VPOM4430::SDP::OMAP4430::OCM_ROM]l @0x0 -bin ..\..\..\..\Apps\PlatformTests\vectors.bin
 
-VPOM4430::SDP::OMAP4430::Logger]pe 0 on
-cc VPOM4430::SDP::OMAP4430::CortexA8
-
+#[VPOM4430::SDP::OMAP4430::Logger]pe 0 on
+cc VPOM4430::SDP::OMAP4430::CPU_SS::CortexA8
 # Allow access to the Trickbox coprocessor.
-c config.cpaccess=0x300
+#c config.cpaccess=0x300
+
 
 # Configure DMM to allow SDRAM accesses during ELF load.
 # DMM_LISA_MAP[0]: 0x80000000 mapped to 0x0 on SDRC0 (128MiB, no interleaving)
 d 0x4E000100=0x80301000
-
-# Load up the u-boot
-l 0x80e80000 -bin D:\OMAP\OMAP4\virtio\1.05a\Modena\u-boot.bin
-
-# Set program counter
-r r15=0x80e80000
+#load up the u-boot
+l 0x80e80000 -bin C:\u-boot.bin
 
 # PRCM setup
 # WKUP Domain
@@ -203,7 +207,6 @@ dp 0x4A008900 = 0x2
 dp 0x4A008a00 = 0x2
 dp 0x4A008b00 = 0x2
 dp 0x4A008c00 = 0x2
-
 dp 0x4A008900 = 0x3
 
 # SDMA No Sleep!!
@@ -305,9 +308,8 @@ dp 0x4A0095B8 = 0x2
 dp 0x4A0095C0 = 0x2
 dp 0x4A0095C8 = 0x2
 
-# Route UART1 signals
+#Route UART1 signals
 dp 0x4a10013C = 0x00010001
-
 
 # EMIF firewall bypass mode can now be turned off
 [VPOM4430::SDP::OMAP4430::L3FW_EMIF] bypass off
@@ -315,10 +317,181 @@ dp 0x4a10013C = 0x00010001
 # Open up the EMIF and OCMRAM firewalls to all accessors before anything runs
 d 0x4a20c08c=0xffffffff
 d 0x4a21208c=0xffffffff
+d 0x4a22808c=0xffffffff
+
+
+# Set program counter
+r r15=0x80e80000
+g
+
+------------------------- [End of Native Apps.script : Modena] ---------------------------
+
+----------------------- [start of Native Apps.script : Chiron] --------------------------
+[VPOM4430::SDP::OMAP4430::L3FW_GPMC] bypass on
+[VPOM4430::SDP::OMAP4430::L3FW_EMIF] bypass on
+g #10
+
+cc VPOM4430::SDP::OMAP4430::CPU_SS::Cortex_1
+
+# Configure DMM to allow SDRAM accesses during ELF load.
+# DMM_LISA_MAP[0]: 0x80000000 mapped to 0x0 on SDRC0 (128MiB, no interleaving)
+d 0x4E000100=0x80301000
+
+#load up the u-boot
+[VPOM4430::SDP::OMAP4430::CPU_SS::Cortex_1]l 0x80e80000 -bin Y:\u-boot_wait.bin
+[VPOM4430::SDP::OMAP4430::CPU_SS::Cortex_2]l 0x80e80000 -bin Y:\u-boot_wait.bin
+
+# PRCM setup
+# WKUP Domain
+dp 0x4a307800 = 0x3
+dp 0x4a307830 = 0x2
+dp 0x4a307838 = 0x102
+dp 0x4a307840 = 0x01000002
+dp 0x4a307858 = 0x2
+dp 0x4a307878 = 0x2
+dp 0x4a307880 = 0x1
+
+# ABE Domain
+dp 0x4A004500 = 0x3
+dp 0x4A004528 = 0x2
+dp 0x4A004530 = 0x2
+dp 0x4A004538 = 0x2
+dp 0x4A004540 = 0x2
+dp 0x4A004548 = 0x2
+dp 0x4A004550 = 0x2
+dp 0x4A004558 = 0x2
+dp 0x4A004560 = 0xf02
+dp 0x4A004568 = 0x2
+dp 0x4A004570 = 0x2
+dp 0x4A004578 = 0x2
+dp 0x4A004580 = 0x2
+dp 0x4A004588 = 0x2
+
+# CORE Domain
+# WakeUp Module domains
+dp 0x4A008900 = 0x2
+dp 0x4A008a00 = 0x2
+dp 0x4A008b00 = 0x2
+dp 0x4A008c00 = 0x2
+dp 0x4A008900 = 0x3
+
+# SDMA No Sleep!!
+dp 0x4A008a00 = 0x0
+dp 0x4A008b00 = 0x3
+dp 0x4A008c00 = 0x3
+
+dp 0x4A008828 = 0x1
+dp 0x4A008920 = 0x1
+
+# IVAHD Domain
+dp 0x4A008F00 = 0x2
+dp 0x4A008F00 = 0x3
+dp 0x4A008F20 = 0x1
+dp 0x4A008F28 = 0x1
+
+# CAM Domain
+dp 0x4A009000 = 0x2
+dp 0x4A009000 = 0x3
+dp 0x4A009020 = 0x102
+dp 0x4A009028 = 0x2
+
+# DSS Domain
+dp 0x4A009100 = 0x2
+dp 0x4A009100 = 0x3
+dp 0x4A009120 = 0xf02
+dp 0x4A009128 = 0x2
+
+# GFX Domain
+dp 0x4A009200 = 0x2
+dp 0x4A009200 = 0x3
+dp 0x4A009220 = 0x2
+
+# L3INT Domain
+dp 0x4A009300 = 0x3
+dp 0x4A009328 = 0x2
+dp 0x4A009330 = 0x2
+dp 0x4A009338 = 0x2
+dp 0x4A009340 = 0x102
+dp 0x4A009358 = 0xff02
+dp 0x4A009360 = 0x102
+dp 0x4A009368 = 0x712
+dp 0x4A009380 = 0x2
+dp 0x4A009388 = 0x2
+dp 0x4A009390 = 0x2
+dp 0x4A009398 = 0x2
+dp 0x4A0093A8 = 0x2
+dp 0x4A0093C0 = 0x2
+dp 0x4A0093C8 = 0x2
+dp 0x4A0093D0 = 0x2
+dp 0x4A0093E0 = 0x2
+
+# L4PER Domain
+dp 0x4A009400 = 0x2
+dp 0x4A009580 = 0x2
+dp 0x4A009400 = 0x3
+dp 0x4A009580 = 0x3
+dp 0x4A009420 = 0x2
+dp 0x4A009428 = 0x2
+dp 0x4A009430 = 0x2
+dp 0x4A009438 = 0x2
+dp 0x4A009440 = 0x2
+dp 0x4A009448 = 0x2
+dp 0x4A009450 = 0x2
+dp 0x4A009458 = 0x2
+dp 0x4A009460 = 0x102
+dp 0x4A009468 = 0x102
+dp 0x4A009470 = 0x102
+dp 0x4A009478 = 0x102
+dp 0x4A009480 = 0x102
+dp 0x4A009488 = 0x2
+dp 0x4A009490 = 0x2
+dp 0x4A009498 = 0x2
+dp 0x4A0094A0 = 0x2
+dp 0x4A0094A8 = 0x2
+dp 0x4A0094B0 = 0x2
+dp 0x4A0094B8 = 0x2
+dp 0x4A0094D0 = 0x2
+dp 0x4A0094D8 = 0x2
+dp 0x4A0094E0 = 0x2
+dp 0x4A0094E8 = 0x2
+dp 0x4A0094F0 = 0x2
+dp 0x4A0094F8 = 0x2
+dp 0x4A009500 = 0x2
+dp 0x4A009508 = 0x2
+dp 0x4A009520 = 0x2
+dp 0x4A009528 = 0x2
+dp 0x4A009530 = 0x2
+dp 0x4A009538 = 0x702
+dp 0x4A009540 = 0x2
+dp 0x4A009548 = 0x2
+dp 0x4A009550 = 0x2
+dp 0x4A009558 = 0x2
+dp 0x4A009560 = 0x2
+dp 0x4A0095A0 = 0x2
+dp 0x4A0095A8 = 0x2
+dp 0x4A0095B0 = 0x2
+dp 0x4A0095B8 = 0x2
+dp 0x4A0095C0 = 0x2
+dp 0x4A0095C8 = 0x2
+
+#Route UART1 signals
+dp 0x4a10013C = 0x00010001
+
+#Route GPIO11 for Phoenix AudioCodec PowerUp
+dp 0x4a31E084 = 0x01080003
+
+# EMIF firewall bypass mode can now be turned off
+[VPOM4430::SDP::OMAP4430::L3FW_EMIF] bypass off
+
+# Open up the EMIF and OCMRAM firewalls to all accessors before anything runs
+d 0x4a20c08c=0xffffffff
+d 0x4a21208c=0xffffffff
+d 0x4a22808c=0xffffffff
 
 g
 
-------------------------- [End of Native Apps.script] ---------------------------
+------------------------- [End of Native Apps.script : Chiron] ---------------------------
+
 
 
 3.8 Running U-Boot boot loader on NOR
@@ -333,7 +506,7 @@ Go to the design tab. Open Scripts-> configs/Native Apps/Native Apps.script.
 Replace it as described in Section 3.7, with the following changes:
 	#load up u-boot to NorFlash
 	cc VPOM4430::SDP::NorFlash
-	l 0x0 -bin M:\x0099946_omapsw_view2\OMAPSW_L\u-boot\u-boot.bin
+	l 0x0 -bin M:\my_directory\u-boot\u-boot.bin
 	r r15=0x0
 	g
 
@@ -352,8 +525,8 @@ The kernel binary used will be arch/arm/boot/Image.
 Select 'break' in the VPOM4430 innovator window. This will halt the system.
 Use the following commands from the console window (will be open at the bottom
 of virtio innovator window) to load up Image and the file system
-        l 0x80008000 -bin <path where Image file is put>/Image
-        l 0x81600000 -bin <path where you have your ramdisk>
+		l 0x81600000 -bin <path where your ramdisk resides>
+		l 0x80008000 -bin <path where Image file resides>/Image
 
 Select 'go' in the virtio window.
 Go to the hyper terminal and execute the following
@@ -369,8 +542,9 @@ to manually run t32.cmm script file.
 Break the system through t32
 Use the following commands from T32 window to load up the kernel image and
 file system
-	Data.load.binary <your Image path>/Image 0x80008000
 	Data.load.binary <your ramdisk path> 0x81600000
+	Data.load.binary <your Image path>/Image 0x80008000
+
 Select 'go' in the T32 window
 Go to the hyper terminal and execute the following
 	go 0x80008000
@@ -388,7 +562,7 @@ NA
 
 4.2 Supported Features
 
-U-boot boot loader
+U-boot boot loader with options to compile u-boot for Modena or Chiron.
 Kernel boot-up on Modena with following drivers:
 	GP-Timers
 	32 KHz Sync timer
@@ -407,8 +581,10 @@ Kernel boot-up on Modena with following drivers:
 	Display (Simple framebuffer and video streaming validation)
 	Audio playback (in audio bypass mode - like 3430)
 
-Kernel boot-up on Chiron (single core selected) with following drivers:
+Kernel boot-up on Chiron (Dual Core) with following features/drivers:
+	SMP
 	GP-Timers
+	DMA
 	Console UART (UART1)
 
 
@@ -424,7 +600,7 @@ Refer to Program schedule.
 
 4.5 Defects Fixed in This Release
 
-	- 'make menuconfig' warning related to Framebuffer driver.
+None.
 
 
 4.6 Open Defects
