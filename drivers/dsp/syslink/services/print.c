@@ -116,7 +116,7 @@ PRINT_exit(void)
  *  @modif  None
  *  ============================================================================
  */
-
+/*
 static void
 PRINT_Printf(char *format, ...)
 {
@@ -135,4 +135,4 @@ PRINT_Printf(char *format, ...)
 
     printk(buffer) ;
 }
-
+*/

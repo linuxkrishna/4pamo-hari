@@ -1,5 +1,5 @@
 /*  ===========================================================================
-    File    hal_mbox.c
+    File    hw_mbox.c
 
     Path    $ (PROJROOT)\driver\mailbox
 
@@ -30,7 +30,7 @@
 #include <MBXRegAcM.h>
 #include <MBXAccInt.h>
 #include <hal_defs.h>
-#include <hal_mbox.h>
+#include <hw_mbox.h>
 #include<linux/module.h>
 MODULE_LICENSE("GPL");
 

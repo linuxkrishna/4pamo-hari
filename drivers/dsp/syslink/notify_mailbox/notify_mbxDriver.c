@@ -69,7 +69,7 @@ stipulated in the agreement under which this program has been supplied.
 #include <global_var.h>
 
 /*-------------------------------- Mailmox Manager Headers                 */
-#include  <tmbx.h>
+#include  <notify_dispatcher.h>
 MODULE_LICENSE("GPL");
 
 /**============================================================================

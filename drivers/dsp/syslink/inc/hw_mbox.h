@@ -1,6 +1,6 @@
 
 /*  ==================================================
-  File    hal_mbox.h
+  File    hw_mbox.h
 
   Path    $ (PROJROOT)\driver\mailbox
 

@@ -28,7 +28,7 @@
 *=============================================================================
 */
 #include <GlobalTypes.h>
-#include <hal_ocp.h>
+#include <hw_ocp.h>
 #include <hal_defs.h>
 #include <MBXRegAcM.h>
 #include <MBXAccInt.h>

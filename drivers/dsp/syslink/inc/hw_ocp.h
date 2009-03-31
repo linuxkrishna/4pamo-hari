@@ -1,6 +1,6 @@
 
 /*  =================================================================
-  File hal_ocp.h
+  File hw_ocp.h
 
   Path $ (PROJROOT)\driver\mailbox
 
@@ -32,7 +32,7 @@ extern "C"
 #endif
 
 #include <GlobalTypes.h>
-#include <hal_ocp.h>
+#include <hw_ocp.h>
 #include <hal_defs.h>
 #include <MBXRegAcM.h>
 #include <MBXAccInt.h>

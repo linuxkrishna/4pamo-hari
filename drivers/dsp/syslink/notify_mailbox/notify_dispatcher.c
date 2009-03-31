@@ -22,9 +22,9 @@ stipulated in the agreement under which this program has been supplied.
 #include <linux/delay.h>
 #include <gpptypes.h>
 #include <GlobalTypes.h>
-#include <tmbx.h>
-#include <hal_mbox.h>
-#include <hal_ocp.h>
+#include <notify_dispatcher.h>
+#include <hw_mbox.h>
+#include <hw_ocp.h>
 #include <linux/delay.h>
 #include <mach/irqs.h>
 

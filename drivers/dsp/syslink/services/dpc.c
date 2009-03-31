@@ -130,7 +130,7 @@ static short int DPC_IsInitialized = FALSE;
 *  @see    DPC_Schedule
 *  ----------------------------------------------------------------------------
 */
-static void DPC_Callback(unsigned long index);
+/*static void DPC_Callback(unsigned long index);*/
 
 /*  ----------------------------------------------------------------------------
 *  @func   ResetDpcObj
@@ -251,7 +251,7 @@ DPC_exit()
 *  @modif  DPC_DpcTaskletMap
 *  ============================================================================
 */
-
+/*
 static signed long int
 NDPC_Create(IN  FnDpcProc userDPCFn,
 IN  void *dpcArgs,
@@ -295,11 +295,11 @@ OUT struct DpcObject **dpcObj)
 			DPC_DpcTaskletMap.dpcs[index].userDPCFn    = userDPCFn ;
 			DPC_DpcTaskletMap.dpcs[index].state        = TRUE      ;
 			atomic_set(&DPC_DpcTaskletMap.dpcs[index].pendCount, 0);
-
+*/
 			/*
 			*  Initialize the tasklet structure.
 			*/
-			tasklet_init(&(DPC_DpcTaskletMap.dpcTasklet[index]),
+/*			tasklet_init(&(DPC_DpcTaskletMap.dpcTasklet[index]),
 			DPC_Callback,
 			index) ;
 
@@ -315,7 +315,7 @@ OUT struct DpcObject **dpcObj)
 
 	return status ;
 }
-
+*/
 
 /** ============================================================================
 *  @func   DPC_Delete
@@ -564,7 +564,7 @@ DPC_Debug()
 *  @modif  None
 *  ----------------------------------------------------------------------------
 */
-
+/*
 static
 void
 DPC_Callback(unsigned long index)
@@ -604,7 +604,7 @@ DPC_Callback(unsigned long index)
 
 	TRC_0LEAVE("DPC_Callback") ;
 }
-
+*/
 
 /*  ----------------------------------------------------------------------------
 *  @func   ResetDpcObj
