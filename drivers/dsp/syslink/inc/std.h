@@ -121,7 +121,7 @@
  *  Aliases for standard C types
  */
 
-typedef s32(*Fxn) ();		/* generic function type */
+typedef s32(*Fxn)();		/* generic function type */
 
 #ifndef NULL
 #define NULL 0

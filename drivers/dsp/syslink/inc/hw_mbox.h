@@ -24,7 +24,7 @@
 * INCLUDE FILES (only if necessary)
 * ========================================================
 */
-#include <hal_defs.h>
+#include <hw_defs.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -68,13 +68,13 @@ extern "C"
 */
 
 /* --------------------------------------------------------------
-* TYPE:         enum HW_MBOX_Id_t
+* TYPE:         enum hw_mbox_id_t
 *
 * DESCRIPTION:  Enumerated Type used to specify Mail Box Sub Module Id Number
 *
 * -----------------------------------------------------------------
 */
-enum HW_MBOX_Id_t {
+enum hw_mbox_id_t {
 HW_MBOX_ID_0,
 HW_MBOX_ID_1,
 HW_MBOX_ID_2,
@@ -84,13 +84,13 @@ HW_MBOX_ID_5
 };
 
 /* -------------------------------------------------------------------
-* TYPE:         enum HW_MBOX_UserId_t
+* TYPE:         enum hw_mbox_userid_t
 *
 * DESCRIPTION:  Enumerated Type used to specify Mail box User Id
 *
 * ---------------------------------------------------------------------
 */
-enum HW_MBOX_UserId_t {
+enum hw_mbox_userid_t {
 HW_MBOX_U0_ARM11,
 HW_MBOX_U1_UMA,
 HW_MBOX_U2_IVA,
@@ -99,13 +99,13 @@ HW_MBOX_U3_ARM11
 
 #if defined(OMAP3430)
 /* ----------------------------------------------------------------------
-* TYPE:         MAILBOX_CONTEXT
+* TYPE:         mailbox_context
 *
 * DESCRIPTION:  Mailbox context settings
 *
 * ------------------------------------------------------------------------
 */
-struct MAILBOX_CONTEXT {
+struct mailbox_context {
 unsigned long sysconfig;
 unsigned long irqEnable0;
 unsigned long irqEnable1;
@@ -123,21 +123,21 @@ unsigned long irqEnable1;
 */
 
 /* -----------------------------------------------------------------------
-* FUNCTION      : HW_MBOX_MsgRead
+* FUNCTION      : hw_mbox_msg_read
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
-*   Identifier  : mailBoxId
-*   Type        : const enum HW_MBOX_Id_t
+*   Identifier  : mail_box_id
+*   Type        : const enum hw_mbox_id_t
 *   Description : Mail Box Sub module Id to read
 *
 * OUTPUTS:
 *
-*   Identifier  : pReadValue
+*   Identifier  : p_read_value
 *   Type        : unsigned long *const
 *   Description : Value read from MailBox
 *
@@ -155,26 +155,26 @@ unsigned long irqEnable1;
 *    then and error is returned.
 * ----------------------------------------------------------------
 */
-extern long HW_MBOX_MsgRead(
-	const unsigned long         baseAddress,
-	const enum HW_MBOX_Id_t   mailBoxId,
-	unsigned long *const        pReadValue
+extern long hw_mbox_msg_read(
+	const unsigned long         base_address,
+	const enum hw_mbox_id_t   mail_box_id,
+	unsigned long *const        p_read_value
 );
 
 /* ---------------------------------------------------------------
-* FUNCTION      : HW_MBOX_MsgWrite
+* FUNCTION      : hw_mbox_msg_write
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
-*   Identifier  : mailBoxId
-*   Type        : const enum HW_MBOX_Id_t
+*   Identifier  : mail_box_id
+*   Type        : const enum hw_mbox_id_t
 *   Description : Mail Box Sub module Id to write
 *
-*   Identifier  : writeValue
+*   Identifier  : write_value
 *   Type        : const unsigned long
 *   Description : Value to write to MailBox
 *
@@ -190,28 +190,28 @@ extern long HW_MBOX_MsgRead(
 *
 * ---------------------------------------------------------------
 */
-extern long HW_MBOX_MsgWrite(
-	const unsigned long         baseAddress,
-	const enum HW_MBOX_Id_t   mailBoxId,
-	const unsigned long         writeValue
+extern long hw_mbox_msg_write(
+	const unsigned long         base_address,
+	const enum hw_mbox_id_t   mail_box_id,
+	const unsigned long         write_value
 );
 
 /* ------------------------------------------------------------------
-* FUNCTION      : HW_MBOX_IsFull
+* FUNCTION      : hw_mbox_is_full
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
-*   Identifier  : mailBoxId
-*   Type        : const enum HW_MBOX_Id_t
+*   Identifier  : mail_box_id
+*   Type        : const enum hw_mbox_id_t
 *   Description : Mail Box Sub module Id to check
 *
 * OUTPUTS:
 *
-*   Identifier  : pIsFull
+*   Identifier  : p_is_full
 *   Type        : unsigned long *const
 *   Description : false means mail box not Full
 *                 true means mailbox full.
@@ -227,28 +227,28 @@ extern long HW_MBOX_MsgWrite(
 *
 * ----------------------------------------------------------------
 */
-extern long HW_MBOX_IsFull(
-	const unsigned long         baseAddress,
-	const enum HW_MBOX_Id_t   mailBoxId,
-	unsigned long *const        pIsFull
+extern long hw_mbox_is_full(
+	const unsigned long         base_address,
+	const enum hw_mbox_id_t   mail_box_id,
+	unsigned long *const        p_is_full
 );
 
 /* -----------------------------------------------------------------
-* FUNCTION      : HW_MBOX_NumMsgGet
+* FUNCTION      : hw_mbox_nomsg_get
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
-*   Identifier  : mailBoxId
-*   Type        : const enum HW_MBOX_Id_t
+*   Identifier  : mail_box_id
+*   Type        : const enum hw_mbox_id_t
 *   Description : Mail Box Sub module Id to get num messages
 *
 * OUTPUTS:
 *
-*   Identifier  : pNumMsg
+*   Identifier  : p_num_msg
 *   Type        : unsigned long *const
 *   Description : Number of messages in mailbox
 *
@@ -264,27 +264,27 @@ extern long HW_MBOX_IsFull(
 *
 * ----------------------------------------------------------------
 */
-extern long HW_MBOX_NumMsgGet(
-	const unsigned long         baseAddress,
-	const enum HW_MBOX_Id_t   mailBoxId,
-	unsigned long *const        pNumMsg
+extern long hw_mbox_nomsg_get(
+	const unsigned long         base_address,
+	const enum hw_mbox_id_t   mail_box_id,
+	unsigned long *const        p_num_msg
 );
 
 /* -----------------------------------------------------------------
-* FUNCTION      : HW_MBOX_EventEnable
+* FUNCTION      : hw_mbox_event_enable
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
 *
-*   Identifier  : mailBoxId
-*   Type        : const enum HW_MBOX_Id_t
+*   Identifier  : mail_box_id
+*   Type        : const enum hw_mbox_id_t
 *   Description : Mail Box Sub module Id to enable
 *
-*   Identifier  : userId
-*   Type        : const enum HW_MBOX_UserId_t
+*   Identifier  : user_id
+*   Type        : const enum hw_mbox_userid_t
 *   Description : Mail box User Id to enable
 *
 *   Identifier  : enableIrq
@@ -302,28 +302,28 @@ extern long HW_MBOX_NumMsgGet(
 *
 * --------------------------------------------------------------------
 */
-extern long HW_MBOX_EventEnable(
-	const unsigned long             baseAddress,
-	const enum HW_MBOX_Id_t       mailBoxId,
-	const enum HW_MBOX_UserId_t   userId,
+extern long hw_mbox_event_enable(
+	const unsigned long             base_address,
+	const enum hw_mbox_id_t       mail_box_id,
+	const enum hw_mbox_userid_t   user_id,
 	const unsigned long             events
 );
 
 /* ------------------------------------------------------------------
-* FUNCTION      : HW_MBOX_EventDisable
+* FUNCTION      : hw_mbox_event_disable
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *  RET_BAD_NULL_PARAM  Address/pointer Paramater was set to 0/NULL
 *
-*   Identifier  : mailBoxId
-*   Type        : const enum HW_MBOX_Id_t
+*   Identifier  : mail_box_id
+*   Type        : const enum hw_mbox_id_t
 *   Description : Mail Box Sub module Id to disable
 *
-*   Identifier  : userId
-*   Type        : const enum HW_MBOX_UserId_t
+*   Identifier  : user_id
+*   Type        : const enum hw_mbox_userid_t
 *   Description : Mail box User Id to disable
 *
 *   Identifier  : enableIrq
@@ -341,28 +341,28 @@ extern long HW_MBOX_EventEnable(
 *
 * ------------------------------------------------------------------
 */
-extern long HW_MBOX_EventDisable(
-	const unsigned long             baseAddress,
-	const enum HW_MBOX_Id_t       mailBoxId,
-	const enum HW_MBOX_UserId_t   userId,
+extern long hw_mbox_event_disable(
+	const unsigned long             base_address,
+	const enum hw_mbox_id_t       mail_box_id,
+	const enum hw_mbox_userid_t   user_id,
 	const unsigned long             events
 );
 
 /* ------------------------------------------------------------------
-* FUNCTION      : HW_MBOX_EventStatus
+* FUNCTION      : hw_mbox_event_status
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
-*   Identifier  : mailBoxId
-*   Type        : const enum HW_MBOX_Id_t
+*   Identifier  : mail_box_id
+*   Type        : const enum hw_mbox_id_t
 *   Description : Mail Box Sub module Id to clear
 *
-*   Identifier  : userId
-*   Type        : const enum HW_MBOX_UserId_t
+*   Identifier  : user_id
+*   Type        : const enum hw_mbox_userid_t
 *   Description : Mail box User Id to clear
 *
 * OUTPUTS:
@@ -382,28 +382,28 @@ extern long HW_MBOX_EventDisable(
 *
 * --------------------------------------------------------------
 */
-extern long HW_MBOX_EventStatus(
-	const unsigned long             baseAddress,
-	const enum HW_MBOX_Id_t       mailBoxId,
-	const enum HW_MBOX_UserId_t   userId,
-	unsigned long *const            pEventStatus
+extern long hw_mbox_event_status(
+	const unsigned long             base_address,
+	const enum hw_mbox_id_t       mail_box_id,
+	const enum hw_mbox_userid_t   user_id,
+	unsigned long *const            p_eventStatus
 );
 
 /* ----------------------------------------------------------------
-* FUNCTION      : HW_MBOX_EventAck
+* FUNCTION      : hw_mbox_event_ack
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
-*   Identifier  : mailBoxId
-*   Type        : const enum HW_MBOX_Id_t
+*   Identifier  : mail_box_id
+*   Type        : const enum hw_mbox_id_t
 *   Description : Mail Box Sub module Id to set
 *
-*   Identifier  : userId
-*   Type        : const enum HW_MBOX_UserId_t
+*   Identifier  : user_id
+*   Type        : const enum hw_mbox_userid_t
 *   Description : Mail box User Id to set
 *
 *   Identifier  : irqStatus
@@ -423,20 +423,20 @@ extern long HW_MBOX_EventStatus(
 *
 * --------------------------------------------------------------
 */
-extern long HW_MBOX_EventAck(
-	const unsigned long              baseAddress,
-	const enum HW_MBOX_Id_t        mailBoxId,
-	const enum HW_MBOX_UserId_t    userId,
+extern long hw_mbox_event_ack(
+	const unsigned long              base_address,
+	const enum hw_mbox_id_t        mail_box_id,
+	const enum hw_mbox_userid_t    user_id,
 	const unsigned long              event
 );
 
 #if defined(OMAP3430)
 /* ---------------------------------------------------------------
-* FUNCTION      : HW_MBOX_saveSettings
+* FUNCTION      : hw_mbox_save_settings
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
@@ -453,14 +453,14 @@ extern long HW_MBOX_EventAck(
 *
 * ----------------------------------------------------------------
 */
-extern long HW_MBOX_saveSettings(unsigned long  baseAddres);
+extern long hw_mbox_save_settings(unsigned long  baseAddres);
 
 /* -----------------------------------------------------------------
-* FUNCTION      : HW_MBOX_restoreSettings
+* FUNCTION      : hw_mbox_restore_settings
 *
 * INPUTS:
 *
-*   Identifier  : baseAddress
+*   Identifier  : base_address
 *   Type        : const unsigned long
 *   Description : Base Address of instance of Mailbox module
 *
@@ -477,7 +477,7 @@ extern long HW_MBOX_saveSettings(unsigned long  baseAddres);
 *
 * -------------------------------------------------------------------
 */
-extern long HW_MBOX_restoreSettings(unsigned long  baseAddres);
+extern long hw_mbox_restore_settings(unsigned long  baseAddres);
 #endif/* defined(OMAP3430)*/
 
 #ifdef __cplusplus

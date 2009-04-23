@@ -57,9 +57,9 @@ static int ducatidrv_ioctl(struct inode *inode, struct file *filp,
 					unsigned int   cmd,
 					unsigned long  args) ;
 
-static int __init ducatidrv_initializeModule(void) ;
+static int __init ducatidrv_initialize_module(void) ;
 
-static void  __exit ducatidrv_finalizeModule(void) ;
+static void  __exit ducatidrv_finalize_module(void) ;
 
 static char *driver_name = DUCATI_NAME;
 
@@ -110,24 +110,24 @@ static struct platform_device omap_ducati_dev = {
 		.resource = NULL,
 };
 
-struct ducatiBaseImage {
-	u32 physAddr;
-	void *mpuVAaddr;
+struct ducati_base_image {
+	u32 phys_addr;
+	void *mpu_vaddr;
 	u32 size;
 	u32 align;
 };
 
-static struct ducatiBaseImage ducbaseimage = {0, NULL, 0x100000, 0x100000};
+static struct ducati_base_image ducbaseimage = {0, NULL, 0x100000, 0x100000};
 
 /**----------------------------------------------------------------------------
- *@func   ducatidrv_initializeModule
+ *@func   ducatidrv_initialize_module
  *
  *@desc   Module initialization  function for Linux driver.
  *----------------------------------------------------------------------------
  */
-static int __init ducatidrv_initializeModule(void)
+static int __init ducatidrv_initialize_module(void)
 {
-	int retVal = 0;
+	int ret_val = 0;
 	int size = 0;
 	int align = 0;
 	int status = 0;
@@ -176,43 +176,43 @@ static int __init ducatidrv_initializeModule(void)
 		status = platform_device_register(&omap_ducati_dev);
 	DPRINTK(" <- driver_init\n");
 
-	retVal = initpage_attributes(0x4000, 14, 64) ;
+	ret_val = initpage_attributes(0x4000, 14, 64) ;
 
-	if (retVal == 0) {
+	if (ret_val == 0) {
 
 		DPRINTK("Allocating Physical Memory for Ducati Baseimage \
 		Size [0x%x] Align [0x%x]", size, align);
 
-		ducbaseimage.mpuVAaddr =
-		MEM_AllocPhysMem(ducbaseimage.size,
+		ducbaseimage.mpu_vaddr =
+		mem_alloc_phymem(ducbaseimage.size,
 		ducbaseimage.align,
-		&ducbaseimage.physAddr);
+		&ducbaseimage.phys_addr);
 
 		DPRINTK("  Allocated Memory: Physical Address [0x%x]",
-		(u32)ducbaseimage.physAddr);
+		(u32)ducbaseimage.phys_addr);
 	}
 
-	retVal = MMUInit((u32)ducbaseimage.physAddr, size);
+	ret_val = ducati_mmu_init((u32)ducbaseimage.phys_addr, size);
 	DPRINTK("  Leaving DDucatiEnablerLogicalDevice \
-	Install [0x%x]", retVal);
+	Install [0x%x]", ret_val);
 
 	return 0;
 }
 
 
 /**----------------------------------------------------------------------------
- *@name   ducatidrv_finalizeModule
+ *@name   ducatidrv_finalize_module
  *
  *@desc   Linux driver function to finalize the driver module.
  *----------------------------------------------------------------------------
 	 */
-static void __exit ducatidrv_finalizeModule(void)
+static void __exit ducatidrv_finalize_module(void)
 {
 	dev_t devno;
 
-	MMUDeInit();
-	MEM_FreePhysMem((void *)ducbaseimage.mpuVAaddr,
-				ducbaseimage.physAddr, ducbaseimage.size);
+	mmu_de_init();
+	mem_free_phymem((void *)ducbaseimage.mpu_vaddr,
+				ducbaseimage.phys_addr, ducbaseimage.size);
 
 	platform_device_unregister(&omap_ducati_dev);
 	platform_driver_unregister(&ducati_driver_ldm);
@@ -229,7 +229,7 @@ static void __exit ducatidrv_finalizeModule(void)
 		class_destroy(ducati_class);
 
 	}
-	DPRINTK("EXIT ducatidrv_finalizeModule\n");
+	DPRINTK("EXIT ducatidrv_finalize_module\n");
 }
 
 
@@ -246,7 +246,7 @@ static int ducatidrv_open(struct inode *inode, struct file *filp)
 
 
 /**----------------------------------------------------------------------------
- *@name   DRV_close
+ *@name   drv_close
  *
  *@desc   Linux specific function to close the driver.
  *----------------------------------------------------------------------------
@@ -301,7 +301,7 @@ static void ducatidrv_free(struct device *dev)
 
  *============================================================================
  */
-module_init(ducatidrv_initializeModule);
-module_exit(ducatidrv_finalizeModule);
+module_init(ducatidrv_initialize_module);
+module_exit(ducatidrv_finalize_module);
 MODULE_AUTHOR("Texas Instruments");
 MODULE_LICENSE("GPL");

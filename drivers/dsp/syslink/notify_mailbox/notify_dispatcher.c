@@ -1,22 +1,18 @@
-/*===========================================================================
-File    Mailbx.c
-
-Path    $(PROJROOT)\driver\mailbox
-
-Desc    Implements the Mailbox Manager module.
-
-Rev     0.1.0
-
-This computer program is copyright to Texas Instruments Incorporated.
-The program may not be used without the written permission of
-Texas Instruments Incorporated or against the terms and conditions
-stipulated in the agreement under which this program has been supplied.
-
-(c) Texas Instruments Incorporated 2008
-
-===========================================================================
-*/
-
+/*
+ * notify_dispatcher.c
+ *
+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
+ *
+ * Copyright (C) 2008-2009 Texas Instruments, Inc.
+ *
+ * This package is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ */
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/delay.h>
@@ -28,578 +24,399 @@ stipulated in the agreement under which this program has been supplied.
 #include <linux/delay.h>
 #include <mach/irqs.h>
 
-
-
-#include "trc.h"
+#include<gt.h>
 #include<dbc.h>
-#include<_signature.h>
-#include<clk.h>
 #include<global_var.h>
 
-/*TODO Replace when correct type found*/
-#define DResource 0
 MODULE_LICENSE("GPL");
 
+struct mbox_isrs mailbx_swisrs;
+EXPORT_SYMBOL(mailbx_swisrs);
+
+struct mbox_config mailbx_hw_config;
+EXPORT_SYMBOL(mailbx_hw_config);
 
 
-/*************************************/
+unsigned long int i_mbox_module_no;
+unsigned long int i_a_irq_bit;
+const unsigned long int kmpu_mailboxes = 2;
 
-
-
-/**============================================================================
-*@macro  COMPONENT_ID
+/*
 *
-*@desc   Component and Subcomponent Identifier.
-*============================================================================
+* Bind an ISR to the HW interrupt line coming into the processor
 */
-#define  COMPONENT_ID       ID_KNL_NOTIFY_MBXMGR
-
-/*_LIT(KLitNotifyRH, "NotifyRH") ;*/
-
-struct MboxIsrs Mailbx_swIsrs;
-EXPORT_SYMBOL(Mailbx_swIsrs);
-
-struct MboxConfig Mailbx_hwConfig;
-EXPORT_SYMBOL(Mailbx_hwConfig);
-
-
-unsigned long int i_mBoxModuleNo;
-unsigned long int i_aIrqBit;
-
-
-
-
-
-#if DResource
-/*DResourceHandler *Mailbx_iResourceHandler;*/
-#endif
-
-const unsigned long int KMboxMpuInterrupt = INT_24XX_MAIL_U0_MPU ;
-
-const unsigned long int KMpuMailboxes = 2;
-
-
-
-
-irqreturn_t Notify_Mailbox0User0_ISR(int temp, void *anArg, struct pt_regs *p)
+irqreturn_t notify_mailbx0_user0_isr(int temp, void *anArg, struct pt_regs *p)
 {
 
-	REG unsigned long int pEventStatus = 0;
-	signed long int mBoxIndex = Mailbx_hwConfig.mBoxModules - 1;
+	REG unsigned long int p_eventStatus = 0;
+	signed long int mbox_index = mailbx_hw_config.mbox_modules - 1;
 	signed long int i;
 
-	for (i = 0; i <  Mailbx_hwConfig.mailboxes[mBoxIndex]; i++) {
-
+	for (i = 0; i <  mailbx_hw_config.mailboxes[mbox_index]; i++) {
 		/*Read the Event Status */
-
-		HW_MBOX_EventStatus(Mailbx_hwConfig.mBoxLinearAddr,
-		(enum HW_MBOX_Id_t)(i), HW_MBOX_U0_ARM11,
-		(unsigned long *) &pEventStatus);
-
-		if (pEventStatus & HW_MBOX_INT_ALL) {
-
-
-
-
-			if ((Mailbx_swIsrs.Isrs
-			[mBoxIndex][i*HW_MBOX_ID_WIDTH]) > 0) {
-
-				(*Mailbx_swIsrs.Isrs[mBoxIndex][i
+		hw_mbox_event_status(mailbx_hw_config.mbox_linear_addr,
+		(enum hw_mbox_id_t)(i), HW_MBOX_U0_ARM11,
+		(unsigned long *) &p_eventStatus);
+		if (p_eventStatus & HW_MBOX_INT_ALL) {
+			if ((mailbx_swisrs.isrs
+			[mbox_index][i*HW_MBOX_ID_WIDTH]) > 0) {
+				(*mailbx_swisrs.isrs[mbox_index][i
 				*HW_MBOX_ID_WIDTH])
-				(Mailbx_swIsrs.IsrParams[mBoxIndex]
+				(mailbx_swisrs.isr_params[mbox_index]
 				[i*HW_MBOX_ID_WIDTH]);
 
-
-				HW_MBOX_EventAck(Mailbx_hwConfig.
-				mBoxLinearAddr,
-				(enum HW_MBOX_Id_t)i,
+				hw_mbox_event_ack(mailbx_hw_config.
+				mbox_linear_addr,
+				(enum hw_mbox_id_t)i,
 				HW_MBOX_U0_ARM11, HW_MBOX_INT_NEW_MSG);
-
 			}
-
 		}
-}
-
+	}
 	return IRQ_HANDLED;
 }
-EXPORT_SYMBOL(Notify_Mailbox0User0_ISR);
+EXPORT_SYMBOL(notify_mailbx0_user0_isr);
 
-
-
-
-/*  ===========================================================================
-func    Mailbx_BindInterrupt
-
-desc    Bind an ISR to the HW interrupt line coming into the processor
-===========================================================================
+/*
+*
+* Bind an ISR to the HW interrupt line coming into the processor
 */
-
-signed long int Mailbx_BindInterrupt(signed long int interruptNo,
-		ISR_Callback hwISR, void *isrArg)
+signed long int ntfy_disp_bind_interrupt(signed long int interrupt_no,
+		isr_call_back hw_isr, void *isr_arg)
 {
-	signed long int status = KErrNone;
-	short int validInterrupt = FALSE;
+	signed long int status = 0;
+	short int valid_interrupt = false;
 	unsigned long int i;
 
-
-	TRC_3ENTER("Mailbx_BindInterrupt", interruptNo, hwISR, isrArg);
-
-
-/*Validate the arguments*/
-	for (i = 0; i < Mailbx_hwConfig.mBoxModules; i++) {
-			if (interruptNo == Mailbx_hwConfig.interruptLines[i]) {
-					validInterrupt = TRUE;
-					break;
-			}
+	/*Validate the arguments*/
+	for (i = 0; i < mailbx_hw_config.mbox_modules; i++) {
+		if (interrupt_no == mailbx_hw_config.
+				interrupt_lines[i]) {
+			valid_interrupt = true;
+			break;
+		}
 	}
-
-	if (validInterrupt != TRUE)
-			status = KErrArgument;
-
-
-	if ((status == KErrNone) && (hwISR == NULL))
-			status = KErrArgument;
-
-
-
-
-		status =
-		request_irq(interruptNo, (void *)Notify_Mailbox0User0_ISR,
-		IRQF_SHARED, "mbox", NotifyMbxDrv_NonShmISR);
-
-		if (status)
-			printk(KERN_ALERT "REQUEST_IRQ FAILED\n");
-
-
-
-
+	if (valid_interrupt != true)
+		status = -EINVAL;
+	if ((status == 0) && (hw_isr == NULL))
+		status = -EINVAL;
+	status =
+	request_irq(interrupt_no, (void *)notify_mailbx0_user0_isr,
+	IRQF_SHARED, "mbox", notify_mbxdrv_nonshm_isr);
+	if (!status)
+		printk(KERN_ALERT "REQUEST_IRQ FAILED\n");
 	return status;
 }
 
-
-/*  ===========================================================================
-func    Mailbx_Debug
-
-desc    Print the mailbox registers and other useful debug information
-===========================================================================
+/*
+*
+* Print the mailbox registers and other useful debug information
 */
 void Mailbx_Debug(void)
 {
-
-	unsigned long int pEventStatus;
-	TRC_0ENTER("Mailbx_Debug");
-
-	HW_MBOX_EventStatus(Mailbx_hwConfig.mBoxLinearAddr,
-		(enum HW_MBOX_Id_t)1, HW_MBOX_U0_ARM11, &pEventStatus);
-
-	TRC_1PRINT(TRC_LEVEL2, "  pEventStatus = [0x%x]", pEventStatus);
-
-	TRC_0LEAVE("Mailbx_Debug");
+	unsigned long int p_eventStatus;
+	hw_mbox_event_status(mailbx_hw_config.mbox_linear_addr,
+		(enum hw_mbox_id_t)1, HW_MBOX_U0_ARM11, &p_eventStatus);
 }
 
-
-/*===========================================================================
-func    Mailbx_DeInit
-
-desc    Uninitialize the Mailbox Manager module
-===========================================================================
+/*
+*
+* Uninitialize the Notify disptacher Manager module
 */
-signed long int Mailbx_DeInit(void)
+signed long int ntfy_disp_deinit(void)
 {
-	signed long int status = KErrNone;
 	unsigned long int temp;
 	signed long int i;
 
-
-	TRC_0ENTER("Mailbx_DeInit");
-/*Reset the Mailbox module */
-	HW_OCP_SoftReset(Mailbx_hwConfig.mBoxLinearAddr);
+	/*Reset the Mailbox module */
+	hw_ocp_soft_reset(mailbx_hw_config.mbox_linear_addr);
 	do {
-			HW_OCP_SoftResetIsDone(Mailbx_hwConfig.mBoxLinearAddr ,
-						&temp);
+		hw_ocp_soft_reset_isdone(mailbx_hw_config.mbox_linear_addr,
+								&temp);
 	} while (temp == 0);
 
-/*Reset the Configuration for the Mailbox modules on MPU */
-
-
+	/*Reset the Configuration for the Mailbox modules on MPU */
 	for (i = 0; i < MAX_MBOX_MODULES; i++) {
+		if ((i < mailbx_hw_config.mbox_modules) &&
+			(mailbx_hw_config.interrupt_lines[i] != (-1)))
+			disable_irq((int)(mailbx_hw_config.interrupt_lines[i]));
 
-	#if DResource
-		if ((i < Mailbx_hwConfig.mBoxModules) &&
-			(Mailbx_hwConfig.interruptLines[i] != (-1)))
-			disable_irq((int)(Mailbx_hwConfig.interruptLines[i]));
-
-	#endif
-		Mailbx_hwConfig.interruptLines[i] = (-1);
-		Mailbx_hwConfig.mailboxes[i] = (-1);
+		mailbx_hw_config.interrupt_lines[i] = (-1);
+		mailbx_hw_config.mailboxes[i] = (-1);
 	}
 
-	Mailbx_hwConfig.mBoxModules = 0;
-	Mailbx_hwConfig.mBoxLinearAddr = (unsigned long int) (-1);
-
-
-return status;
+	mailbx_hw_config.mbox_modules = 0;
+	mailbx_hw_config.mbox_linear_addr = (unsigned long int) (-1);
+	return 0;
 }
 
-
-/*===========================================================================
-func    Mailbx_Getstruct MboxConfig
-
-desc    Return the pointer to the Mailbox Manager's configuration object
-===========================================================================
+/*
+*
+* Return the pointer to the Mailbox Manager's configuration object
 */
-struct MboxConfig *Mailbx_GetMBoxConfig(void)
+struct mbox_config *mailbx_get_config(void)
 {
-	return &(Mailbx_hwConfig);
+	return &(mailbx_hw_config);
 }
 
-
-/*===========================================================================
-func    Mailbx_Init
-
-desc    Initialize the Mailbox Manager module and the mailbox hardware
-===========================================================================
+/*
+*
+*  Initialize the Mailbox Manager module and the mailbox hardware
 */
-signed long int Mailbx_Init(void)
+signed long int mailbx_init(void)
 {
-	signed long int status = KErrNone;
+	signed long int status = 0;
 	signed long int i, j;
 
-
-	TRC_0ENTER("Mailbx_Init");
-
-/*Initialize the configuration parameters for the Mailbox modules on MPU */
+	/*Initialize the configuration parameters for the Mailbox modules on
+	* MPU */
 	for (i = 0; i < MAX_MBOX_MODULES; i++) {
-			Mailbx_hwConfig.interruptLines[i] = (-1);
-			Mailbx_hwConfig.mailboxes[i] = (-1);
+		mailbx_hw_config.interrupt_lines[i] = (-1);
+		mailbx_hw_config.mailboxes[i] = (-1);
 	}
-
 	for (i = 0; i < MAX_MBOX_MODULES; i++) {
-			Mailbx_swIsrs.isrNo[i] = (-1);
-			for (j = 0; j < MAX_MBOX_ISRS; j++) {
-					Mailbx_swIsrs.Isrs[i][j] = NULL;
-					Mailbx_swIsrs.IsrParams[i][j] = NULL;
-			}
+		mailbx_swisrs.isrNo[i] = (-1);
+		for (j = 0; j < MAX_MBOX_ISRS; j++) {
+				mailbx_swisrs.isrs[i][j] = NULL;
+				mailbx_swisrs.isr_params[i][j] = NULL;
+		}
 	}
-
-/*Setup the configuration parameters for the Mailbox modules on MPU */
-	Mailbx_hwConfig.mBoxLinearAddr = (const unsigned long) LinearAddress;
-	Mailbx_hwConfig.mBoxModules = 1;
-	Mailbx_hwConfig.interruptLines[(Mailbx_hwConfig.mBoxModules-1)]
-			= KMboxMpuInterrupt;
-
-	Mailbx_hwConfig.mailboxes[(Mailbx_hwConfig.mBoxModules-1)]
-			= KMpuMailboxes;
+	/*Setup the configuration parameters for the Mailbox modules on MPU */
+	mailbx_hw_config.mbox_linear_addr =
+		(const unsigned long) linear_address;
+	mailbx_hw_config.mbox_modules = 1;
+	mailbx_hw_config.interrupt_lines[(mailbx_hw_config.mbox_modules-1)]
+			= INT_24XX_MAIL_U0_MPU;
+	mailbx_hw_config.mailboxes[(mailbx_hw_config.mbox_modules-1)]
+			= kmpu_mailboxes;
 
 
 	return status;
 }
 
-/*===========================================================================
-func    Mailbx_InterruptDisable
-
-desc    Disable a particular IRQ bit on a Mailbox IRQ Enable Register
-===========================================================================
+/*
+*
+* Disable a particular IRQ bit on a Mailbox IRQ Enable Register
 */
-signed long int Mailbx_InterruptDisable(unsigned long int mBoxModuleNo,
-					unsigned long int aIrqBit)
+signed long int mailbx_interrupt_disable(unsigned long int mbox_module_no,
+					unsigned long int a_irq_bit)
 {
+	int status = 0;
 
-		signed long int status = KErrNone;
-		TRC_2ENTER("Mailbx_InterruptDisable", mBoxModuleNo, aIrqBit);
-
-		/*Validate the parameters */
-		if (mBoxModuleNo > Mailbx_hwConfig.mBoxModules)
-				status = KErrArgument;
-
-
-		if ((status == KErrNone) && (aIrqBit >= (HW_MBOX_ID_WIDTH *
-		Mailbx_hwConfig.mailboxes[mBoxModuleNo-1])))
-				status = KErrArgument;
-
-
-		/*Interrupts on transmission not supported currently */
-		if ((status == KErrNone) && (aIrqBit % HW_MBOX_ID_WIDTH))
-				status = KErrNotSupported;
-
-
-		if (status == KErrNone) {
-			HW_MBOX_EventDisable(Mailbx_hwConfig.mBoxLinearAddr ,
-			(enum HW_MBOX_Id_t)(aIrqBit / HW_MBOX_ID_WIDTH),
-			HW_MBOX_U0_ARM11, HW_MBOX_INT_NEW_MSG);
-		}
-
-		return status;
-}
-
-
-/*===========================================================================
-func    Mailbx_InterruptEnable
-
-desc    Enable a particular IRQ bit on a Mailbox IRQ Enable Register
-===========================================================================
-*/
-signed long int Mailbx_InterruptEnable(unsigned long int mBoxModuleNo,
-					unsigned long int aIrqBit)
-{
-
-		signed long int status = KErrNone;
-		TRC_2ENTER("Mailbx_InterruptEnable", mBoxModuleNo, aIrqBit);
-
-		/*Validate the parameters */
-		if (mBoxModuleNo > Mailbx_hwConfig.mBoxModules)
-				status = KErrArgument;
-
-
-		if ((status == KErrNone) &&
-				(aIrqBit >= (HW_MBOX_ID_WIDTH *
-				Mailbx_hwConfig.mailboxes[mBoxModuleNo-1])))
-				status = KErrArgument;
-
-
-		if ((status == KErrNone) &&
-		(Mailbx_swIsrs.Isrs[mBoxModuleNo-1][aIrqBit] == NULL))
-			status = KErrNotReady;
-
-
-
-		/*Interrupts on transmission not supported currently */
-		if ((status == KErrNone) && (aIrqBit % HW_MBOX_ID_WIDTH))
-				status = KErrNotSupported;
-
-
-	if (status == KErrNone) {
-		HW_MBOX_EventEnable(Mailbx_hwConfig.mBoxLinearAddr,
-		(enum HW_MBOX_Id_t)(aIrqBit / HW_MBOX_ID_WIDTH),
-		HW_MBOX_U0_ARM11, HW_MBOX_INT_NEW_MSG);
+	/*Validate the parameters */
+	if (mbox_module_no > mailbx_hw_config.mbox_modules) {
+		status = -EINVAL;
+		goto func_end;
 	}
-
-
-		return status;
+	if (a_irq_bit >= (HW_MBOX_ID_WIDTH *
+			mailbx_hw_config.mailboxes[mbox_module_no-1])) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	/*Interrupts on transmission not supported currently */
+	if ((a_irq_bit % HW_MBOX_ID_WIDTH)) {
+		status = -EACCES;
+		goto func_end;
+	}
+	hw_mbox_event_disable(mailbx_hw_config.mbox_linear_addr ,
+		(enum hw_mbox_id_t)(a_irq_bit / HW_MBOX_ID_WIDTH),
+		HW_MBOX_U0_ARM11, HW_MBOX_INT_NEW_MSG);
+func_end:
+	return status;
 }
 
-
-/*  ===========================================================================
-func    Mailbx_Read
-
-desc    Read a message on a Mailbox FIFO queue
-===========================================================================
+/*
+*
+*  Enable a particular IRQ bit on a Mailbox IRQ Enable Register
 */
-signed long int Mailbx_Read(unsigned long int mBoxModuleNo,
-		unsigned long int aMboxNo, unsigned long int *messages,
-		unsigned long int *numMessages, short int readAll)
+signed long int mailbx_interrupt_enable(unsigned long int mbox_module_no,
+					unsigned long int a_irq_bit)
 {
-		signed long int status = KErrNone;
-
-
-		if (mBoxModuleNo > Mailbx_hwConfig.mBoxModules)
-				status = KErrArgument;
-
-
-		if ((status == KErrNone) &&
-		(aMboxNo >= Mailbx_hwConfig.mailboxes[mBoxModuleNo-1]))
-				status = KErrArgument;
-
-
-		if ((status == KErrNone) &&
-			(messages == NULL || numMessages == NULL))
-				status = KErrArgument;
-
-
-		if (status == KErrNone) {
-				/*Read a single message */
-			HW_MBOX_NumMsgGet(Mailbx_hwConfig.mBoxLinearAddr ,
-			(enum HW_MBOX_Id_t)aMboxNo, numMessages);
-
-		if (*numMessages > 0) {
-			HW_MBOX_MsgRead(Mailbx_hwConfig.mBoxLinearAddr,
-			(enum HW_MBOX_Id_t)aMboxNo, messages);
-		} else
-			status = KErrNotReady;
-
-
-		}
-
-
-		return (signed long int)status;
+	signed long int status = 0;
+	/*Validate the parameters */
+	if (mbox_module_no > mailbx_hw_config.mbox_modules) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	if (a_irq_bit >= (HW_MBOX_ID_WIDTH *
+			mailbx_hw_config.mailboxes[mbox_module_no-1])) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	if (mailbx_swisrs.isrs[mbox_module_no-1][a_irq_bit] == NULL) {
+		status = -EFAULT;
+		goto func_end;
+	}
+	/*Interrupts on transmission not supported currently */
+	if (a_irq_bit % HW_MBOX_ID_WIDTH) {
+		status = -EACCES;
+		goto func_end;
+	}
+	hw_mbox_event_enable(mailbx_hw_config.mbox_linear_addr,
+	(enum hw_mbox_id_t)(a_irq_bit / HW_MBOX_ID_WIDTH),
+	HW_MBOX_U0_ARM11, HW_MBOX_INT_NEW_MSG);
+func_end:
+	return status;
 }
 
-
-/*  ===========================================================================
-func    Mailbx_Register
-
-desc    Register a ISR callback associated with a particular IRQ bit on a
-Mailbox IRQ Enable Register and Also Reigisters a Interrupt Handler
-===========================================================================
+/*
+*
+* Read a message on a Mailbox FIFO queue
 */
-signed long int Mailbx_Register(unsigned long int mBoxModuleNo,
-		unsigned long int aIrqBit, ISR_Callback isrCallbackFn,
+signed long int mailbx_read(unsigned long int mbox_module_no,
+		unsigned long int a_mbox_no, unsigned long int *messages,
+		unsigned long int *num_messages, short int read_all)
+{
+	signed long int status = 0;
+
+	if (mbox_module_no > mailbx_hw_config.mbox_modules) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	if (a_mbox_no >= mailbx_hw_config.mailboxes[mbox_module_no-1]) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	if (messages == NULL || num_messages == NULL) {
+		status = -EFAULT;
+		goto func_end;
+	}
+	/*Read a single message */
+	hw_mbox_nomsg_get(mailbx_hw_config.mbox_linear_addr ,
+	(enum hw_mbox_id_t)a_mbox_no, num_messages);
+	if (*num_messages > 0) {
+		hw_mbox_msg_read(mailbx_hw_config.mbox_linear_addr,
+		(enum hw_mbox_id_t)a_mbox_no, messages);
+	} else
+		status = -EBUSY;
+func_end:
+	return (signed long int)status;
+}
+
+/*
+*
+* Register a ISR callback associated with a particular IRQ bit on a
+* Mailbox IRQ Enable Register and Also Reigisters a Interrupt Handler
+*/
+signed long int mailbx_register(unsigned long int mbox_module_no,
+		unsigned long int a_irq_bit, isr_call_back isr_cbck_fn,
 		void *isrCallbackArgs)
 
 {
-		signed long int status = KErrNone;
+	signed long int status = 0;
 
-		i_mBoxModuleNo =  mBoxModuleNo;
-		i_aIrqBit = aIrqBit;
+	i_mbox_module_no =  mbox_module_no;
+	i_a_irq_bit = a_irq_bit;
 
-		TRC_4ENTER("Mailbx_Register", mBoxModuleNo, aIrqBit,
-						isrCallbackFn, isrCallbackArgs);
-
-/*Validate the parameters */
-		if (mBoxModuleNo > Mailbx_hwConfig.mBoxModules)
-				status = KErrArgument;
-
-
-		if ((status == KErrNone) &&
-				(aIrqBit >= (HW_MBOX_ID_WIDTH *
-				Mailbx_hwConfig.mailboxes[mBoxModuleNo-1])))
-				status = KErrArgument;
-
-
-		if ((status == KErrNone) && (isrCallbackFn == NULL))
-				status = KErrArgument;
-
-
-
-		if ((status == KErrNone) && (aIrqBit % HW_MBOX_ID_WIDTH))
-				status = KErrNotSupported;
-
-
-		if (status == KErrNone) {
-
-			HW_MBOX_EventDisable(Mailbx_hwConfig.mBoxLinearAddr ,
-			(enum HW_MBOX_Id_t)(aIrqBit / HW_MBOX_ID_WIDTH),
-			HW_MBOX_U0_ARM11, HW_MBOX_INT_NEW_MSG);
-
-
-
-			Mailbx_swIsrs.Isrs[mBoxModuleNo-1][aIrqBit] =
-			isrCallbackFn;
-
-			Mailbx_swIsrs.IsrParams[mBoxModuleNo-1][aIrqBit]
-			= isrCallbackArgs;
-
+	/*Validate the parameters */
+	if (mbox_module_no > mailbx_hw_config.mbox_modules) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	if (a_irq_bit >= (HW_MBOX_ID_WIDTH *
+			mailbx_hw_config.mailboxes[mbox_module_no-1])) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	if ((isr_cbck_fn == NULL)) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	if (a_irq_bit % HW_MBOX_ID_WIDTH) {
+		status = -EINVAL;
+		goto func_end;
 	}
 
+	hw_mbox_event_disable(mailbx_hw_config.mbox_linear_addr,
+	(enum hw_mbox_id_t)(a_irq_bit / HW_MBOX_ID_WIDTH),
+	HW_MBOX_U0_ARM11, HW_MBOX_INT_NEW_MSG);
 
-		return status;
-}
-
-
-/*===========================================================================
-func    Mailbx_Send
-
-desc  Send a message on a Mailbox FIFO queue
-===========================================================================
-*/
-signed long int Mailbx_Send(unsigned long int mBoxModuleNo,
-		unsigned long int aMboxNo, unsigned long int message)
-{
-	signed long int status = KErrNone;
-	/*unsigned long int mbxFull;*/
-
-	TRC_3ENTER("Mailbx_Send", mBoxModuleNo, aMboxNo, message);
-
-
-/*Validate the arguments */
-	if (mBoxModuleNo > Mailbx_hwConfig.mBoxModules)
-			status = KErrArgument;
-
-
-	if ((status == KErrNone) &&
-	(aMboxNo >= Mailbx_hwConfig.mailboxes[mBoxModuleNo-1]))
-		status = KErrArgument;
-
-
-/*Send the message */
-
-if (1) {
-
-	HW_MBOX_MsgWrite(Mailbx_hwConfig.mBoxLinearAddr,
-	(enum HW_MBOX_Id_t)aMboxNo, message);
-
-}
-
-
-return status;
-}
-
-
-/*  ===========================================================================
-func    Mailbx_UnBindInterrupt
-
-desc    Remove the ISR to the HW interrupt line coming into the processor
-===========================================================================
-*/
-signed long int Mailbx_UnBindInterrupt(signed long int interruptNo)
-{
-	signed long int status = KErrNone;
-	unsigned long int i;
-	short int validInterrupt = FALSE;
-
-	TRC_1ENTER("Mailbx_UnBindInterrupt", interruptNo);
-
-	/*Validate the arguments*/
-
-	for (i = 0; i < Mailbx_hwConfig.mBoxModules; i++) {
-			if (interruptNo == Mailbx_hwConfig.interruptLines[i]) {
-					validInterrupt = TRUE;
-					break;
-			}
-	}
-
-
-	if (validInterrupt != TRUE)
-			status = KErrArgument;
-
-
-	/*Unbind the HW Interrupt */
-	if (status == KErrNone)
-			disable_irq(interruptNo);
-
-
-
+	mailbx_swisrs.isrs[mbox_module_no-1][a_irq_bit] = isr_cbck_fn;
+	mailbx_swisrs.isr_params[mbox_module_no-1][a_irq_bit] = isrCallbackArgs;
+func_end:
 	return status;
 }
 
-
-/*===========================================================================
-func    Mailbx_Unregister
-
-desc    Unregister a ISR callback associated with a particular IRQ bit on a
-Mailbox IRQ Enable Register
-===========================================================================
+/*
+*
+* Send a message on a Mailbox FIFO queue
 */
-signed long int Mailbx_Unregister(unsigned long int mBoxModuleNo,
-		unsigned long int aIrqBit)
+signed long int mailbx_send(unsigned long int mbox_module_no,
+		unsigned long int a_mbox_no, unsigned long int message)
 {
-		signed long int status = KErrNone;
+	signed long int status = 0;
 
-		TRC_2ENTER("Mailbx_Unregister", mBoxModuleNo, aIrqBit);
+	/*Validate the arguments */
+	if (mbox_module_no > mailbx_hw_config.mbox_modules) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	if (a_mbox_no >= mailbx_hw_config.mailboxes[mbox_module_no-1]) {
+		status = -EINVAL;
+		goto func_end;
+	}
 
-		/*Validate the arguments */
-		if (mBoxModuleNo > Mailbx_hwConfig.mBoxModules)
-				status = KErrArgument;
+	/*Send the message */
+	hw_mbox_msg_write(mailbx_hw_config.mbox_linear_addr,
+		(enum hw_mbox_id_t)a_mbox_no, message);
 
+func_end:
+	return status;
+}
 
-		if ((status == KErrNone) &&
-				(aIrqBit >= (HW_MBOX_ID_WIDTH *
-				Mailbx_hwConfig.mailboxes[mBoxModuleNo-1])))
-				status = KErrArgument;
+/*
+*
+* Remove the ISR to the HW interrupt line coming into the processor
+*/
+signed long int mailbx_unbind_interrupt(signed long int interrupt_no)
+{
+	unsigned long int i;
+	short int valid_interrupt = false;
 
-
-		/*Interrupts on transmission not supported currently */
-		if ((status == KErrNone) && (aIrqBit % HW_MBOX_ID_WIDTH))
-				status = KErrNotSupported;
-
-
-		if (status == KErrNone) {
-				/*Remove the ISR plugin */
-			Mailbx_swIsrs.Isrs[mBoxModuleNo-1][aIrqBit] = NULL;
-			Mailbx_swIsrs.IsrParams[mBoxModuleNo-1][aIrqBit] = NULL;
+	/*Validate the arguments*/
+	for (i = 0; i < mailbx_hw_config.mbox_modules; i++) {
+		if (interrupt_no == mailbx_hw_config.
+				interrupt_lines[i]) {
+			valid_interrupt = true;
+			break;
 		}
+	}
+	if (valid_interrupt != true)
+		return -EFAULT;
+	/*Unbind the HW Interrupt */
+	disable_irq(interrupt_no);
+	return 0;
+}
 
+/*
+*
+* Unregister a ISR callback associated with a particular IRQ bit on a
+* Mailbox IRQ Enable Register
+*/
+signed long int mailbx_unregister(unsigned long int mbox_module_no,
+					unsigned long int a_irq_bit)
+{
+	signed long int status = 0;
 
+	/*Validate the arguments */
+	if (mbox_module_no > mailbx_hw_config.mbox_modules) {
+		status = -EINVAL;
+		goto func_end;
+	}
 
-		return status;
+	if (a_irq_bit >= (HW_MBOX_ID_WIDTH *
+			mailbx_hw_config.mailboxes[mbox_module_no-1])) {
+		status = -EINVAL;
+		goto func_end;
+	}
+
+	/*Interrupts on transmission not supported currently */
+	if (a_irq_bit % HW_MBOX_ID_WIDTH) {
+		status = -EINVAL;
+		goto func_end;
+	}
+	/*Remove the ISR plugin */
+	mailbx_swisrs.isrs[mbox_module_no-1][a_irq_bit] = NULL;
+	mailbx_swisrs.isr_params[mbox_module_no-1][a_irq_bit] = NULL;
+func_end:
+	return status;
 }

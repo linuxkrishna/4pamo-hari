@@ -1,5 +1,5 @@
 
-libducati =   ducati/ducatienabler.o  ducati/ducati_mmu.o
+libducati =   ducati/ducatienabler.o  ducati/ducati_mmu.o ducati/hw_mmu.o
 
 
 obj-$(CONFIG_BRIDGE_DUCATI)    += ducati_enabler.o

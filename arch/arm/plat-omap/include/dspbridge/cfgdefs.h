@@ -97,13 +97,13 @@
 		u32 dwChnlBufSize;
 		u32 dwNumChnls;
 		u32 dwPrmBase;
-#ifdef OMAP_3430
+//#ifdef OMAP_3430
 		u32 dwCmBase;
-#endif
-#ifdef OMAP44XX
+//#endif
+//#ifdef OMAP44XX
 		u32 dwCm1Base;
 		u32 dwCm2Base;
-#endif
+//#endif
 		u32 dwPerBase;
 		u32 dwWdTimerDspBase;
 		u32 dwMboxBase;

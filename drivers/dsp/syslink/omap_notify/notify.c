@@ -30,22 +30,17 @@
 
 /*----------------------------------- IPC Headers                 */
 #include <gpptypes.h>
-#include <ipctypes.h>
 #include <dbc.h>
 
-/*----------------------------------- OSAL Headers                */
-#include <sync.h>
 
 /*----------------------------------- Notify Headers              */
 #include <notify.h>
 #include <notify_driver.h>
-#include <_notifydefs.h>
 #include <notifyerr.h>
 
 /*----------------------------------- Generic Headers             */
-#include <trc.h>
-#include<gen_utils.h>
 #include<global_var.h>
+#include<gt.h>
 
 
 /**============================================================================
@@ -63,8 +58,7 @@
 *============================================================================
 */
 #if defined(NOTIFY_DEBUG)
-#define SET_FAILURE_REASON(status)  (TRC_SetReason \
-(status, FID_C_KNL_NOTIFY, __LINE__))
+#define SET_FAILURE_REASON(status)
 #else
 #define SET_FAILURE_REASON(status)
 #endif /*if defined(NOTIFY_DEBUG) */
@@ -75,7 +69,7 @@
 *@desc   Start spinlock protection
 *============================================================================
 */
-#define SPINLOCK_START()           SYNC_SpinLockStart()
+#define SPINLOCK_START()           sync_spinlock_start()
 
 /**============================================================================
 *@const  SPINLOCK_END
@@ -83,18 +77,18 @@
 *@desc   End spinlock protection
 *============================================================================
 */
-#define SPINLOCK_END(irqFlags)     SYNC_SpinLockEnd(irqFlags)
+#define SPINLOCK_END(irqFlags)     sync_spinlock_end(irqFlags)
 
 
 
 
 /**----------------------------------------------------------------------------
-*@func   _Notify_findDriver
+*@func   _notify_find_driver
 *
 *@desc   Find a driver by name in the drivers array and return handle to the
 *driver object.
 *
-*@arg    driverName
+*@arg    driver_name
 *Name of the Notify driver to be found.
 *@arg    handle
 *Location to receive the handle to the Notify driver.
@@ -103,7 +97,7 @@
 *The Notify driver has been successfully initialized
 *NOTIFY_ENOTFOUND
 *
-*@enter  driverName must be a valid pointer
+*@enter  driver_name must be a valid pointer
 *handle must be a valid pointer.
 *
 *@leave  On success, handle must have a valid Notify driver handle.
@@ -114,13 +108,13 @@
 
 
 /**----------------------------------------------------------------------------
-*@func   _Notify_isSupportedProc
+*@func   _notify_is_support_proc
 *
 *@desc   Check if specified processor ID is supported by the Notify driver.
 *
-*@arg    drvHandle
+*@arg    drv_handle
 *Handle to the Notify driver
-*@arg    procId
+*@arg    proc_id
 *ID of the processor to be checked
 *
 *@ret    TRUE
@@ -128,7 +122,7 @@
 *FALSE
 *The specified processor ID is not supported by the driver
 *
-*@enter  drvHandle must be a valid pointer
+*@enter  drv_handle must be a valid pointer
 *
 *@leave  None
 *
@@ -137,144 +131,126 @@
 */
 
 short int
-_Notify_isSupportedProc(IN  struct Notify_DriverHandle *drvHandle,
-		IN  unsigned long int         procId) ;
+_notify_is_support_proc(IN  struct notify_driver_handle *drv_handle,
+		IN  unsigned long int         proc_id) ;
 
 
 /**============================================================================
-*@name   Notify_isInit
+*@name   notify_is_init
 *
 *@desc   Indicates whether the Notify module has been initialized
 *============================================================================
 */
-short int  Notify_isInit = FALSE;
-EXPORT_SYMBOL(Notify_isInit);
+short int  notify_is_init = FALSE;
+EXPORT_SYMBOL(notify_is_init);
 
-/*Notify_isInit = FALSE;*/
+/*notify_is_init = FALSE;*/
 
 
 /**============================================================================
-*@name   Notify_StateObj
+*@name   notify_state_obj
 *
 *@desc   Notify state object instance
 *============================================================================
 */
-struct Notify_State  Notify_StateObj ;
-EXPORT_SYMBOL(Notify_StateObj);
+struct notify_state  notify_state_obj ;
+EXPORT_SYMBOL(notify_state_obj);
 
+#if GT_TRACE
+static struct GT_Mask notify_debugmask = { NULL, NULL };  /* GT trace variable */
+EXPORT_SYMBOL(notify_debugmask);
+#endif
 
 
 /**============================================================================
-*@func   Notify_init
+*@func   notify_init
 *
 *@desc   This function initializes the Notify module.
 *
-*@modif  Notify_StateObj, Notify_isInit
+*@modif  notify_state_obj, notify_is_init
 *============================================================================
 */
 
-signed long int
-Notify_init(IN struct Notify_Attrs  *attrs)
+signed long int notify_init(IN struct notify_attrs  *attrs)
 {
-	signed long int       status = NOTIFY_SOK ;
-	struct Notify_DriverHandle *drvHandle ;
+	struct notify_driver_handle *drv_handle ;
 	unsigned short int              i ;
 
-	TRC_1ENTER("Notify_init", attrs) ;
+	GT_create(&notify_debugmask, "NT");
+	gt_1trace(notify_debugmask, GT_ENTER, "notify_init", attrs) ;
 
-	DBC_require(attrs != NULL) ;
+	BUG_ON(attrs == NULL) ;
+	BUG_ON(notify_is_init == true) ;
+	BUG_ON(attrs->maxDrivers > NOTIFY_MAX_DRIVERS);
 
-	if (Notify_isInit == TRUE) {
-		status = NOTIFY_EALREADYINIT ;
-		SET_FAILURE_REASON(status) ;
-	} else if (attrs == NULL) {
-		status = NOTIFY_EPOINTER ;
-		SET_FAILURE_REASON(status) ;
-	} else if (attrs->maxDrivers > NOTIFY_MAX_DRIVERS) {
-		status = NOTIFY_ECONFIG ;
-		SET_FAILURE_REASON(status) ;
-	} else {
-		Notify_StateObj.maxDrivers = attrs->maxDrivers ;
-		for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-			drvHandle = &(Notify_StateObj.drivers[i]) ;
-			drvHandle->isInit = FALSE ;
-			drvHandle->name[0] = '\0' ;
-			drvHandle->notifyId = i ;
-			drvHandle->fnTable = NULL ;
-			drvHandle->driverObj = NULL ;
+	notify_state_obj.maxDrivers = attrs->maxDrivers ;
+	for (i = 0 ; i < notify_state_obj.maxDrivers ; i++) {
+		drv_handle = &(notify_state_obj.drivers[i]) ;
+		drv_handle->isInit = FALSE ;
+		drv_handle->name[0] = '\0' ;
+		drv_handle->notifyId = i ;
+		drv_handle->fn_table = NULL ;
+		drv_handle->driver_object = NULL ;
 
-		}
-		Notify_isInit = TRUE ;
 	}
+	notify_is_init = TRUE ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_init", status) ;
 
-	DBC_ensure((NOTIFY_SUCCEEDED(status) && (Notify_isInit == TRUE))
-			|| (NOTIFY_FAILED(status))) ;
-
-	TRC_1LEAVE("Notify_init", status) ;
-
-	return status ;
+	return 0 ;
 }
-EXPORT_SYMBOL(Notify_init);
+EXPORT_SYMBOL(notify_init);
 
 /**============================================================================
-*@func   Notify_exit
+*@func   notify_exit
 *
 *@desc   This function finalizes the Notify module.
 *
-*@modif  Notify_isInit
+*@modif  notify_is_init
 *============================================================================
 */
 
-signed long int
-Notify_exit(void)
+signed long int notify_exit(void)
 {
-	signed long int status = NOTIFY_SOK ;
+	int status = 0 ;
 
-	TRC_0ENTER("Notify_exit") ;
+	gt_0trace(notify_debugmask, GT_ENTER, "notify_exit") ;
+	WARN_ON(notify_is_init == false);
 
-	if (Notify_isInit == FALSE) {
-		status = NOTIFY_EINIT ;
-		SET_FAILURE_REASON(status) ;
-	} else {
-		Notify_isInit = FALSE ;
-		status = NOTIFY_SEXIT ;
-	}
-
-	DBC_ensure((NOTIFY_SUCCEEDED(status) && (Notify_isInit == FALSE))
-			/           || (NOTIFY_FAILED(status))) ;
-
-	TRC_1LEAVE("Notify_exit", status) ;
+	if (notify_is_init == FALSE)
+		status = -EFAULT;
+	gt_1trace(notify_debugmask, GT_ENTER, "notify_exit status = %d\n",
+							status);
 	return status ;
 }
-EXPORT_SYMBOL(Notify_exit);
+EXPORT_SYMBOL(notify_exit);
 
 
 /**============================================================================
-*@func   Notify_driverInit
+*@func   notify_driver_init
 *
 *@desc   This function initializes and configures the specified Notify driver
 *
-*@modif  Notify_StateObj
+*@modif  notify_state_obj
 *============================================================================
 */
 
-signed long int
-Notify_driverInit(IN  char *driverName,
-		IN  struct Notify_Config  *config,
+signed long int notify_driver_init(IN  char *driver_name,
+		IN  struct notify_config  *config,
 		OUT void  **handle)
 {
 	signed long int       status = NOTIFY_SOK ;
-	struct Notify_DriverHandle *drvHandle ;
+	struct notify_driver_handle *drv_handle ;
 
 
-	TRC_3ENTER("Notify_driverInit", driverName, config, handle) ;
+	gt_3trace(notify_debugmask, GT_ENTER,
+		"notify_driver_init", driver_name, config, handle) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(driverName    != NULL) ;
-	DBC_require(config        != NULL) ;
-	DBC_require(handle        != NULL) ;
+	BUG_ON(notify_is_init != true) ;
+	BUG_ON(driver_name == NULL) ;
+	BUG_ON(config == NULL) ;
+	BUG_ON(handle == NULL) ;
 
-	if (Notify_isInit == FALSE) {
+	if (notify_is_init == FALSE) {
 		status = NOTIFY_EINIT ;
 		SET_FAILURE_REASON(status) ;
 
@@ -283,89 +259,89 @@ Notify_driverInit(IN  char *driverName,
 		SET_FAILURE_REASON(status) ;
 
 	} else {
-		status = _Notify_findDriver(driverName, handle) ;
+		status = _notify_find_driver(driver_name, handle) ;
 		if (NOTIFY_SUCCEEDED(status)) {
-			drvHandle =
-				(struct Notify_DriverHandle *)(*handle) ;
+			drv_handle =
+				(struct notify_driver_handle *)(*handle) ;
 
-			status = drvHandle->fnTable->notifyDriverInit
-					(driverName, config,
-					&(drvHandle->driverObj)) ;
+			status = drv_handle->fn_table->notifyDriverInit
+					(driver_name, config,
+					&(drv_handle->driver_object)) ;
 
 			if (NOTIFY_SUCCEEDED(status))
-				drvHandle->isInit = TRUE ;
+				drv_handle->isInit = TRUE ;
 			 else
 				SET_FAILURE_REASON(status) ;
 
-		} else
+		} else{
 			SET_FAILURE_REASON(status) ;
+		}
 
 	}
 
 	DBC_ensure((NOTIFY_SUCCEEDED(status) && (*handle != NULL))
 			|| (NOTIFY_FAILED(status))) ;
 
-	TRC_1LEAVE("Notify_driverInit", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_driver_init", status) ;
 
 	return status ;
 }
-EXPORT_SYMBOL(Notify_driverInit);
+EXPORT_SYMBOL(notify_driver_init);
 
 /**============================================================================
-*@func   Notify_driverExit
+*@func   notify_driver_exit
 *
 *@desc   This function finalizes the specified Notify driver.
 *
-*@modif  Notify_StateObj
+*@modif  notify_state_obj
 *============================================================================
 */
 
-signed long int
-Notify_driverExit(IN void  *handle)
+signed long int notify_driver_exit(IN void  *handle)
 {
 
 	signed long int       status = NOTIFY_SOK ;
-	struct Notify_DriverHandle *drvHandle =
-			(struct Notify_DriverHandle *) handle ;
+	struct notify_driver_handle *drv_handle =
+			(struct notify_driver_handle *) handle ;
 
 
-	TRC_1ENTER("Notify_driverExit", handle) ;
+	gt_1trace(notify_debugmask, GT_ENTER, "notify_driver_exit", handle);
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(drvHandle      != NULL) ;
-	DBC_require((drvHandle != NULL) && (drvHandle->isInit == TRUE)) ;
+	BUG_ON(notify_is_init != true);
+	BUG_ON(drv_handle == NULL) ;
+	BUG_ON((drv_handle == NULL) || (drv_handle->isInit != true));
 
-	if (Notify_isInit == FALSE) {
+	if (notify_is_init == FALSE) {
 		status = NOTIFY_EINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle == NULL) {
+	} else if (drv_handle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle->isInit == FALSE) {
+	} else if (drv_handle->isInit == FALSE) {
 		status = NOTIFY_EDRIVERINIT ;
 		SET_FAILURE_REASON(status) ;
 
 	} else {
-		status = drvHandle->fnTable->notifyDriverExit(drvHandle) ;
+		status = drv_handle->fn_table->notify_drv_exit(drv_handle) ;
 		if (NOTIFY_FAILED(status))
 			SET_FAILURE_REASON(status) ;
 
 
-		drvHandle->isInit = FALSE ;
+		drv_handle->isInit = FALSE ;
 	}
 
-	DBC_ensure((NOTIFY_SUCCEEDED(status) && (drvHandle->isInit == FALSE))
+	DBC_ensure((NOTIFY_SUCCEEDED(status) && (drv_handle->isInit == FALSE))
 			|| (NOTIFY_FAILED(status))) ;
 
-	TRC_1LEAVE("Notify_driverExit", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_driver_exit", status) ;
 
 	return status ;
 }
-EXPORT_SYMBOL(Notify_driverExit);
+EXPORT_SYMBOL(notify_driver_exit);
 /**============================================================================
-*@func   Notify_registerEvent
+*@func   notify_register_event
 *
 *@desc   This function registers a callback for a specific event with the
 *Notify module.
@@ -374,94 +350,91 @@ EXPORT_SYMBOL(Notify_driverExit);
 *============================================================================
 */
 
-signed long int
-Notify_registerEvent(IN     void  *handle,
-		IN     unsigned long int  procId,
-		IN     unsigned long int        eventNo,
-		IN     FnNotifyCbck  fnNotifyCbck,
-		IN OPT void *cbckArg)
+signed long int notify_register_event(IN     void  *handle,
+		IN     unsigned long int  proc_id,
+		IN     unsigned long int        event_no,
+		IN     fn_notify_cbck  fn_notify_cbck,
+		IN OPT void *cbck_arg)
 {
 	signed long int       status = NOTIFY_SOK ;
 
-	struct Notify_DriverHandle *drvHandle =
-		(struct Notify_DriverHandle *) handle ;
+	struct notify_driver_handle *drv_handle =
+		(struct notify_driver_handle *) handle ;
 
-	TRC_5ENTER("Notify_registerEvent",
+	gt_5trace(notify_debugmask, GT_ENTER, "notify_register_event",
 			handle,
-			procId,
-			eventNo,
-			fnNotifyCbck,
-			cbckArg) ;
+			proc_id,
+			event_no,
+			fn_notify_cbck,
+			cbck_arg) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(drvHandle      != NULL) ;
+	BUG_ON(notify_is_init != true) ;
+	BUG_ON(drv_handle == NULL) ;
 
-	DBC_require((drvHandle != NULL)
-			&& (drvHandle->isInit == TRUE));
+	BUG_ON(drv_handle->isInit != true);
 
-	DBC_require(fnNotifyCbck != NULL) ;
+	BUG_ON(fn_notify_cbck == NULL) ;
 
-	DBC_require(_Notify_isSupportedProc
-				(drvHandle, procId) == TRUE) ;
+	BUG_ON(_notify_is_support_proc
+				(drv_handle, proc_id) != true) ;
 
-	DBC_require((drvHandle != NULL)
-		&& ((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo[procId].maxEvents));
+	BUG_ON((event_no & NOTIFY_EVENT_MASK)
+		>= drv_handle->attrs.proc_info[proc_id].max_events);
 
-	if (Notify_isInit == FALSE) {
+	if (notify_is_init == FALSE) {
 		status = NOTIFY_EINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (fnNotifyCbck == NULL) {
+	} else if (fn_notify_cbck == NULL) {
 		status = NOTIFY_EPOINTER ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle == NULL) {
+	} else if (drv_handle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle->isInit == FALSE) {
+	} else if (drv_handle->isInit == FALSE) {
 		status = NOTIFY_EDRIVERINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (_Notify_isSupportedProc
-			(drvHandle, procId)	== FALSE) {
+	} else if (_notify_is_support_proc
+			(drv_handle, proc_id)	== FALSE) {
 
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
-	} else if ((eventNo & NOTIFY_EVENT_MASK)
-			>= drvHandle->attrs.procInfo[procId].maxEvents) {
+	} else if ((event_no & NOTIFY_EVENT_MASK)
+			>= drv_handle->attrs.proc_info[proc_id].max_events) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 	}
 	/*
-	   else if (((eventNo & NOTIFY_EVENT_MASK)
-	   <  drvHandle->attrs.procInfo[procId].reservedEvents)
-	   && (((eventNo & NOTIFY_SYSTEM_KEY_MASK)
+	   else if (((event_no & NOTIFY_EVENT_MASK)
+	   <  drv_handle->attrs.proc_info[proc_id].reserved_events)
+	   && (((event_no & NOTIFY_SYSTEM_KEY_MASK)
 		>> sizeof(unsigned short int))
 		!= NOTIFY_SYSTEM_KEY)) {
 	   status = NOTIFY_ERESERVEDEVENT ;
 	   SET_FAILURE_REASON(status) ;
 	   }*/
 	else {
-		status = drvHandle->fnTable->notifyRegisterEvent
-				(drvHandle,	procId,
-				(eventNo & NOTIFY_EVENT_MASK),
-				fnNotifyCbck,
-				cbckArg) ;
+		status = drv_handle->fn_table->notify_register_event
+				(drv_handle,	proc_id,
+				(event_no & NOTIFY_EVENT_MASK),
+				fn_notify_cbck,
+				cbck_arg) ;
 
 		if (NOTIFY_FAILED(status))
 			SET_FAILURE_REASON(status) ;
 
 	}
 
-	TRC_1LEAVE("Notify_registerEvent", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_register_event", status) ;
 	return status ;
 }
-EXPORT_SYMBOL(Notify_registerEvent);
+EXPORT_SYMBOL(notify_register_event);
 
 /**============================================================================
-*@func   Notify_unregisterEvent
+*@func   notify_unregister_event
 *
 *@desc   This function un-registers the callback for the specific event with
 *the Notify module.
@@ -470,68 +443,67 @@ EXPORT_SYMBOL(Notify_registerEvent);
 *============================================================================
 */
 
-signed long int
-Notify_unregisterEvent(IN     void  *handle,
-		IN     unsigned long int  procId,
-		IN     unsigned long int        eventNo,
-		IN     FnNotifyCbck  fnNotifyCbck,
-		IN OPT void *cbckArg)
+signed long int notify_unregister_event(IN     void  *handle,
+		IN     unsigned long int  proc_id,
+		IN     unsigned long int        event_no,
+		IN     fn_notify_cbck  fn_notify_cbck,
+		IN OPT void *cbck_arg)
 {
 	signed long int       status = NOTIFY_SOK ;
 
-	struct Notify_DriverHandle *drvHandle =
-			(struct Notify_DriverHandle *) handle;
+	struct notify_driver_handle *drv_handle =
+			(struct notify_driver_handle *) handle;
 
-	TRC_5ENTER("Notify_unregisterEvent",
+	gt_5trace(notify_debugmask, GT_ENTER, "notify_unregister_event",
 			handle,
-			procId,
-			eventNo,
-			fnNotifyCbck,
-			cbckArg) ;
+			proc_id,
+			event_no,
+			fn_notify_cbck,
+			cbck_arg) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(drvHandle      != NULL) ;
+	BUG_ON(notify_is_init != TRUE) ;
+	BUG_ON(drv_handle == NULL) ;
 
-	DBC_require((drvHandle != NULL)
-			&& (drvHandle->isInit == TRUE)) ;
+	BUG_ON((drv_handle == NULL)
+			|| (drv_handle->isInit == true)) ;
 
-	DBC_require(fnNotifyCbck != NULL) ;
+	BUG_ON(fn_notify_cbck == NULL) ;
 
-	DBC_require(_Notify_isSupportedProc
-				(drvHandle, procId) == TRUE) ;
+	BUG_ON(_notify_is_support_proc
+				(drv_handle, proc_id) != true) ;
 
-	DBC_require((drvHandle != NULL)
-		&& ((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo[procId].maxEvents));
+	BUG_ON((drv_handle == NULL)
+		|| ((event_no & NOTIFY_EVENT_MASK)
+		>= drv_handle->attrs.proc_info[proc_id].max_events));
 
-	if (Notify_isInit == FALSE) {
+	if (notify_is_init == FALSE) {
 		status = NOTIFY_EINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (fnNotifyCbck == NULL) {
+	} else if (fn_notify_cbck == NULL) {
 		status = NOTIFY_EPOINTER ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle == NULL) {
+	} else if (drv_handle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle->isInit == FALSE) {
+	} else if (drv_handle->isInit == FALSE) {
 		status = NOTIFY_EDRIVERINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (_Notify_isSupportedProc(drvHandle, procId) == FALSE) {
+	} else if (_notify_is_support_proc(drv_handle, proc_id) == FALSE) {
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if ((eventNo & NOTIFY_EVENT_MASK)
-			>= drvHandle->attrs.procInfo[procId].maxEvents) {
+	} else if ((event_no & NOTIFY_EVENT_MASK)
+			>= drv_handle->attrs.proc_info[proc_id].max_events) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo[procId].reservedEvents)
-		&& (((eventNo & NOTIFY_SYSTEM_KEY_MASK)
+	} else if (((event_no & NOTIFY_EVENT_MASK)
+		< drv_handle->attrs.proc_info[proc_id].reserved_events)
+		&& (((event_no & NOTIFY_SYSTEM_KEY_MASK)
 			>> sizeof(unsigned short int))
 				!= NOTIFY_SYSTEM_KEY)) {
 		status = NOTIFY_ERESERVEDEVENT ;
@@ -539,23 +511,24 @@ Notify_unregisterEvent(IN     void  *handle,
 
 	} else {
 		status =
-		drvHandle->fnTable->notifyUnregisterEvent(drvHandle,
-				procId,
-				(eventNo & NOTIFY_EVENT_MASK),
-				fnNotifyCbck,
-				cbckArg) ;
+		drv_handle->fn_table->notify_unregister_event(drv_handle,
+				proc_id,
+				(event_no & NOTIFY_EVENT_MASK),
+				fn_notify_cbck,
+				cbck_arg) ;
 		if (NOTIFY_FAILED(status))
 			SET_FAILURE_REASON(status) ;
 
 	}
 
-	TRC_1LEAVE("Notify_unregisterEvent", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS,
+		"notify_unregister_event", status) ;
 	return status ;
 }
-EXPORT_SYMBOL(Notify_unregisterEvent);
+EXPORT_SYMBOL(notify_unregister_event);
 
 /**============================================================================
-*@func   Notify_sendEvent
+*@func   notify_sendevent
 *
 *@desc   This function sends a notification to the specified event.
 *
@@ -563,66 +536,65 @@ EXPORT_SYMBOL(Notify_unregisterEvent);
 *============================================================================
 */
 
-signed long int
-Notify_sendEvent(IN void  *handle,
-		IN unsigned long int  procId,
-		IN unsigned long int        eventNo,
+signed long int notify_sendevent(IN void  *handle,
+		IN unsigned long int  proc_id,
+		IN unsigned long int        event_no,
 		IN unsigned long int        payload,
-		IN short int          waitClear)
+		IN short int          wait_clear)
 {
 
 	signed long int       status = NOTIFY_SOK ;
 
-	struct Notify_DriverHandle *drvHandle =
-			(struct Notify_DriverHandle *) handle ;
+	struct notify_driver_handle *drv_handle =
+			(struct notify_driver_handle *) handle ;
 
-	TRC_5ENTER("Notify_sendEvent",
+	gt_5trace(notify_debugmask, GT_ENTER, "notify_sendevent",
 			handle,
-			procId,
-			eventNo,
+			proc_id,
+			event_no,
 			payload,
-			waitClear) ;
+			wait_clear) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
+	BUG_ON(notify_is_init != TRUE) ;
 
-	DBC_require(drvHandle      != NULL) ;
+	BUG_ON(drv_handle == NULL) ;
 
-	DBC_require((drvHandle != NULL)
-			&& (drvHandle->isInit == TRUE)) ;
+	BUG_ON((drv_handle == NULL)
+			|| (drv_handle->isInit != TRUE)) ;
 
-	DBC_require(_Notify_isSupportedProc
-				(drvHandle, procId) == TRUE) ;
+	BUG_ON(_notify_is_support_proc
+				(drv_handle, proc_id) != TRUE) ;
 
-	DBC_require((drvHandle != NULL)
-	&& ((eventNo & NOTIFY_EVENT_MASK)
-	< drvHandle->attrs.procInfo[procId].maxEvents)) ;
+	BUG_ON((drv_handle == NULL)
+	&& ((event_no & NOTIFY_EVENT_MASK)
+	< drv_handle->attrs.proc_info[proc_id].max_events)) ;
 
-	if (Notify_isInit == FALSE) {
+	if (notify_is_init == FALSE) {
 		status = NOTIFY_EINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle == NULL) {
+	} else if (drv_handle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle->isInit == FALSE) {
+	} else if (drv_handle->isInit == FALSE) {
 		status = NOTIFY_EDRIVERINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (_Notify_isSupportedProc
-			(drvHandle, procId) == FALSE) {
+	} else if (_notify_is_support_proc
+			(drv_handle, proc_id) == FALSE) {
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if ((eventNo & NOTIFY_EVENT_MASK)
-		>= drvHandle->attrs.procInfo[procId].maxEvents) {
+	} else if ((event_no & NOTIFY_EVENT_MASK)
+		>= drv_handle->attrs.proc_info[proc_id].max_events) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 	}
 
-	/*else if (((eventNo & NOTIFY_EVENT_MASK)
-	  <  drvHandle->attrs.procInfo[procId].reservedEvents)
-	  && (((eventNo & NOTIFY_SYSTEM_KEY_MASK)
+	/*else if (((event_no & NOTIFY_EVENT_MASK)
+	  <  drv_handle->attrs.proc_info[proc_id].reserved_events)
+	  && (((event_no & NOTIFY_SYSTEM_KEY_MASK)
 		>> sizeof(unsigned short int))
 	  != NOTIFY_SYSTEM_KEY)) {
 	  status = NOTIFY_ERESERVEDEVENT ;
@@ -632,25 +604,25 @@ Notify_sendEvent(IN void  *handle,
 	else {
 
 
-		status = drvHandle->fnTable->notifySendEvent
-				(drvHandle,
-				procId,
-				(eventNo & NOTIFY_EVENT_MASK),
+		status = drv_handle->fn_table->notify_sendevent
+				(drv_handle,
+				proc_id,
+				(event_no & NOTIFY_EVENT_MASK),
 				payload,
-				waitClear) ;
+				wait_clear) ;
 
 		if (NOTIFY_FAILED(status))
 			SET_FAILURE_REASON(status) ;
 
 	}
 
-	TRC_1LEAVE("Notify_sendEvent", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_sendevent", status) ;
 
 	return status ;
 }
-EXPORT_SYMBOL(Notify_sendEvent);
+EXPORT_SYMBOL(notify_sendevent);
 /**======================================================
-*@func   Notify_disable
+*@func   notify_disable
 *
 *@desc   This function disables all events. This is equivalent to global
 *interrupt disable, however restricted within interrupts handled by
@@ -658,44 +630,43 @@ EXPORT_SYMBOL(Notify_sendEvent);
 *disabled with this API. It is not possible to disable a specific
 *callback.
 *
-*@modif  Notify_StateObj.disableFlags
+*@modif  notify_state_obj.disable_flags
 *========================================================
 */
 
-void *
-Notify_disable(void)
+void *notify_disable(void)
 {
-	struct Notify_DriverHandle *drvHandle ;
+	struct notify_driver_handle *drv_handle ;
 	unsigned short int              i ;
-	TRC_0ENTER("Notify_disable") ;
-	DBC_require(Notify_isInit == TRUE) ;
+	gt_0trace(notify_debugmask, GT_ENTER, "notify_disable") ;
+	BUG_ON(notify_is_init != true) ;
 
-	if (Notify_isInit == TRUE) {
-		for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-			drvHandle = &(Notify_StateObj.drivers[i]) ;
+	if (notify_is_init == TRUE) {
+		for (i = 0 ; i < notify_state_obj.maxDrivers ; i++) {
+			drv_handle = &(notify_state_obj.drivers[i]) ;
 		/*TBD: Current implementation only supports single non-nested
 		 *disable/restore pair. To support nested calls, will need to
-		 *have a first-in-last-out queue of disableFlags.
+		 *have a first-in-last-out queue of disable_flags.
 		 */
 
-			Notify_StateObj.disableFlags[i] =
-				drvHandle->fnTable->notifyDisable(drvHandle) ;
+			notify_state_obj.disable_flags[i] =
+			drv_handle->fn_table->notify_disable(drv_handle);
 		}
 	}
 
-	TRC_1PRINT(TRC_LEVEL1, "    flags[%d]",
-				&(Notify_StateObj.disableFlags)) ;
-	TRC_0LEAVE("Notify_disable") ;
+	gt_1trace(notify_debugmask, GT_1CLASS, "    flags[%d]",
+				&(notify_state_obj.disable_flags)) ;
+	gt_0trace(notify_debugmask, GT_5CLASS, "notify_disable") ;
 
-	return (void *) &(Notify_StateObj.disableFlags) ;
+	return (void *) &(notify_state_obj.disable_flags) ;
 }
-EXPORT_SYMBOL(Notify_disable);
+EXPORT_SYMBOL(notify_disable);
 
 /**=========================================================
-*@func   Notify_restore
+*@func   notify_restore
 *
 *@desc   This function restores the Notify module to the state before the
-*last Notify_disable() was called. This is equivalent to global
+*last notify_disable() was called. This is equivalent to global
 *interrupt restore, however restricted within interrupts handled by
 *the Notify module. All callbacks registered for all events as
 *specified in the flags are enabled with this API. It is not possible
@@ -705,57 +676,56 @@ EXPORT_SYMBOL(Notify_disable);
 *===========================================================
 */
 
-signed long int
-Notify_restore(IN void *flags)
+signed long int notify_restore(IN void *flags)
 {
-	signed long int       tmpStatus = NOTIFY_SOK ;
+	signed long int       tmp_status = NOTIFY_SOK ;
 	signed long int       status = NOTIFY_SOK ;
-	struct Notify_DriverHandle *drvHandle ;
-	void **driverFlags ;
+	struct notify_driver_handle *drv_handle ;
+	void **driver_flags ;
 	unsigned short int              i ;
 
 
 
-	TRC_1ENTER("Notify_restore", flags) ;
+	gt_1trace(notify_debugmask, GT_ENTER, "notify_restore", flags) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(flags          != NULL) ;
+	BUG_ON(notify_is_init != TRUE) ;
+	BUG_ON(flags == NULL) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
+	BUG_ON(notify_is_init != TRUE) ;
 
-	if (Notify_isInit == FALSE) {
+	if (notify_is_init == FALSE) {
 		status = NOTIFY_EINIT ;
 		SET_FAILURE_REASON(status) ;
 	} else if (flags == NULL) {
 		status = NOTIFY_EINVALIDARG ;
 		SET_FAILURE_REASON(status) ;
 	} else {
-		driverFlags = (void **) flags ;
+		driver_flags = (void **) flags ;
 
-		for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-			drvHandle = &(Notify_StateObj.drivers[i]) ;
+		for (i = 0 ; i < notify_state_obj.maxDrivers ; i++) {
+			drv_handle = &(notify_state_obj.drivers[i]) ;
 		/*TBD: Current implementation only supports single non-nested
 		 *disable/restore pair. To support nested calls, will need to
-		 *have a first-in-last-out queue of disableFlags.
+		 *have a first-in-last-out queue of disable_flags.
 		 */
-			tmpStatus = drvHandle->fnTable->notifyRestore
-					(drvHandle,
-					driverFlags[i]) ;
+			tmp_status = drv_handle->fn_table->notify_restore
+					(drv_handle,
+					driver_flags[i]) ;
 	/*Save the failure status even if any of the driver calls fail */
 			if (NOTIFY_SUCCEEDED(status)
-						&& NOTIFY_FAILED(tmpStatus)) {
-				status = tmpStatus ;
+						&& NOTIFY_FAILED(tmp_status)) {
+				status = tmp_status ;
 				SET_FAILURE_REASON(status) ;
 			}
 		}
 	}
 
-	TRC_1LEAVE("Notify_restore", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_restore", status) ;
 	return status ;
 }
-EXPORT_SYMBOL(Notify_restore);
+EXPORT_SYMBOL(notify_restore);
 /**============================================================================
-*@func   Notify_disableEvent
+*@func   notify_disable_event
 *
 *@desc   This function disables a specific event. All callbacks registered
 *for the specific event are disabled with this API. It is not
@@ -765,76 +735,76 @@ EXPORT_SYMBOL(Notify_restore);
 *============================================================================
 */
 
-signed long int
-Notify_disableEvent(IN void  *handle,
-		IN unsigned long int  procId,
-		IN unsigned long int        eventNo)
+signed long int notify_disable_event(IN void  *handle,
+		IN unsigned long int  proc_id,
+		IN unsigned long int        event_no)
 {
 	signed long int       status = NOTIFY_SOK ;
-	struct Notify_DriverHandle *drvHandle =
-			(struct Notify_DriverHandle *) handle ;
+	struct notify_driver_handle *drv_handle =
+			(struct notify_driver_handle *) handle ;
 
-	TRC_3ENTER("Notify_disableEvent", handle, procId, eventNo) ;
+	gt_3trace(notify_debugmask, GT_ENTER,
+		"notify_disable_event", handle, proc_id, event_no) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(drvHandle      != NULL) ;
-	DBC_require((drvHandle != NULL)
-				&& (drvHandle->isInit == TRUE)) ;
+	BUG_ON(notify_is_init != TRUE) ;
+	BUG_ON(drv_handle == NULL) ;
+	BUG_ON((drv_handle == NULL)
+				&& (drv_handle->isInit == true)) ;
 
-	DBC_require(_Notify_isSupportedProc
-			(drvHandle, procId) == TRUE) ;
+	BUG_ON(_notify_is_support_proc
+			(drv_handle, proc_id) != true) ;
 
-	DBC_require((drvHandle != NULL)
-		&& ((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo[procId].maxEvents)) ;
+	BUG_ON((drv_handle == NULL)
+		|| ((event_no & NOTIFY_EVENT_MASK)
+		>= drv_handle->attrs.proc_info[proc_id].max_events)) ;
 
-	if (Notify_isInit == FALSE) {
+	if (notify_is_init == FALSE) {
 		status = NOTIFY_EINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle == NULL) {
+	} else if (drv_handle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle->isInit == FALSE) {
+	} else if (drv_handle->isInit == FALSE) {
 		status = NOTIFY_EDRIVERINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (_Notify_isSupportedProc
-			(drvHandle, procId) == FALSE) {
+	} else if (_notify_is_support_proc
+			(drv_handle, proc_id) == FALSE) {
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if ((eventNo & NOTIFY_EVENT_MASK)
-		>= drvHandle->attrs.procInfo[procId].maxEvents) {
+	} else if ((event_no & NOTIFY_EVENT_MASK)
+		>= drv_handle->attrs.proc_info[proc_id].max_events) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (((eventNo & NOTIFY_EVENT_MASK)
-			<  drvHandle->attrs.procInfo[procId].reservedEvents)
-			&& (((eventNo & NOTIFY_SYSTEM_KEY_MASK) >>
+	} else if (((event_no & NOTIFY_EVENT_MASK)
+			<  drv_handle->attrs.proc_info[proc_id].reserved_events)
+			&& (((event_no & NOTIFY_SYSTEM_KEY_MASK) >>
 			sizeof(unsigned short int))
 				!= NOTIFY_SYSTEM_KEY)) {
 		status = NOTIFY_ERESERVEDEVENT ;
 		SET_FAILURE_REASON(status) ;
 
 	} else {
-		status = drvHandle->fnTable->notifyDisableEvent
-				(drvHandle,
-				procId,
-				(eventNo & NOTIFY_EVENT_MASK)) ;
+		status = drv_handle->fn_table->notify_disable_event
+				(drv_handle,
+				proc_id,
+				(event_no & NOTIFY_EVENT_MASK)) ;
 
 		if (NOTIFY_FAILED(status))
 			SET_FAILURE_REASON(status) ;
 
 	}
 
-	TRC_1LEAVE("Notify_disableEvent", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_disable_event", status) ;
 	return status ;
 }
-EXPORT_SYMBOL(Notify_disableEvent);
+EXPORT_SYMBOL(notify_disable_event);
 /**============================================================================
-*@func   Notify_enableEvent
+*@func   notify_enable_event
 *
 *@desc   This function enables a specific event. All callbacks registered for
 *this specific event are enabled with this API. It is not possible to
@@ -844,79 +814,79 @@ EXPORT_SYMBOL(Notify_disableEvent);
 *============================================================================
 */
 
-signed long int
-Notify_enableEvent(IN void  *handle,
-		IN unsigned long int  procId,
-		IN unsigned long int        eventNo)
+signed long int notify_enable_event(IN void  *handle,
+		IN unsigned long int  proc_id,
+		IN unsigned long int        event_no)
 {
 	signed long int       status = NOTIFY_SOK ;
 
-	struct Notify_DriverHandle *drvHandle =
-			(struct Notify_DriverHandle *) handle ;
+	struct notify_driver_handle *drv_handle =
+			(struct notify_driver_handle *) handle ;
 
-	TRC_3ENTER("Notify_enableEvent", handle, procId, eventNo) ;
+	gt_3trace(notify_debugmask, GT_ENTER,
+		"notify_enable_event", handle, proc_id, event_no) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(drvHandle      != NULL) ;
+	BUG_ON(notify_is_init != true) ;
+	BUG_ON(drv_handle == NULL) ;
 
-	DBC_require((drvHandle != NULL)
-			&& (drvHandle->isInit == TRUE)) ;
+	BUG_ON((drv_handle == NULL)
+			|| (drv_handle->isInit != true)) ;
 
-	DBC_require(_Notify_isSupportedProc
-			(drvHandle, procId) == TRUE) ;
+	BUG_ON(_notify_is_support_proc
+			(drv_handle, proc_id) != true) ;
 
-	DBC_require((drvHandle != NULL)
-		&& ((eventNo & NOTIFY_EVENT_MASK)
-		< drvHandle->attrs.procInfo[procId].maxEvents));
+	BUG_ON((drv_handle == NULL)
+		|| ((event_no & NOTIFY_EVENT_MASK)
+		>= drv_handle->attrs.proc_info[proc_id].max_events));
 
-	if (Notify_isInit == FALSE) {
+	if (notify_is_init == FALSE) {
 		status = NOTIFY_EINIT ;
 		SET_FAILURE_REASON(status) ;
-	} else if (drvHandle == NULL) {
+	} else if (drv_handle == NULL) {
 		status = NOTIFY_EHANDLE ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (drvHandle->isInit == FALSE) {
+	} else if (drv_handle->isInit == FALSE) {
 		status = NOTIFY_EDRIVERINIT ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if (_Notify_isSupportedProc
-				(drvHandle, procId) == FALSE) {
+	} else if (_notify_is_support_proc
+				(drv_handle, proc_id) == FALSE) {
 		status = NOTIFY_ENOTSUPPORTED ;
 		SET_FAILURE_REASON(status) ;
 
-	} else if ((eventNo & NOTIFY_EVENT_MASK)
-		>= drvHandle->attrs.procInfo[procId].maxEvents) {
+	} else if ((event_no & NOTIFY_EVENT_MASK)
+		>= drv_handle->attrs.proc_info[proc_id].max_events) {
 		status = NOTIFY_EINVALIDEVENT ;
 		SET_FAILURE_REASON(status) ;
 	}
 	/*
-	   else if (((eventNo & NOTIFY_EVENT_MASK)
-	   <  drvHandle->attrs.procInfo[procId].reservedEvents)
-	   && (((eventNo & NOTIFY_SYSTEM_KEY_MASK)
+	   else if (((event_no & NOTIFY_EVENT_MASK)
+	   <  drv_handle->attrs.proc_info[proc_id].reserved_events)
+	   && (((event_no & NOTIFY_SYSTEM_KEY_MASK)
 		>> sizeof(unsigned short int))
 	   != NOTIFY_SYSTEM_KEY)) {
 	   status = NOTIFY_ERESERVEDEVENT ;
 	   SET_FAILURE_REASON(status) ;
 	   }*/
 	else {
-		status = drvHandle->fnTable->notifyEnableEvent
-				(drvHandle,
-				procId,
-				(eventNo & NOTIFY_EVENT_MASK)) ;
+		status = drv_handle->fn_table->notify_enable_event
+				(drv_handle,
+				proc_id,
+				(event_no & NOTIFY_EVENT_MASK)) ;
 		if (NOTIFY_FAILED(status))
 			SET_FAILURE_REASON(status) ;
 
 	}
 
-	TRC_1LEAVE("Notify_enableEvent", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_enable_event", status) ;
 
 	return status ;
 }
-EXPORT_SYMBOL(Notify_enableEvent);
+EXPORT_SYMBOL(notify_enable_event);
 #if defined(NOTIFY_DEBUG)
 /**========================================================
-*@func   Notify_debug
+*@func   notify_debug
 *
 *@desc   This function prints out debug information about
 the Notify module.
@@ -925,25 +895,24 @@ the Notify module.
 *==========================================================
 */
 
-signed long int
-Notify_debug(IN void  *handle)
+signed long int notify_debug(IN void  *handle)
 {
 	signed long int status = NOTIFY_SOK ;
-	TRC_1ENTER("Notify_debug", handle) ;
+	gt_1trace(notify_debugmask, GT_ENTER, "notify_debug", handle) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(handle         != NULL) ;
+	BUG_ON(notify_is_init != true) ;
+	BUG_ON(handle == NULL) ;
 
-	TRC_1LEAVE("Notify_debug", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_debug", status) ;
 
 	return status ;
 }
-EXPORT_SYMBOL(Notify_debug);
+EXPORT_SYMBOL(notify_debug);
 #endif /*defined(NOTIFY_DEBUG) */
 
 
 /**--------------------------------------------------------
-*@func   _Notify_findDriver
+*@func   _notify_find_driver
 *
 *@desc   Find a driver by name in the drivers array and
 return handle to the
@@ -953,34 +922,34 @@ return handle to the
 *-----------------------------------------------------------
 */
 
-signed long int
-_Notify_findDriver(IN  char *driverName,
+signed long int _notify_find_driver(IN  char *driver_name,
 		OUT void  **handle)
 {
 	signed long int       status = NOTIFY_ENOTFOUND ;
-	struct Notify_DriverHandle *drvHandle ;
+	struct notify_driver_handle *drv_handle ;
 	unsigned short int              i ;
-	TRC_2ENTER("_Notify_findDriver", driverName, handle) ;
+	gt_2trace(notify_debugmask, GT_ENTER,
+		"_notify_find_driver", driver_name, handle) ;
 
-	DBC_require(driverName    != NULL) ;
-	DBC_require(handle        != NULL) ;
+	BUG_ON(driver_name == NULL) ;
+	BUG_ON(handle == NULL) ;
 
 	*handle = NULL ;
-	for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
-		drvHandle = &(Notify_StateObj.drivers[i]) ;
+	for (i = 0 ; i < notify_state_obj.maxDrivers ; i++) {
+		drv_handle = &(notify_state_obj.drivers[i]) ;
 	/*The function table pointer is used to define whether any driver
 	 *is registered in this slot. It is set to TRUE when slot is reserved,
 	 *but not yet filled.
 	 */
-		if ((drvHandle->fnTable != NULL)
-				&& (drvHandle->fnTable !=
-				(struct Notify_Interface *) TRUE)) {
+		if ((drv_handle->fn_table != NULL)
+				&& (drv_handle->fn_table !=
+				(struct notify_interface *) TRUE)) {
 
-			if (GEN_strncmp(driverName,
-					drvHandle->name, NOTIFY_MAX_NAMELEN)
+			if (strncmp(driver_name,
+					drv_handle->name, NOTIFY_MAX_NAMELEN)
 					== 0) {
 				/*Found the driver. */
-				*handle = (void *) drvHandle;
+				*handle = (void *) drv_handle;
 				status = NOTIFY_SOK ;
 				break ;
 			}
@@ -990,14 +959,14 @@ _Notify_findDriver(IN  char *driverName,
 	DBC_ensure((NOTIFY_SUCCEEDED(status) && (*handle != NULL))
 			|| (NOTIFY_FAILED(status)    && (*handle == NULL))) ;
 
-	TRC_1LEAVE("_Notify_findDriver", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "_notify_find_driver", status) ;
 
 	return status ;
 }
-EXPORT_SYMBOL(_Notify_findDriver);
+EXPORT_SYMBOL(_notify_find_driver);
 
 /**----------------------------------------------------------------------------
-*@func   _Notify_isSupportedProc
+*@func   _notify_is_support_proc
 *
 *@desc   Check if specified processor ID is supported by the Notify driver.
 *
@@ -1005,32 +974,34 @@ EXPORT_SYMBOL(_Notify_findDriver);
 *----------------------------------------------------------------------------
 */
 
-short int
-_Notify_isSupportedProc(IN  struct Notify_DriverHandle *drvHandle,
-		IN  unsigned long int         procId)
+short int _notify_is_support_proc(IN  struct notify_driver_handle *drv_handle,
+				IN  unsigned long int  proc_id)
 {
 	short int                 found = FALSE ;
-	struct Notify_DriverAttrs *attrs ;
+	struct notify_driver_attrs *attrs ;
 	unsigned short int        i ;
-	TRC_2ENTER("_Notify_isSupportedProc", drvHandle, procId) ;
+	gt_2trace(notify_debugmask, GT_ENTER,
+		"_notify_is_support_proc", drv_handle, proc_id) ;
 
-	DBC_require(drvHandle != NULL) ;
+	BUG_ON(drv_handle == NULL) ;
 
-	attrs = &(drvHandle->attrs) ;
+	attrs = &(drv_handle->attrs) ;
 	for (i = 0 ; i < attrs->numProc ; i++) {
-		if (attrs->procInfo[i].procId == procId) {
+		if (attrs->proc_info[i].proc_id == proc_id) {
 			found = TRUE ;
 			break ;
 		}
 	}
 
-	TRC_1PRINT(TRC_LEVEL1,
+	gt_1trace(notify_debugmask, GT_1CLASS,
 			"isSupportedProc[%d]", found) ;
 
-	TRC_0LEAVE("_Notify_isSupportedProc") ;
+	gt_0trace(notify_debugmask, GT_5CLASS, "_notify_is_support_proc") ;
 
 	return found ;
 }
-EXPORT_SYMBOL(_Notify_isSupportedProc);
+EXPORT_SYMBOL(_notify_is_support_proc);
+
+
 
 

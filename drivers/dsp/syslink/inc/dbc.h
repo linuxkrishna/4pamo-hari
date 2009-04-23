@@ -21,15 +21,6 @@
 
 
 /*  ----------------------------------- IPC headers */
-#include <ipc.h>
-
-/*  ----------------------------------- OSAL headers */
-#include <print.h>
-
-
-#if defined  __cplusplus
-extern "C" {
-#endif /* defined (__cplusplus) */
 
 
 /*  ========================================================+=
@@ -39,66 +30,60 @@ extern "C" {
 *         macros portable across OSes.
 *  ==========================================================
 */
-#define  DBC_PRINTF     PRINT_Printf
+#define  DBC_PRINTF     print_printf
 
 
 #if defined DDSP_DEBUG
 
 /** =======================================================
-*  @macro  DBC_Assert
+*  @macro  dbc_assert
 *
 *  @desc   Assert on expression.
 *  ========================================================
 */
-#define DBC_assert(exp)                          \
+#define dbc_assert(exp)                          \
 		if (!(exp)) {                             \
 				DBC_PRINTF("Assertion failed ("#exp").\
 				File : "__FILE__ \
-				" Line : %d\n", __LINE__) ; \
+				" line : %d\n", __LINE__) ; \
 		}
-#define DBC_Assert DBC_assert
+#define dbc_assert dbc_assert
 
 /** =======================================================
-*  @macro  DBC_Require
+*  @macro  dbc_require
 *
 *  @desc   Function Precondition.
 *  =====================================================+=
 */
-#define DBC_require DBC_Assert
-#define DBC_Require DBC_require
+#define dbc_require dbc_assert
+#define dbc_require dbc_require
 
 /** =======================================================
-*  @macro  DBC_Ensure
+*  @macro  dbc_ensure
 *
 *  @desc   Function Postcondition.
 *  =======================================================
 */
-#define DBC_ensure DBC_Assert
-#define DBC_Ensure DBC_ensure
+#define DBC_ensure dbc_assert
+#define dbc_ensure DBC_ensure
 
 #else /* defined (DDSP_DEBUG) */
 
 /*  =======================================================
-*  @macro  DBC_Assert/DBC_Require/DBC_Ensure
+*  @macro  dbc_assert/dbc_require/dbc_ensure
 *
 *  @desc   Asserts defined out.
 *  ======================================================+
 */
-#define DBC_assert(exp)
-#define DBC_Assert(exp)
+#define dbc_assert(exp)
+#define dbc_assert(exp)
 
-#define DBC_require(exp)
-#define DBC_Require(exp)
+#define dbc_require(exp)
+#define dbc_require(exp)
 
 #define DBC_ensure(exp)
-#define DBC_Ensure(exp)
+#define dbc_ensure(exp)
 
 #endif /* defined (DDSP_DEBUG) */
-
-
-#if defined __cplusplus
-}
-#endif /* defined (__cplusplus) */
-
 
 #endif  /* !defined (DBC_H) */

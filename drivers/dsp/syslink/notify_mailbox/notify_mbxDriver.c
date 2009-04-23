@@ -1,30 +1,20 @@
-/*===========================================================================
-File    notify_mbxDriver.cpp
+/*
+ * notify_mbxDriver.c
+ *
+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
+ *
+ * Copyright (C) 2008-2009 Texas Instruments, Inc.
+ *
+ * This package is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-Path $ (PROJROOT)\driver\NotifyDrivers
 
-Desc Implements the Notify Mailboxes Driver for both
-Tesla and Ducati remote processors
-
-Rev     0.1.0
-
-This computer program is copyright to Texas Instruments Incorporated.
-The program may not be used without the written permission of
-Texas Instruments Incorporated or against the terms and conditions
-stipulated in the agreement under which this program has been supplied.
-
-(c) Texas Instruments Incorporated 2008
-
-===========================================================================
-*/
-
-/*----------------------------------- OS Specific Headers         */
-/*#include  < e32def.h>
-#include  < e32err.h>
-#include  < kernel.h>
-#include  < platform.h>*/
-
-/*Kernel Hdeaders*/
 #include <linux/spinlock.h>
 #include <linux/semaphore.h>
 #include <linux/timer.h>
@@ -33,127 +23,41 @@ stipulated in the agreement under which this program has been supplied.
 #include <linux/list.h>
 #include <linux/io.h>
 
+#include <gpptypes.h>
+#include <notifyerr.h>
+#include <linux/module.h>
 
-
-/*----------------------------------- IPC Headers                 */
-#include  <gpptypes.h>
-#include  <ipctypes.h>
-#include  <notifyerr.h>
-#include  <linux/module.h>
-
-/*----------------------------------- OSAL Headers                */
-
-
-
-
-/*----------------------------------- Generic Headers             */
 #include  <_bitops.h>
 #include  <dbc.h>
-#include  <list.h>
-
-/*----------------------------------- Notify Headers              */
+#include <notify_driver.h>
 #include <notifydefs.h>
 #include <notify_driverdefs.h>
-
 #include <notifydrv_install.h>
 #include <notify_mbxDriver.h>
-#include <_notify_mbxDriver.h>
-
-#include <shmdefs.h>
-#include <notify_driver.h>
-
 
 
 #include  <mem.h>
-#include <trc.h>
 #include <global_var.h>
+#include <gt.h>
 
-/*-------------------------------- Mailmox Manager Headers                 */
 #include  <notify_dispatcher.h>
+
 MODULE_LICENSE("GPL");
 
-/**============================================================================
-*@macro  COMPONENT_ID
-*
-*@desc   Component and Subcomponent Identifier.
-*============================================================================
-*/
-#define  COMPONENT_ID       ID_KNL_NOTIFY_MBXDRIVER
 
-
-/**============================================================================
-*@macro  SET_FAILURE_REASON
-*
-*@desc   Sets failure reason.
-*============================================================================
-*/
-#if defined NOTIFY_DEBUG
-#define SET_FAILURE_REASON(status)  (TRC_SetReason \
-(status, FID_C_KNL_NOTIFY_SHMDRIVER, __LINE__))
-#else
-#define SET_FAILURE_REASON(status)
-#endif /*if defined (NOTIFY_DEBUG) */
-
-
-/**============================================================================
-*@const  NOTIFYSHMDRV_MEM_ALIGN
-*
-*@desc   Default alignment to be used for local memory allocations.
-*============================================================================
-*/
 #define NOTIFYSHMDRV_MEM_ALIGN       0
 
-/**============================================================================
-*@const  NOTIFYSHMDRV_MAX_EVENTS
-*
-*@desc   Maximum number of events supported by the NotiyShmDrv driver.
-*============================================================================
-*/
 #define NOTIFYSHMDRV_MAX_EVENTS      32
 
-/**============================================================================
-*@const  NOTIFYSHMDRV_RECV_INT_ID
-*
-*@desc   Interrupt ID of physical interrupt handled by the Notify driver to
-*receive events.
-*============================================================================
-*/
 #define NOTIFYSHMDRV_RECV_INT_ID     55
 
-/**============================================================================
-*@const  NOTIFYSHMDRV_SEND_INT_ID
-*
-*@desc   Interrupt ID of physical interrupt handled by the Notify driver to
-*send events.
-*============================================================================
-*/
 #define NOTIFYSHMDRV_SEND_INT_ID     26
 
-/**============================================================================
-*@const  NOTIFYSHMDRV_INIT_STAMP
-*
-*@desc   Stamp indicating that the Notify Shared Memory driver on the
-*processor has been initialized.
-*============================================================================
-*/
 #define NOTIFYSHMDRV_INIT_STAMP      0xA9C8B7D6
 
-/**============================================================================
-*@const  NOTIFYSHMDRV_MAX_EVENTS
-*
-*@desc   Maximum number of events supported by the NotiyShmDrv driver.
-*============================================================================
-*/
 #define NOTIFYNONSHMDRV_MAX_EVENTS      1
 
-/**============================================================================
-*@const  NOTIFYSHMDRV_MAX_EVENTS
-*
-*@desc   Maximum number of events supported by the NotiyShmDrv driver.
-*============================================================================
-*/
 #define NOTIFYNONSHMDRV_RESERVED_EVENTS      1
-
 
 #define NOTIFYDRV_TESLA_RECV_MBX     1
 
@@ -163,1632 +67,1023 @@ MODULE_LICENSE("GPL");
 
 #define NOTIFYDRV_DUCATI_SEND_MBX     3
 
-
-
-/**============================================================================
-*@const  SELF_ID
-*
-*@desc   Identifier for this processor communicating with the other
-*processor
-*============================================================================
-*/
 #define SELF_ID    0
 
-/**============================================================================
-*@const  OTHER_ID
-*
-*@desc   Identifier for the other processor communicating with this
-*processor
-*============================================================================
-*/
 #define OTHER_ID   1
 
-/**============================================================================
-*@const  UP
-*
-*@desc   Flag indicating event is set.
-*============================================================================
-*/
 #define UP    1
 
-/**============================================================================
-*@const  DOWN
-*
-*@desc   Flag indicating event is not set.
-*============================================================================
-*/
 #define DOWN  0
-
 
 #define PROC_TESLA  0
 #define PROC_DUCATI 1
 #define PROC_GPP    2
-
-#define PAGE_ALIGN_BITS  12
-
-#if defined(DEBUGLDD)
-#define ON_DEBUGLDD(x) x
-#else
-#define ON_DEBUGLDD(x)
-#endif
 
 irqreturn_t(*irq_handler)(int, void *, struct pt_regs *);
 EXPORT_SYMBOL(irq_handler);
 
 
 
-/**============================================================================
-*@const  SPINLOCK_START
-*
-*@desc   Start spinlock protection
-*============================================================================
+/*
+* Defines the Event Listener object, which contains
+* information for *each registered listener for an event.
 */
-/*#define SPINLOCK_START()           SYNC_SpinLockStart ()*/
-
-/**============================================================================
-*@const  SPINLOCK_END
-*
-*@desc   End spinlock protection
-*============================================================================
-*/
-/*#define SPINLOCK_END(irqFlags)     SYNC_SpinLockEnd(irqFlags)*/
-
-
-/**============================================================================
-*@name   struct NotifyDrv_EventListener
-*
-*@desc   Defines the Event Listener object, which contains information for
-*each registered listener for an event.
-*
-*@field  element
-*Structure that allows it to be used by LIST.
-*@field  fnNotifyCbck
-*Callback function for the event.
-*@field  cbckArg
-*Parameters passed to the callback.
-*============================================================================
-*/
-struct NotifyDrv_EventListener{
-struct list_head    element;
-FnNotifyCbck   fnNotifyCbck;
-void *cbckArg;
+struct notify_drv_eventlistner{
+	struct list_head    element;
+	fn_notify_cbck   fn_notify_cbck;
+	void *cbck_arg;
 };
 
-/**============================================================================
-*@name   struct NotifyDrv_EventList
-*
-*@desc   Defines the Event object, which contains the event-specific
+/*
+* Defines the Event object, which contains the event-specific
 *information.
-*
-*@field  eventHandlerCount
-*Number of listener attached to the event.
-*@field  listeners
-*Queue of listeners.
-*============================================================================
 */
-struct NotifyDrv_EventList {
-unsigned long int      eventHandlerCount;
-struct lst_list *listeners;
+struct notify_drv_eventlist {
+	unsigned long int      event_handler_count;
+	struct lst_list *listeners;
 };
 
-/**============================================================================
-*@name   struct NotifyShmDrv_State
-*
-*@desc   Defines the NotifyShmDrv state object.
-*
-*@field  procId
-*ID of processor with which this Notify driver communicates.
-*@field  eventList
-*Pointer to array containing information about registered
-*listeners and events.
-*@field  attrs
-*Contains user-provided information for the NotifyShmDrv driver.
-*@field  ctrlPtr
-*Pointer to the NotifyShmDrv control structure.
-*@field  regChart
-*Registration chart indicating event number of registered events.
-*@field  drvHandle
-*Handle to the Notify driver object.
-*@field  isrObject
-*NotifyShmDrv Isr object.
-*============================================================================
+/*
+* Defines the NotifyShmDrv state object..
 */
-struct NotifyShmDrv_State{
-unsigned long int                  procId;
-struct NotifyDrv_EventList *eventList;
-struct NotifyShmDrv_Attrs            attrs;
-struct NotifyShmDrv_Ctrl *ctrlPtr;
-struct NotifyShmDrv_EventRegEntry *regChart;
-struct Notify_DriverHandle *drvHandle;
+struct notifyshm_drv_state{
+	unsigned long int                  proc_id;
+	struct notify_drv_eventlist *event_list;
+	struct notify_shmdrv_attrs            attrs;
+	struct notify_shmdrv_ctrl *ctrlPtr;
+	struct notify_shmdrv_eventreg *reg_chart;
+	struct notify_driver_handle *drv_handle;
 };
 
-union NotifyDrv_ProcEvents{
-struct {
-struct NotifyShmDrv_Attrs            attrs;
-struct NotifyShmDrv_Ctrl *ctrlPtr;
-}  shmEvents;
+union notify_drv_procevents{
+	struct {
+		struct notify_shmdrv_attrs  attrs;
+		struct notify_shmdrv_ctrl *ctrlPtr;
+	} shm_events;
 
-struct {
-/*Attributes */
-unsigned long int    numEvents ;
-unsigned long int    sendEventPollCount ;
+	struct {
+	/*Attributes */
+	unsigned long int    num_events ;
+	unsigned long int    send_event_pollcount ;
 
-/*Control Paramters */
-unsigned long int sendInitStatus ;
-struct NotifyShmDrv_EventRegMask     regMask ;
-}  nonShmEvents;
+	/*Control Paramters */
+	unsigned long int send_init_status ;
+	struct notify_shmdrv_eventreg_mask     reg_mask ;
+	} non_shm_events;
 };
 
+struct notify_drv_proc_module {
 
-struct NotifyDrvProcModule {
-
-unsigned long int                  procId;
-struct NotifyDrv_EventList *eventList;
-struct NotifyShmDrv_EventRegEntry *regChart;
-union NotifyDrv_ProcEvents     eventsObj;
+	unsigned long int  proc_id;
+	struct notify_drv_eventlist *event_list;
+	struct notify_shmdrv_eventreg *reg_chart;
+	union notify_drv_procevents  events_obj;
 };
 
+struct notify_mbxdrv_module {
 
-struct NotifyMbxDrvModule {
-
-short int       iDriver_IsInit;
-struct Notify_DriverHandle *drvHandle;
-struct NotifyDrvProcModule        drvProcObjects[2];
+	short int idriver_isinit;
+	struct notify_driver_handle *drv_handle;
+	struct notify_drv_proc_module  drv_proc_objects[2];
 };
-/**============================================================================
-*@name   struct NotifyShmDrv_StateObj
-*
-*@desc   Notify Shared Memroy driver state object instance
-*============================================================================
+
+/*
+* Notify Shared Memroy driver state object instance
 */
-struct NotifyMbxDrvModule NotifyMbxDrv_StateObj;
-EXPORT_SYMBOL(NotifyMbxDrv_StateObj);
+struct notify_mbxdrv_module notify_mbxdrv_state_obj;
+EXPORT_SYMBOL(notify_mbxdrv_state_obj);
 
-
-
-/*----------------------------------------------------------------------------
-*@name   NotifyShmDrv_IsInit
-*
-*@desc   Indicates whether the NotifyShmDrv driver is initialized.
-*----------------------------------------------------------------------------
+/*
+* Funtion table interface for the Notify Shm Driver.
 */
-
-/**============================================================================
-*@name   NotifyMbxDrv_Interface
-*
-*@desc   Funtion table interface for the Notify Shm Driver.
-*============================================================================
-*/
-struct Notify_Interface NotifyMbxDrv_Interface = {
-NotifyMbxDrv_driverInit,
-NotifyMbxDrv_driverExit,
-NotifyMbxDrv_registerEvent,
-NotifyMbxDrv_unregisterEvent,
-NotifyMbxDrv_sendEvent,
-NotifyMbxDrv_disable,
-NotifyMbxDrv_restore,
-NotifyMbxDrv_disableEvent,
-NotifyMbxDrv_enableEvent,
+struct notify_interface notify_mbxdrv_interface = {
+	notify_mbxdrv_driver_init,
+	notify_mbxdrv_driver_exit,
+	notify_mbxdrv_register_event,
+	notify_mbxdrv_unregevent,
+	notify_mbxdrv_sendevent,
+	notify_mbxdrv_disable,
+	notify_mbxdrv_restore,
+	notify_mbxdrv_disable_event,
+	notify_mbxdrv_enable_event,
 #if defined NOTIFY_DEBUG
-NotifyMbxDrv_debug
+	notify_mbxdrv_debug
 #endif
-} ;
+};
 
-
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_queSearchElement
-*
-*@desc   This function searchs for a element the List.
-*
-*@arg    list.
-*Pointer to List.
-*@arg    checkObj
-*Listener object to be matched with queue element.
-*@arg    listener
-*Pointer to store found element.
-*
-*@ret    None.
-*
-*@enter  None.
-*
-*@leave  None.
-*
-*@see    None.
-*----------------------------------------------------------------------------
+/*
+*This function searchs for a element the List.
 */
 static void
-NotifyMbxDrv_queSearchElement(IN  struct lst_list *list,
-IN  struct NotifyDrv_EventListener *checkObj,
-OUT struct NotifyDrv_EventListener **listener);
+notify_mbxdrv_qsearch_elem(IN  struct lst_list *list,
+		struct notify_drv_eventlistner *checkObj,
+		struct notify_drv_eventlistner **listener);
 
+#if GT_TRACE
+static struct GT_Mask notifymbx_debugmask = { NULL, NULL };
+#endif
 
-signed long int DECLARE_STANDARD_EXTENSION(void)
-{
-	signed long int status = KErrNone;
-
-
-	TRC_ENABLE(ID_NOTIFYMBXDRV_ALL);
-	TRC_SET_SEVERITY(TRC_ENTER);
-
-	NotifyMbxDrv_init();
-
-	return status;
-}
-
-/**============================================================================
-@name   NotifyMbxDrv_init
+/*
+* Top-level initialization function for the Notify shared memory
+* mailbox driver.
 *
-*@desc   Top-level initialization function for the Notify shared memory
-*mailbox driver.
-*This can be plugged in as the user init function.
-*
-*@modif  NotifyMbxDrv_StateObj.iDriver_IsInit
-*============================================================================
 */
-
-void
-NotifyMbxDrv_init()
+void notify_mbxdrv_init()
 {
-	signed long int status = NOTIFY_SOK;
-	struct Notify_DriverAttrs drvAttrs;
-	signed long int mbxRetVal = KErrNone;
+	int status = 0;
+	struct notify_driver_attrs drv_attrs;
 
-	TRC_0ENTER("NotifyMbxDrv_init");
+	GT_create(&notifymbx_debugmask, "NM");
+	gt_0trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_init");
 
 	/*Initialize the global Notify Mbx Driver Object */
-	NotifyMbxDrv_StateObj.iDriver_IsInit = FALSE;
-	NotifyMbxDrv_StateObj.drvHandle = NULL;
+	notify_mbxdrv_state_obj.idriver_isinit = false;
+	notify_mbxdrv_state_obj.drv_handle = NULL;
 
 	/*Fill in information about driver attributes. */
-	drvAttrs.numProc = 2;
+	drv_attrs.numProc = 2;
 
-	drvAttrs.procInfo[PROC_TESLA].maxEvents =
+	drv_attrs.proc_info[PROC_TESLA].max_events =
 			NOTIFYNONSHMDRV_MAX_EVENTS;
-
-	drvAttrs.procInfo[PROC_TESLA].reservedEvents =
+	drv_attrs.proc_info[PROC_TESLA].reserved_events =
 				NOTIFYNONSHMDRV_MAX_EVENTS;
+	drv_attrs.proc_info[PROC_TESLA].event_priority  = false;
+	drv_attrs.proc_info[PROC_TESLA].payload_size = 32;
+	drv_attrs.proc_info[PROC_TESLA].proc_id = PROC_TESLA;
 
-	drvAttrs.procInfo[PROC_TESLA].eventPriority  =
-			FALSE; /*Events are prioritized. */
-
-	drvAttrs.procInfo[PROC_TESLA].payloadSize = 32;
-			/*32-bit payload supported. */
-
-	drvAttrs.procInfo[PROC_TESLA].procId = PROC_TESLA;
-
-	drvAttrs.procInfo[PROC_DUCATI].maxEvents  =
+	drv_attrs.proc_info[PROC_DUCATI].max_events  =
 				NOTIFYSHMDRV_MAX_EVENTS;
-
-	drvAttrs.procInfo[PROC_DUCATI].reservedEvents =
+	drv_attrs.proc_info[PROC_DUCATI].reserved_events =
 			NOTIFYSHMDRV_RESERVED_EVENTS;
+	drv_attrs.proc_info[PROC_DUCATI].event_priority = TRUE;
+	drv_attrs.proc_info[PROC_DUCATI].payload_size = 32;
+	drv_attrs.proc_info[PROC_DUCATI].proc_id = PROC_DUCATI;
 
-	drvAttrs.procInfo[PROC_DUCATI].eventPriority = TRUE;
-				/*Events are prioritized. */
-
-	drvAttrs.procInfo[PROC_DUCATI].payloadSize = 32;
-			/*32-bit payload supported. */
-
-	drvAttrs.procInfo[PROC_DUCATI].procId = PROC_DUCATI;
-
-
-	mbxRetVal = Mailbx_Init();
-
-	if (mbxRetVal !=  KErrNone)
-		status = NOTIFY_EFAIL;
-
-
-	if (NOTIFY_SUCCEEDED(status)) {
-		status =
-			Notify_registerDriver((char *)
+	mailbx_init();
+	status = notify_register_driver((char *)
 				(NOTIFYMBXDRV_DRIVERNAME),
-				&(NotifyMbxDrv_Interface),
-				&drvAttrs,
-				&(NotifyMbxDrv_StateObj.drvHandle));
+				&(notify_mbxdrv_interface),
+				&drv_attrs,
+				&(notify_mbxdrv_state_obj.drv_handle));
 
-
-	}
-
-	if (NOTIFY_SUCCEEDED(status))
-		NotifyMbxDrv_StateObj.iDriver_IsInit = TRUE;
+	if (status == 0)
+		notify_mbxdrv_state_obj.idriver_isinit = TRUE;
 	 else
-		SET_FAILURE_REASON(status);
-
-
-	TRC_1LEAVE("NotifyMbxDrv_init", status);
+		pr_err("notify_mbxdrv_init: failed, status = %d\n", status);
+	gt_1trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_init status"
+							"= %d\n", status);
 }
-EXPORT_SYMBOL(NotifyMbxDrv_init);
+EXPORT_SYMBOL(notify_mbxdrv_init);
 
-
-
-
-/**============================================================================
-*@name   NotifyMbxDrv_exit
+/*
 *
-*@desc   Top-level finalization function for the Notify shared memory
-*mailbox driver.
+*Top-level finalization function for the Notify shared memory mailbox driver.
 *
-*@modif  NotifyMbxDrv_IsInit
-*============================================================================
 */
-
-void
-NotifyMbxDrv_exit()
+void notify_mbxdrv_exit()
 {
-	signed long int status = NOTIFY_SOK;
-	signed long int mbxRetVal = KErrNone;
+	int status = 0;
 
-	TRC_0ENTER("NotifyMbxDrv_exit");
+	gt_0trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_exit");
 
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
+	WARN_ON(notify_mbxdrv_state_obj.idriver_isinit != TRUE);
+	ntfy_disp_deinit();
 
+	status = notify_unregister_driver(notify_mbxdrv_state_obj.drv_handle);
 
-	mbxRetVal = Mailbx_DeInit();
-
-	if (mbxRetVal !=  KErrNone)
-		status = NOTIFY_EFAIL;
-
-
-	if (NOTIFY_SUCCEEDED(status))
-		status = Notify_unregisterDriver(NotifyMbxDrv_StateObj.
-							drvHandle);
-
-	if (NOTIFY_SUCCEEDED(status))
-		NotifyMbxDrv_StateObj.iDriver_IsInit = FALSE;
+	if (status == 0)
+		notify_mbxdrv_state_obj.idriver_isinit = false;
 	else
-		SET_FAILURE_REASON(status);
+		pr_err("notify_mbxdrv_exit: failed, status = %d\n", status);
 
-
-	TRC_1LEAVE("NotifyMbxDrv_exit", status);
+	gt_1trace(notifymbx_debugmask, GT_5CLASS, "notify_mbxdrv_exit,"
+						"status = %d\n", status);
 }
-EXPORT_SYMBOL(NotifyMbxDrv_exit);
+EXPORT_SYMBOL(notify_mbxdrv_exit);
 
-/**----------------------------------------------------------------------------
-*@name   NotifyMbxDrv_driverInit
+/*
+* Initialization function for the Notify shared memory mailbox driver.
 *
-*@desc   Initialization function for the Notify shared memory mailbox driver.
-*
-*@modif  NotifyMbxDrv_StateObj
-*----------------------------------------------------------------------------
 */
-
-signed long int
-NotifyMbxDrv_driverInit(IN  char *driverName,
-IN  struct Notify_Config *config,
-OUT void **driverObj)
+signed long int notify_mbxdrv_driver_init(char *driver_name,
+			struct notify_config *config, void **driver_object)
 {
-	signed long int              status    = NOTIFY_SOK;
-	unsigned long int                     i         = 0;
-	struct NotifyShmDrv_Attrs *attrs     = NULL;
-	struct NotifyDrv_EventList *eventList;
+	int status = 0;
+	int i = 0;
+	struct notify_shmdrv_attrs *attrs = NULL;
+	struct notify_drv_eventlist *event_list;
 	struct NotifyShmDrv_ProcCtrl *ctrlPtr = NULL;
-	unsigned long int               procId;
-	struct MboxConfig *mBoxHwConfig;
-	unsigned long int mBoxModuleNo;
-	signed long int interruptNo;
-	signed long int mbxRetVal;
+	 int proc_id;
+	struct mbox_config *mbox_hw_config;
+	int mbox_module_no;
+	int interrupt_no;
+	 int mbx_ret_val;
 
+	gt_3trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_driver_init",
+				driver_name, config, driver_object);
 
+	BUG_ON(notify_mbxdrv_state_obj.idriver_isinit == false);
+	BUG_ON(driver_object ==  NULL);
+	BUG_ON(config ==  NULL);
 
+	(void) driver_name;
 
+	*driver_object = NULL;
+	attrs = (struct notify_shmdrv_attrs *)config->driverAttrs;
 
-
-	TRC_3ENTER("NotifyMbxDrv_driverInit",
-				driverName, config, driverObj);
-
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
-	DBC_require(driverObj !=  NULL);
-	DBC_require(config !=  NULL);
-
-	(void) driverName;
-
-	if (NotifyMbxDrv_StateObj.iDriver_IsInit == FALSE) {
-		status = NOTIFY_EDRIVERINIT;
-		SET_FAILURE_REASON(status);
-
-	} else if ((driverObj == NULL) || (config == NULL)) {
-		status = NOTIFY_EPOINTER;
-		SET_FAILURE_REASON(status);
-
-	} else {
-		*driverObj = NULL;
-		attrs = (struct NotifyShmDrv_Attrs *)
-						config->driverAttrs;
-
-		if (attrs == NULL) {
-			status = NOTIFY_ECONFIG;
-			SET_FAILURE_REASON(status);
-		}
-
-
-		if (NOTIFY_SUCCEEDED(status)) {
-
-			/*Validate the attributes for Tesla */
-			procId = PROC_TESLA;
-
-			if (procId == PROC_TESLA) {
-				TRC_0PRINT(TRC_LEVEL1,
-				" --Tesla currently not using driverAttrs--");
-			}
-
-		}
+	if (attrs == NULL) {
+		status = -EINVAL;
+		WARN_ON(1);
+		gt_0trace(notifymbx_debugmask, GT_5CLASS,
+			"notify_mbxdrv_driver_init: config"
+			"attributes == NULL\n");
+		goto func_exit;
 	}
 
+	/*Validate the attributes for Tesla */
+	proc_id = PROC_TESLA;
+	if (proc_id == PROC_TESLA) {
+		gt_0trace(notifymbx_debugmask, GT_1CLASS,
+			" --Tesla currently not using driverAttrs--");
+	}
 
 	/*Initialize the data structures for both processors. */
-	if (NOTIFY_SUCCEEDED(status)) {
+	proc_id = PROC_TESLA;
 
-		procId = PROC_TESLA;
+	if (proc_id == PROC_TESLA) {
+		unsigned long int num_events =
+			NOTIFYNONSHMDRV_MAX_EVENTS;
 
-		if (procId == PROC_TESLA) {
-			unsigned long int numEvents =
-				NOTIFYNONSHMDRV_MAX_EVENTS;
+		gt_0trace(notifymbx_debugmask, GT_ENTER,
+			"Tesla Driver Initialization");
 
-			TRC_0ENTER("Tesla Driver Initialization");
+		notify_mbxdrv_state_obj.
+		drv_proc_objects[PROC_TESLA].proc_id = PROC_TESLA;
 
-			NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].procId = PROC_TESLA;
+		notify_mbxdrv_state_obj.
+		drv_proc_objects[PROC_TESLA].events_obj.
+		non_shm_events.num_events = num_events;
 
-			NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].eventsObj.
-			nonShmEvents.numEvents = numEvents;
+		/*Allocate the listener list for each event. */
+		notify_mbxdrv_state_obj.
+		drv_proc_objects[PROC_TESLA].event_list =
+		mem_calloc((sizeof(struct notify_drv_eventlist)
+		* num_events), MEM_NONPAGED);
 
-			/*Allocate the listener list for each event. */
-
-
-			if (NOTIFY_SUCCEEDED(status)) {
-
-				NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].eventList =
-				MEM_Calloc((sizeof(struct NotifyDrv_EventList)
-				* numEvents), MEM_NONPAGED);
-
-
-				if (NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].
-						eventList == NULL) {
-
-					NotifyMbxDrv_StateObj.
-						drvProcObjects[PROC_TESLA].
-							eventList = NULL;
-
-					status = NOTIFY_EMEMORY;
-					SET_FAILURE_REASON(status);
-				}
-			}
-
-
-			if (NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].eventList) {
-
-				NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].regChart =
-				MEM_Calloc((sizeof
-				(struct NotifyShmDrv_EventRegEntry) *
-				numEvents), MEM_NONPAGED);
-
-
-				if (NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].
-						regChart == NULL) {
-
-					NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].
-					regChart = NULL;
-
-					status = NOTIFY_EMEMORY;
-					SET_FAILURE_REASON(status);
-				}
-			}
-
-			TRC_3PRINT(TRC_LEVEL2, "status[0x%x]  \
-				eventListr[0x%x] regChart[0x%x]",
-							tmpStatus,
-			NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].eventList,
-			NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].regChart);
-
-
-
-			if (NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].regChart) {
-
-				eventList = NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].eventList;
-
-				for (i = 0; (i < numEvents) &&
-					NOTIFY_SUCCEEDED(status); i++) {
-
-					NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].
-					regChart[i].regEventNo =
-					(unsigned long int) -1;
-
-					eventList[i].eventHandlerCount = 0;
-
-					eventList[i].listeners =
-					MEM_Calloc(sizeof(struct lst_list),
-								MEM_NONPAGED);
-
-					INIT_LIST_HEAD(&eventList[i].
-							listeners->head);
-
-
-						if (eventList[i].
-							listeners == NULL) {
-
-							status = NOTIFY_EFAIL;
-							SET_FAILURE_REASON(
-								status);
-						}
-				}
-			}
-
-			TRC_1LEAVE("Tesla Driver Initialization", status);
+		if (notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].
+				event_list == NULL) {
+			status = -ENOMEM;
+			WARN_ON(1);
+			gt_0trace(notifymbx_debugmask, GT_5CLASS,
+			"notify_mbxdrv_driver_init: TESLA event_list == NULL");
+			goto func_exit;
 		}
 
+		if (notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].event_list) {
 
-/**************************************************************/
+			notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].reg_chart =
+			mem_calloc((sizeof
+			(struct notify_shmdrv_eventreg) *
+			num_events), MEM_NONPAGED);
 
-
-		if (NOTIFY_SUCCEEDED(status)) {
-			NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].procId = PROC_TESLA;
-
-
-			NotifyMbxDrv_StateObj.drvProcObjects[PROC_TESLA].
-			eventsObj.shmEvents.ctrlPtr =
-			(struct NotifyShmDrv_Ctrl *)ioremap_nocache
-			((dma_addr_t)attrs->shmBaseAddr, attrs->shmSize) ;
-
-
-
-			ctrlPtr  =
-			(struct NotifyShmDrv_ProcCtrl *)
-			(NotifyMbxDrv_StateObj.drvProcObjects[PROC_TESLA].
-			 eventsObj.shmEvents.ctrlPtr);
-
-
-
-			ctrlPtr->selfEventChart =
-			(struct NotifyShmDrv_EventEntry *)
-			((unsigned long int *) (NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].
-			eventsObj.shmEvents.ctrlPtr) +
-			sizeof(struct NotifyShmDrv_Ctrl) +
-			(sizeof(struct NotifyShmDrv_EventEntry) *
-				attrs->numEvents * SELF_ID));
-
-
-			ctrlPtr->otherEventChart =
-			(struct NotifyShmDrv_EventEntry *)
-			((unsigned long int *) (NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].eventsObj.
-			shmEvents.ctrlPtr) +
-			sizeof(struct NotifyShmDrv_Ctrl) +
-			(sizeof(struct NotifyShmDrv_EventEntry) *
-			attrs->numEvents
-			* OTHER_ID));
-
-
-				TRC_3PRINT(TRC_LEVEL2,
-				" ctrlPtr[0x%x] selfEventChart[0x%x] \
-				otherEventChart[0x%x]", ctrlPtr,
-				ctrlPtr->selfEventChart,
-				ctrlPtr->otherEventChart);
-
+			if (notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].
+					reg_chart == NULL) {
+				status = -ENOMEM;
+				gt_0trace(notifymbx_debugmask, GT_5CLASS,
+				"notify_mbxdrv_driver_init:"
+				"TESLA event_list == NULL");
+				WARN_ON(1);
+				goto func_exit;
+			}
 		}
+		gt_3trace(notifymbx_debugmask, GT_2CLASS, "status[0x%x]"
+			"event_listr[0x%x] reg_chart[0x%x]\n", tmp_status,
+			notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].event_list,
+			notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].reg_chart);
 
+		if (notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].reg_chart) {
 
+			event_list = notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].event_list;
 
-/*****************************************************************/
+			for (i = 0; (i < num_events) && (status >= 0); i++) {
+				notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].
+				reg_chart[i].reg_event_no =
+				(unsigned long int) -1;
 
+				event_list[i].event_handler_count = 0;
 
+				event_list[i].listeners =
+				mem_calloc(sizeof(struct lst_list),
+							MEM_NONPAGED);
 
+				INIT_LIST_HEAD(&event_list[i].
+						listeners->head);
+				if (event_list[i].
+					listeners == NULL) {
+					status = -ENOMEM;
+					gt_0trace(notifymbx_debugmask,
+					GT_5CLASS, "notify_mbxdrv_driver_init:"
+					"event list failure\n");
+				}
+			}
+		}
 	}
+	gt_1trace(notifymbx_debugmask, GT_5CLASS,
+			"Tesla Driver Initialization, status = %d\n", status);
 
+	notify_mbxdrv_state_obj.
+	drv_proc_objects[PROC_TESLA].proc_id = PROC_TESLA;
 
+	notify_mbxdrv_state_obj.drv_proc_objects[PROC_TESLA].
+	events_obj.shm_events.ctrlPtr =
+	(struct notify_shmdrv_ctrl *)ioremap_nocache
+	((dma_addr_t)attrs->shmBaseAddr, attrs->shmSize);
 
-	if (NOTIFY_SUCCEEDED(status)) {
-		TRC_0ENTER("Interrupt Configuration");
+	ctrlPtr = (struct NotifyShmDrv_ProcCtrl *)
+	(notify_mbxdrv_state_obj.drv_proc_objects[PROC_TESLA].
+	 events_obj.shm_events.ctrlPtr);
 
-	mBoxHwConfig = Mailbx_GetMBoxConfig();
-	mBoxModuleNo = mBoxHwConfig->mBoxModules;
-	interruptNo = mBoxHwConfig->interruptLines[mBoxModuleNo-1];
-	mbxRetVal = KErrNone;
+	ctrlPtr->selfEventChart =
+	(struct notify_shmdrv_event_entry *)
+	((unsigned long int *) (notify_mbxdrv_state_obj.
+	drv_proc_objects[PROC_TESLA].
+	events_obj.shm_events.ctrlPtr) +
+	sizeof(struct notify_shmdrv_ctrl) +
+	(sizeof(struct notify_shmdrv_event_entry) *
+		attrs->num_events * SELF_ID));
 
-	mbxRetVal = Mailbx_BindInterrupt(interruptNo,
-			(void *)Notify_Mailbox0User0_ISR, NULL);
+	ctrlPtr->otherEventChart =
+	(struct notify_shmdrv_event_entry *)
+	((unsigned long int *) (notify_mbxdrv_state_obj.
+	drv_proc_objects[PROC_TESLA].events_obj.
+	shm_events.ctrlPtr) +
+	sizeof(struct notify_shmdrv_ctrl) +
+	(sizeof(struct notify_shmdrv_event_entry) *
+	attrs->num_events
+	* OTHER_ID));
+
+	gt_3trace(notifymbx_debugmask, GT_2CLASS,
+	" ctrlPtr[0x%x] selfEventChart[0x%x] otherEventChart[0x%x]\n",
+	ctrlPtr, ctrlPtr->selfEventChart, ctrlPtr->otherEventChart);
+
+	gt_0trace(notifymbx_debugmask, GT_ENTER, "Interrupt Configuration");
+
+	mbox_hw_config = mailbx_get_config();
+	mbox_module_no = mbox_hw_config->mbox_modules;
+	interrupt_no = mbox_hw_config->interrupt_lines[mbox_module_no-1];
+
+	mbx_ret_val = ntfy_disp_bind_interrupt(interrupt_no,
+			(void *)notify_mailbx0_user0_isr, NULL);
 	/*Set up the ISR on the Modena-Tesla FIFO */
+	if (mbx_ret_val == 0) {
+		gt_0trace(notifymbx_debugmask, GT_ENTER,
+				"Tesla Interrupt Enable\n");
+		proc_id = PROC_TESLA;
+		mbx_ret_val = mailbx_register(mbox_module_no,
+				(NOTIFYDRV_TESLA_RECV_MBX * 2),
+				(void *)notify_mbxdrv_nonshm_isr,
+				(void *)
+				&(notify_mbxdrv_state_obj.
+				drv_proc_objects[proc_id]));
 
-		if (mbxRetVal == KErrNone) {
-
-			TRC_0ENTER("Tesla Interrupt Enable");
-
-			procId = PROC_TESLA;
-
-			mbxRetVal = Mailbx_Register(mBoxModuleNo,
-					(NOTIFYDRV_TESLA_RECV_MBX * 2),
-					(void *)NotifyMbxDrv_NonShmISR,
-					(void *)
-					&(NotifyMbxDrv_StateObj.
-					drvProcObjects[procId]));
-
-			if (mbxRetVal == KErrNone) {
-
-					mbxRetVal = Mailbx_InterruptEnable(
-								mBoxModuleNo,
-						(NOTIFYDRV_TESLA_RECV_MBX * 2));
-			}
-
-			TRC_1LEAVE("Tesla Interrupt Enable", mbxRetVal);
+		if (mbx_ret_val == 0) {
+			mbx_ret_val = mailbx_interrupt_enable(
+				mbox_module_no, (NOTIFYDRV_TESLA_RECV_MBX * 2));
 		}
-
-
-/*Set up the ISR on the Modena-Ducati FIFO */
-
-
-		if (mbxRetVal !=  KErrNone) {
-			status = NOTIFY_EFAIL;
-			SET_FAILURE_REASON(status);
-		}
-
-		TRC_1LEAVE("Interrupt Configuration", mbxRetVal);
 	}
 
+	/*Set up the ISR on the Modena-Ducati FIFO */
+	if (mbx_ret_val != 0) {
+		status = -ENODEV;
+		gt_0trace(notifymbx_debugmask, GT_5CLASS,
+				"MAIL box setup failure\n");
+		WARN_ON(1);
+		goto func_exit;
+	}
 
-	if (NOTIFY_SUCCEEDED(status)) {
+	gt_1trace(notifymbx_debugmask, GT_5CLASS,
+		"Interrupt Configuration", mbx_ret_val);
 
-		*driverObj = &(NotifyMbxDrv_StateObj);
-
-		ctrlPtr->regMask.mask = 0x0;
-		ctrlPtr->regMask.enableMask = 0xFFFFFFFF;
-
-
+	if (status == 0) {
+		*driver_object = &(notify_mbxdrv_state_obj);
+		ctrlPtr->reg_mask.mask = 0x0;
+		ctrlPtr->reg_mask.enable_mask = 0xFFFFFFFF;
 		ctrlPtr->recvInitStatus = NOTIFYSHMDRV_INIT_STAMP;
-		ctrlPtr->sendInitStatus = NOTIFYSHMDRV_INIT_STAMP;
-
-
+		ctrlPtr->send_init_status = NOTIFYSHMDRV_INIT_STAMP;
 	}
-
-TRC_1LEAVE("NotifyMbxDrv_driverInit", status);
-
+	gt_1trace(notifymbx_debugmask, GT_5CLASS, "notify_mbxdrv_driver_init"
+						" status = %d\n", status);
+func_exit:
 return status;
 }
 
-/**----------------------------------------------------------------------------
-*@name   NotifyMbxDrv_driverExit
-*
-*@desc   Finalization function for the Notify driver.
-*
-*@modif  NotifyMbxDrv_StateObj
-*----------------------------------------------------------------------------
+/*
+* Finalization function for the Notify driver.
 */
-
-signed long int
-NotifyMbxDrv_driverExit (IN struct Notify_DriverHandle *handle)
+signed long int notify_mbxdrv_driver_exit(struct notify_driver_handle *handle)
 {
-	signed long int                status    = NOTIFY_SOK;
-	signed long int                   tmpStatus = NOTIFY_SOK;
-	struct NotifyDrv_EventListener *listener  = NULL;
-	struct NotifyMbxDrvModule *driverObj;
-	struct NotifyDrv_EventList *eventList;
-	unsigned short int                       i;
-	unsigned long int procId;
+	int status = 0;
+	struct notify_drv_eventlistner *listener  = NULL;
+	struct notify_mbxdrv_module *driver_object;
+	struct notify_drv_eventlist *event_list;
+	int i = 0;
+	int proc_id;
+	struct mbox_config *mbox_hw_config;
+	int mbox_module_no;
+	int interrupt_no;
+	int mbx_ret_val = 0;
 
+	gt_1trace(notifymbx_debugmask, GT_ENTER,
+			"notify_mbxdrv_driver_exit", handle);
 
-	driverObj = (struct NotifyMbxDrvModule *)&handle->driverObj;
-
-
-	TRC_1ENTER("NotifyMbxDrv_driverExit", handle);
-
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
-	DBC_require(handle !=  NULL);
-	DBC_require((handle !=  NULL) && (handle->driverObj != NULL));
-
+	WARN_ON(handle == NULL);
+	if (handle == NULL)
+		return -1;
+	driver_object = (struct notify_mbxdrv_module *)&handle->driver_object;
+	WARN_ON(handle->driver_object == NULL);
+		return -1;
+	WARN_ON(notify_mbxdrv_state_obj.idriver_isinit == false);
 
 	/*Uninstall the ISRs & Disable the Mailbox interrupt.*/
-	if (NOTIFY_SUCCEEDED(status)) {
+	mbox_hw_config = mailbx_get_config();
+	mbox_module_no = mbox_hw_config->mbox_modules;
+	interrupt_no = mbox_hw_config->interrupt_lines[mbox_module_no-1];
 
-		struct MboxConfig *mBoxHwConfig = Mailbx_GetMBoxConfig();
+	/*Remove the ISR on the Modena-Tesla FIFO */
+	gt_0trace(notifymbx_debugmask, GT_ENTER, "Tesla Interrupt Removal");
+	proc_id = PROC_TESLA;
+	mailbx_interrupt_disable(mbox_module_no,
+				(NOTIFYDRV_TESLA_RECV_MBX * 2));
+	mailbx_unregister(mbox_module_no,
+				(NOTIFYDRV_TESLA_RECV_MBX * 2));
 
-		unsigned long int mBoxModuleNo = mBoxHwConfig->mBoxModules;
+	/*Remove the generic ISR */
+	mbx_ret_val = mailbx_unbind_interrupt(interrupt_no);
 
-		signed long int interruptNo =
-				mBoxHwConfig->interruptLines[mBoxModuleNo-1];
+	if (mbx_ret_val != 0)
+		gt_1trace(notifymbx_debugmask, GT_6CLASS, "UnBind"
+		"Interrupt failed[0x%x]", mbx_ret_val);
 
-		signed long int mbxRetVal = KErrNone;
+	gt_0trace(notifymbx_debugmask, GT_ENTER,
+			"Tesla Driver Finalization");
 
-		/*Remove the ISR on the Modena-Tesla FIFO */
-
-		TRC_0ENTER("Tesla Interrupt Removal");
-
-		procId = PROC_TESLA;
-
-		mbxRetVal = Mailbx_InterruptDisable(mBoxModuleNo,
-					(NOTIFYDRV_TESLA_RECV_MBX * 2));
-
-
-
-		mbxRetVal = Mailbx_Unregister(mBoxModuleNo,
-					(NOTIFYDRV_TESLA_RECV_MBX * 2));
-
-
-
-		TRC_1LEAVE("Tesla Interrupt Removal", mbxRetVal);
-
-
-
-		/*Remove the generic ISR */
-		mbxRetVal =
-			Mailbx_UnBindInterrupt(interruptNo);
-
-		if (mbxRetVal !=  KErrNone)
-			TRC_1PRINT(TRC_LEVEL6, "UnBind \
-			Interrupt failed[0x%x]", mbxRetVal);
-
+	if (notify_mbxdrv_state_obj.
+		drv_proc_objects[PROC_TESLA].reg_chart !=  NULL) {
+		mem_free(notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].reg_chart);
+		notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].reg_chart = NULL;
 	}
+	event_list = notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].event_list;
 
-	procId = PROC_TESLA;
+	for (i = 0; i < notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].
+			events_obj.non_shm_events.num_events; i++) {
 
-	if (procId == PROC_TESLA) {
-		TRC_0ENTER("Tesla Driver Finalization");
+		WARN_ON(event_list[i].event_handler_count != 0);
+		event_list[i].event_handler_count = 0;
 
-		if (NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].regChart !=  NULL) {
+		if (event_list[i].listeners !=  NULL) {
+			while ((list_empty((struct list_head *)
+				event_list[i].listeners) != true)) {
 
-			MEM_Free(NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].regChart);
-
-			if (NOTIFY_SUCCEEDED(status)
-				&& DSP_FAILED(tmpStatus)) {
-
-				status = NOTIFY_EMEMORY;
-				SET_FAILURE_REASON(status);
-			}
-			NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].regChart = NULL;
-		}
-
-
-
-		eventList = NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].eventList;
-
-
-
-		for (i = 0; i < NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].
-				eventsObj.nonShmEvents.numEvents; i++) {
-
-			DBC_assert(eventList[i].eventHandlerCount == 0);
-			eventList[i].eventHandlerCount = 0;
-
-				if (eventList[i].listeners !=  NULL) {
-
-					while ((list_empty(
-						(struct list_head *)
-						eventList[i].listeners)
-						!=  TRUE)
-						&& (NOTIFY_SUCCEEDED
-						(status))) {
-
-							listener =
-							(struct
-							NotifyDrv_EventListener
-							*)
-							(eventList[i].
-							listeners);
-
-						if (listener !=  NULL) {
-							MEM_Free
-							(listener);
-
-							if ((NOTIFY_SUCCEEDED
-								(status))) {
-
-								status =
-								NOTIFY_EMEMORY;
-
-
-							}
-
-						} else {
-
-							status =
-								NOTIFY_EFAIL;
-							SET_FAILURE_REASON
-								(status);
-						}
-					}
-
-					list_del(
-					(struct list_head *)
-					eventList[i].listeners);
-
-					eventList[i].listeners = NULL;
+				listener = (struct notify_drv_eventlistner *)
+					(event_list[i].listeners);
+				if (listener != NULL) {
+					mem_free(listener);
+				} else {
+					status = 0;
+					gt_0trace(notifymbx_debugmask,
+					GT_5CLASS, "listener== NULL\n");
+					WARN_ON(1);
 				}
+			}
+			list_del((struct list_head *)event_list[i].listeners);
+			event_list[i].listeners = NULL;
 		}
-
-		/*Free allocated memory. */
-
-		if (NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].eventList !=  NULL) {
-
-			MEM_Free(NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].eventList);
-
-			if (NOTIFY_SUCCEEDED(status)) {
-				status = NOTIFY_EMEMORY;
-				SET_FAILURE_REASON(status);
-			}
-
-			NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].
-						eventList = NULL;
-			}
-
-
-		TRC_1LEAVE("Tesla Driver Finalization", status);
 	}
+	/*Free allocated memory. */
+	if (notify_mbxdrv_state_obj.
+		drv_proc_objects[PROC_TESLA].event_list !=  NULL) {
+		mem_free(notify_mbxdrv_state_obj.
+		drv_proc_objects[PROC_TESLA].event_list);
 
-
-	TRC_1LEAVE("NotifyMbxDrv_driverExit", status);
-
+		notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].event_list = NULL;
+	}
+	gt_1trace(notifymbx_debugmask, GT_5CLASS,
+		"notify_mbxdrv_driver_exit", status);
 	return status;
 }
 
 
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_registerEvent
+/*
+* Register a callback for an event with the Notify driver.
 *
-*@desc   Register a callback for an event with the Notify driver.
-*
-*@modif  eventList
-*----------------------------------------------------------------------------
 */
-
-signed long int
-NotifyMbxDrv_registerEvent(IN struct Notify_DriverHandle *handle,
-IN unsigned long int        procId,
-IN unsigned long int              eventNo,
-IN FnNotifyCbck        fnNotifyCbck,
-IN void *cbckArg)
+signed long int notify_mbxdrv_register_event(
+				struct notify_driver_handle *handle,
+				unsigned long int  proc_id,
+				unsigned long int  event_no,
+				fn_notify_cbck     fn_notify_cbck,
+				void *cbck_arg)
 {
-	signed long int                status    = NOTIFY_SOK;
-	short int                         done      = FALSE;
-	short int                         firstReg  = FALSE;
-	struct NotifyDrv_EventListener *eventListener;
-	struct NotifyDrv_EventList *eventList;
-	struct NotifyMbxDrvModule *driverObj;
-	struct NotifyShmDrv_EventRegEntry *regChart;
-	signed long int                        i;
-	signed long int                        j;
+	int status = 0;
+	int firstReg = false;
+	struct notify_drv_eventlistner *event_listener;
+	struct notify_drv_eventlist *event_list;
+	struct notify_mbxdrv_module *driver_object;
+	struct notify_shmdrv_eventreg *reg_chart;
+	int i;
+	int j;
 
+	gt_5trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_register_event",
+			handle, proc_id, event_no, fn_notify_cbck, cbck_arg);
+	BUG_ON(notify_mbxdrv_state_obj.idriver_isinit != TRUE);
+	BUG_ON(fn_notify_cbck == NULL);
+	BUG_ON(handle == NULL);
+	BUG_ON(handle->driver_object == NULL);
+	driver_object = (struct notify_mbxdrv_module *)
+				&handle->driver_object;
+	if (proc_id == PROC_TESLA) {
+		gt_0trace(notifymbx_debugmask, GT_ENTER, "Tesla RegisterEvent");
 
-	TRC_5ENTER("NotifyMbxDrv_registerEvent",
-					handle,
-					procId,
-					eventNo,
-					fnNotifyCbck,
-					cbckArg);
-
-	driverObj = (struct NotifyMbxDrvModule *)
-				&handle->driverObj;
-
-	DBC_require(NotifyMbxDrv_StateObj.
-					iDriver_IsInit == TRUE);
-
-	DBC_require(fnNotifyCbck !=  NULL);
-
-	DBC_require(handle !=  NULL);
-	DBC_require((handle !=  NULL) && (handle->driverObj != NULL));
-
-
-	if (procId == PROC_TESLA) {
-		TRC_0ENTER("Tesla RegisterEvent");
-
-		eventListener =
-		MEM_Calloc(sizeof(struct NotifyDrv_EventListener),
+		event_listener =
+		mem_calloc(sizeof(struct notify_drv_eventlistner),
 						MEM_NONPAGED);
 
-		if (eventListener == NULL) {
-			status = NOTIFY_EMEMORY;
-			SET_FAILURE_REASON(status);
+		if (event_listener == NULL) {
+			status = -ENOMEM;
+			goto func_end;
+		}
+		event_list = notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].event_list;
+
+		event_listener->fn_notify_cbck = fn_notify_cbck;
+		event_listener->cbck_arg   = cbck_arg;
+		BUG_ON(event_no != 0);
+		if (list_empty((struct list_head *)
+			event_list[event_no].listeners)) {
+			firstReg = TRUE;
+			list_add_tail((struct list_head *)
+					&(event_listener->element),
+					(struct list_head *)
+					event_list[event_no].listeners);
+
+			event_list[event_no].event_handler_count++;
 
 		} else {
+			status = -EFAULT;
+			gt_0trace(notifymbx_debugmask, GT_7CLASS,
+				"GT_ENTERlist is empty\n");
+		}
+		if (firstReg == true) {
+			reg_chart = notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].reg_chart;
 
-			eventList = NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].eventList;
+			for (i = 0; i < notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].
+				events_obj.non_shm_events.
+					num_events; i++) {
+				if (reg_chart[i].reg_event_no == (int) -1) {
+					for (j = (i - 1); j >= 0; j--) {
+						if (event_no
+						< reg_chart[j].reg_event_no) {
+							reg_chart
+							[j + 1].
+							reg_event_no =
+							reg_chart[j].
+							reg_event_no;
 
-			eventListener->fnNotifyCbck = fnNotifyCbck;
-			eventListener->cbckArg   = cbckArg;
-
-			DBC_assert(eventNo == 0);
-
-
-
-			if (list_empty((struct list_head *)
-				eventList[eventNo].listeners)) {
-
-				firstReg = TRUE;
-				list_add_tail((struct list_head *)
-						&(eventListener->element),
-						(struct list_head *)
-						eventList[eventNo].listeners);
-
-				eventList[eventNo].eventHandlerCount++;
-
-			} else {
-				status = NOTIFY_EFAIL;
-				SET_FAILURE_REASON(status);
-			}
-
-
-
-
-			if (firstReg == TRUE) {
-				regChart = NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].regChart;
-
-				for (i = 0; i < NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].
-					eventsObj.nonShmEvents.
-						numEvents; i++) {
-
-
-					if (regChart[i].regEventNo
-						== (unsigned long int) -1) {
-
-						for (j = (i - 1);
-							j >= 0; j--) {
-
-							if (eventNo
-							< regChart[j].
-							regEventNo) {
-
-								regChart
-								[j + 1].
-								regEventNo  =
-								regChart[j].
-								regEventNo;
-
-								regChart
-								[j + 1].
-								reserved  =
-								regChart[j].
-								reserved;
-								i = j;
-							} else {
-
-								j = -1;
-							}
+							reg_chart
+							[j + 1].
+							reserved  =
+							reg_chart[j].
+							reserved;
+							i = j;
+						} else {
+							j = -1;
 						}
-
-						regChart[i].regEventNo =
-								eventNo;
-						done = TRUE;
-						break;
 					}
-				}
-
-
-				if (1/*done*/) {
-					/*Mark the event as registered */
-					SET_BIT(NotifyMbxDrv_StateObj.
-						drvProcObjects[PROC_TESLA].
-						eventsObj.nonShmEvents.
-						regMask.mask, eventNo);
-
-				} else {
-					status = NOTIFY_ERESOURCE;
-					SET_FAILURE_REASON(status);
-					list_del((struct list_head *)
-						&(eventListener->element));
+					reg_chart[i].reg_event_no =
+							event_no;
+					break;
 				}
 			}
+
+			/*Mark the event as registered */
+			SET_BIT(notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].
+				events_obj.non_shm_events.
+				reg_mask.mask, event_no);
 
 		}
-
-		TRC_0LEAVE("Tesla RegisterEvent");
+		gt_0trace(notifymbx_debugmask, GT_5CLASS,
+					"Tesla RegisterEvent\n");
 	}
-
-	TRC_1LEAVE("NotifyMbxDrv_registerEvent", status);
-
+func_end:
+	gt_1trace(notifymbx_debugmask, GT_5CLASS,
+			"notify_mbxdrv_register_event", status);
 	return status;
 }
 
 
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_unregisterEvent
+/*
 *
-*@desc   Unregister a callback for an event with the Notify driver.
+* Unregister a callback for an event with the Notify driver.
 *
-*@modif  eventList
-*----------------------------------------------------------------------------
 */
 
-signed long int
-NotifyMbxDrv_unregisterEvent(IN struct Notify_DriverHandle *handle,
-IN unsigned long int        procId,
-IN unsigned long int              eventNo,
-IN FnNotifyCbck        fnNotifyCbck,
-IN void *cbckArg)
+signed long int notify_mbxdrv_unregevent(struct notify_driver_handle *handle,
+					unsigned long int  proc_id,
+					unsigned long int  event_no,
+					fn_notify_cbck     fn_notify_cbck,
+					void *cbck_arg)
 {
-	signed long int                status    = NOTIFY_SOK;
-	struct NotifyDrv_EventListener *listener  = NULL;
-	unsigned long int                       numEvents;
-	struct NotifyMbxDrvModule *driverObj;
-	struct NotifyDrv_EventList *eventList;
-	struct NotifyShmDrv_EventRegEntry *regChart;
-	struct NotifyShmDrv_Ctrl *ctrlPtr = NULL;
-	struct NotifyDrv_EventListener   unregInfo;
-	signed long int                        i;
-	signed long int                        j;
+	int status = 0;
+	struct notify_drv_eventlistner *listener  = NULL;
+	int num_events;
+	struct notify_mbxdrv_module *driver_object;
+	struct notify_drv_eventlist *event_list;
+	struct notify_shmdrv_eventreg *reg_chart;
+	struct notify_shmdrv_ctrl *ctrlPtr = NULL;
+	struct notify_drv_eventlistner   unreg_info;
+	int i;
+	int j;
 
+	gt_5trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_unregevent",
+		handle, proc_id, event_no, fn_notify_cbck, cbck_arg);
 
+	WARN_ON(notify_mbxdrv_state_obj.idriver_isinit == false);
+	BUG_ON(fn_notify_cbck ==  NULL);
+	BUG_ON(handle == NULL);
+	BUG_ON(handle->driver_object == NULL);
+	driver_object = (struct notify_mbxdrv_module *)&handle->driver_object;
 
-	driverObj = (struct NotifyMbxDrvModule *)&handle->driverObj;
-
-
-	TRC_5ENTER("NotifyMbxDrv_unregisterEvent",
-					handle,
-					procId,
-					eventNo,
-					fnNotifyCbck,
-					cbckArg);
-
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
-	DBC_require(fnNotifyCbck !=  NULL);
-	DBC_require(handle !=  NULL);
-	DBC_require((handle !=  NULL) && (handle->driverObj != NULL));
-
-	if (procId == PROC_TESLA) {
-		TRC_0ENTER("Tesla UnregisterEvent");
-
-		numEvents = NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].eventsObj.
-			nonShmEvents.numEvents;
-
-
-		eventList = NotifyMbxDrv_StateObj.
-			drvProcObjects[PROC_TESLA].eventList;
-
-		unregInfo.fnNotifyCbck = fnNotifyCbck;
-		unregInfo.cbckArg      = cbckArg;
-
-		NotifyMbxDrv_queSearchElement(eventList[eventNo].listeners,
-								&unregInfo,
+	if (proc_id == PROC_TESLA) {
+		gt_0trace(notifymbx_debugmask, GT_ENTER,
+			"Tesla UnregisterEvent\n");
+		num_events = notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].events_obj.
+			non_shm_events.num_events;
+		event_list = notify_mbxdrv_state_obj.
+			drv_proc_objects[PROC_TESLA].event_list;
+		unreg_info.fn_notify_cbck = fn_notify_cbck;
+		unreg_info.cbck_arg = cbck_arg;
+		notify_mbxdrv_qsearch_elem(event_list[event_no].listeners,
+								&unreg_info,
 								&listener);
+		if (listener == NULL) {
+			status = -EFAULT;
+			goto func_end;
+		}
+		list_del((struct list_head *)&(listener->element));
+		event_list[event_no].event_handler_count--;
+		mem_free(listener);
+		if (list_empty((struct list_head *)
+			event_list[event_no].listeners) == TRUE) {
+			CLEAR_BIT(ctrlPtr->selfProcCtrl.
+					reg_mask.mask, event_no);
+			reg_chart = notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].reg_chart;
 
-		if (listener !=  NULL) {
-			list_del((struct list_head *)&(listener->element));
-			eventList[eventNo].eventHandlerCount--;
-			MEM_Free(listener);
-
-			if (list_empty((struct list_head *)
-				eventList[eventNo].listeners) == TRUE) {
-
-				CLEAR_BIT(ctrlPtr->selfProcCtrl.
-						regMask.mask, eventNo);
-
-				regChart = NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].regChart;
-
-				for (i = 0; i < numEvents; i++) {
-
-					if (eventNo == regChart[i].regEventNo) {
-						regChart[i].regEventNo =
-							(unsigned long int) -1;
-
-							for (j = (i + 1);
-
-								(regChart[j].
-								regEventNo !=
-								(unsigned
-								long int) -1)
-								&&  (j !=
-								numEvents);
-								j++) {
-
-								regChart
-								[j - 1].
-								regEventNo  =
-								regChart[j].
-								regEventNo;
-
-								regChart[j - 1].
-								reserved =
-								regChart[j].
-								reserved;
-							}
-
-							if (j == numEvents) {
-								regChart
-								[j - 1].
-								regEventNo =
-								(unsigned
-								long int) -1;
-							}
-
-							break;
+			for (i = 0; i < num_events; i++) {
+				if (event_no == reg_chart[i].reg_event_no) {
+					reg_chart[i].reg_event_no =
+						(unsigned long int) -1;
+					for (j = (i + 1); (reg_chart[j].
+						reg_event_no != (int) -1)
+						&& (j != num_events); j++) {
+						reg_chart
+						[j - 1].reg_event_no
+						= reg_chart[j].reg_event_no;
+						reg_chart
+						[j - 1].reserved =
+							reg_chart[j].reserved;
 					}
+					if (j == num_events) {
+						reg_chart
+						[j - 1].reg_event_no = (int) -1;
+					}
+					break;
 				}
 			}
-
-		} else {
-			status = NOTIFY_ENOTFOUND;
-			SET_FAILURE_REASON(status);
 		}
-
-		TRC_0LEAVE("Tesla UnregisterEvent");
+		gt_0trace(notifymbx_debugmask, GT_5CLASS,
+					"Tesla UnregisterEvent\n");
 	}
-
-
-	TRC_1LEAVE("NotifyMbxDrv_unregisterEvent", status);
-
+func_end:
+	gt_1trace(notifymbx_debugmask, GT_5CLASS,
+		"notify_mbxdrv_unregevent", status);
 	return status;
 }
 
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_sendEvent
-*
-*@desc   Send a notification event to the registered users for this
+/*
+*Send a notification event to the registered users for this
 *notification on the specified processor.
 *
-*@modif  otherEventChart
-*----------------------------------------------------------------------------
 */
-
-signed long int
-NotifyMbxDrv_sendEvent(IN struct Notify_DriverHandle *handle,
-IN unsigned long int        procId,
-IN unsigned long int              eventNo,
-IN unsigned long int              payload,
-IN short int                waitClear)
+signed long int notify_mbxdrv_sendevent(struct notify_driver_handle *handle,
+		 unsigned long int proc_id, unsigned long int event_no,
+		 unsigned long int payload, short int wait_clear)
 {
-	signed long int status = NOTIFY_SOK;
-	struct NotifyMbxDrvModule *driverObj;
-	unsigned long int maxPollCount;
-	struct MboxConfig *mBoxHwConfig = Mailbx_GetMBoxConfig();
-	unsigned long int mBoxModuleNo = mBoxHwConfig->mBoxModules;
-	signed long int mbxRetVal = KErrNone;
+	int status = 0;
+	struct notify_mbxdrv_module *driver_object;
+	int maxPollCount;
+	struct mbox_config *mbox_hw_config = mailbx_get_config();
+	int mbox_module_no = mbox_hw_config->mbox_modules;
+	int mbx_ret_val = 0;
 
 
-	TRC_5ENTER("NotifyMbxDrv_sendEvent",
+	gt_5trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_sendevent",
 					handle,
-					procId,
-					eventNo,
+					proc_id,
+					event_no,
 					payload,
-					waitClear);
-
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
-	DBC_require(handle !=  NULL);
-	DBC_require((handle !=  NULL) && (handle->driverObj != NULL));
-
-	if (procId == PROC_TESLA) {
-
-		TRC_0ENTER("Tesla Send");
-		driverObj = (struct NotifyMbxDrvModule *)&handle->driverObj;
-
-
-		DBC_assert(eventNo < NotifyMbxDrv_StateObj.
-					drvProcObjects[PROC_TESLA].eventsObj.
-					nonShmEvents.numEvents);
-
-		maxPollCount = NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].
-				eventsObj.nonShmEvents.sendEventPollCount;
-
-		mbxRetVal =
-			Mailbx_Send(mBoxModuleNo,
+					wait_clear);
+	BUG_ON(notify_mbxdrv_state_obj.idriver_isinit == false);
+	BUG_ON(handle ==  NULL);
+	BUG_ON(handle->driver_object == NULL);
+	if (proc_id == PROC_TESLA) {
+		gt_0trace(notifymbx_debugmask, GT_ENTER, "Tesla Send");
+		driver_object =
+		(struct notify_mbxdrv_module *)&handle->driver_object;
+		BUG_ON(event_no > notify_mbxdrv_state_obj.
+					drv_proc_objects[PROC_TESLA].events_obj.
+					non_shm_events.num_events);
+		maxPollCount = notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].
+				events_obj.non_shm_events.send_event_pollcount;
+		mbx_ret_val = mailbx_send(mbox_module_no,
 				NOTIFYDRV_TESLA_SEND_MBX, payload);
-
-
-		if (mbxRetVal == KErrNone) {
-			status = NOTIFY_SOK;
-		} else {
-
-			status = NOTIFY_EFAIL;
-			SET_FAILURE_REASON(status);
-		}
-
-		TRC_1LEAVE("Tesla Send", mbxRetVal);
-
+		gt_1trace(notifymbx_debugmask, GT_5CLASS,
+				"Tesla Send", mbx_ret_val);
 	}
-
-
-	TRC_1LEAVE("NotifyMbxDrv_sendEvent", status);
-
+	gt_1trace(notifymbx_debugmask, GT_5CLASS,
+			"notify_mbxdrv_sendevent", status);
 	return status;
 }
 
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_disable
+/*
+* Disable all events for this Notify driver.
 *
-*@desc   Disable all events for this Notify driver.
-*
-*@modif  None
-*----------------------------------------------------------------------------
 */
-/*TODO:Need to introduce the procId not to affect the parallel IPC stacks*/
-
-void *
-NotifyMbxDrv_disable(IN struct Notify_DriverHandle *handle)
+void *notify_mbxdrv_disable(struct notify_driver_handle *handle)
 {
-	signed long int mbxRetVal = KErrNone;
-	struct MboxConfig *mBoxHwConfig = Mailbx_GetMBoxConfig();
-	unsigned long int mBoxModuleNo = mBoxHwConfig->mBoxModules;
-	signed long int procId;
+	int mbx_ret_val = KErrNone;
+	struct mbox_config *mbox_hw_config = mailbx_get_config();
+	int mbox_module_no = mbox_hw_config->mbox_modules;
 
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
-	TRC_1ENTER("NotifyMbxDrv_disable", handle);
-
-	/*Disable the receive interrupt for Tesla */
-	procId = PROC_TESLA;
-
-	if (procId == PROC_TESLA) {
-		mbxRetVal = Mailbx_InterruptDisable(mBoxModuleNo,
-					(NOTIFYDRV_TESLA_RECV_MBX * 2));
-
-		TRC_1PRINT(TRC_LEVEL1, "Tesla Disable[%d]", mbxRetVal);
-	}
-
-
-	TRC_1PRINT(TRC_LEVEL1, "  flags[%d]", NULL);
-	TRC_0LEAVE("NotifyMbxDrv_disable");
-
+	BUG_ON(notify_mbxdrv_state_obj.idriver_isinit == false);
+	gt_1trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_disable\n",
+								handle);
+	mbx_ret_val = mailbx_interrupt_disable(mbox_module_no,
+				(NOTIFYDRV_TESLA_RECV_MBX * 2));
+	gt_1trace(notifymbx_debugmask, GT_ENTER,
+			"Tesla Disable[%d]", mbx_ret_val);
 	return NULL; /*No flags to be returned. */
 }
 
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_restore
-*
-*@desc   Restore the Notify driver to the state before the last disable was
+/*
+* Restore the Notify driver to the state before the last disable was
 *called.
 *
-*@modif  TBD
-*----------------------------------------------------------------------------
 */
-/*TODO: Need to introduce the procId not to affect the parallel IPC stacks*/
-
-signed long int
-NotifyMbxDrv_restore(IN struct Notify_DriverHandle *handle,
-IN void *flags)
+signed long int notify_mbxdrv_restore(struct notify_driver_handle *handle,
+							void *flags)
 {
-	signed long int mbxRetVal = KErrNone;
-	struct MboxConfig *mBoxHwConfig = Mailbx_GetMBoxConfig();
-	unsigned long int mBoxModuleNo = mBoxHwConfig->mBoxModules;
-	signed long int procId;
+	int mbx_ret_val = 0;
+	struct mbox_config *mbox_hw_config = mailbx_get_config();
+	int mbox_module_no = mbox_hw_config->mbox_modules;
 
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
-	TRC_2ENTER("NotifyMbxDrv_restore", handle, flags);
-
+	BUG_ON(notify_mbxdrv_state_obj.idriver_isinit == false);
+	gt_2trace(notifymbx_debugmask, GT_ENTER,
+		"notify_mbxdrv_restore", handle, flags);
 	(void) handle;
 	(void) flags;
-
 	/*Enable the receive interrupt for Tesla */
-	procId = PROC_TESLA;
-
-	if (procId == PROC_TESLA) {
-
-		mbxRetVal = Mailbx_InterruptEnable(mBoxModuleNo,
-				(NOTIFYDRV_TESLA_RECV_MBX * 2));
-
-		TRC_1PRINT(TRC_LEVEL1, "Tesla Enable[%d]", mbxRetVal);
-	}
-
-
-	TRC_1LEAVE("NotifyMbxDrv_restore", NOTIFY_SOK);
-
-	return NOTIFY_SOK;
+	mbx_ret_val = mailbx_interrupt_enable(mbox_module_no,
+			(NOTIFYDRV_TESLA_RECV_MBX * 2));
+	gt_1trace(notifymbx_debugmask, GT_1CLASS,
+		"Tesla Enable[%d]", mbx_ret_val);
+	return mbx_ret_val;
 }
 
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_disableEvent
+/*
+* Disable a specific event for this Notify driver.
 *
-*@desc   Disable a specific event for this Notify driver.
-*
-*@modif  TBD
-*----------------------------------------------------------------------------
 */
-
-signed long int
-NotifyMbxDrv_disableEvent(IN struct Notify_DriverHandle *handle,
-IN unsigned long int        procId,
-IN unsigned long int              eventNo)
+signed long int notify_mbxdrv_disable_event(struct notify_driver_handle *handle,
+			unsigned long int  proc_id, unsigned long int  event_no)
 {
 	static int access_count ;
-	signed long int        status = NOTIFY_SOK;
-	struct NotifyMbxDrvModule *driverObj;
+	signed long int status = 0;
+	struct notify_mbxdrv_module *driver_object;
 
 	access_count++;
+	gt_3trace(notifymbx_debugmask, GT_ENTER,
+	"notify_mbxdrv_disable_event", handle, proc_id, event_no);
 
-	TRC_3ENTER("NotifyMbxDrv_disableEvent", handle, procId, eventNo);
+	BUG_ON(notify_mbxdrv_state_obj.idriver_isinit == false);
+	BUG_ON(handle == NULL);
+	BUG_ON(handle->driver_object == NULL);
+	BUG_ON((proc_id != PROC_TESLA) && (proc_id != PROC_DUCATI));
 
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
-	DBC_require(handle !=  NULL);
-	DBC_require((handle !=  NULL) && (handle->driverObj != NULL));
-	DBC_require((procId == PROC_TESLA) || (procId == PROC_DUCATI));
+	if (proc_id == PROC_TESLA) {
+		gt_0trace(notifymbx_debugmask, GT_ENTER, "Tesla DisableEvent");
 
-	if (procId == PROC_TESLA) {
-		TRC_0ENTER("Tesla DisableEvent");
-
-
-	driverObj = (struct NotifyMbxDrvModule *)handle->driverObj;
-
-	DBC_assert(eventNo < NotifyMbxDrv_StateObj.drvProcObjects[PROC_TESLA].
-					eventsObj.nonShmEvents.numEvents);
-
+		driver_object = (struct notify_mbxdrv_module *)
+					handle->driver_object;
+		BUG_ON(event_no > notify_mbxdrv_state_obj.
+					drv_proc_objects[PROC_TESLA].
+					events_obj.non_shm_events.num_events);
 		if (access_count == 1) {
-
-			CLEAR_BIT(NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].
-				eventsObj.nonShmEvents.
-				regMask.enableMask, eventNo);
+			CLEAR_BIT(notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].
+				events_obj.non_shm_events.
+				reg_mask.enable_mask, event_no);
 		}
-
-		TRC_1LEAVE("Tesla DisableEvent", NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].eventsObj.
-				nonShmEvents.regMask.enableMask);
+		gt_1trace(notifymbx_debugmask, GT_5CLASS,
+				"Tesla DisableEvent", notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].events_obj.
+				non_shm_events.reg_mask.enable_mask);
 	}
-
-
-
-	TRC_1LEAVE("NotifyMbxDrv_disableEvent", status);
-
-	return status;
-
-}
-
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_enableEvent
-*
-*@desc   Enable a specific event for this Notify driver.
-*
-*@modif  TBD
-*----------------------------------------------------------------------------
-*/
-
-signed long int
-NotifyMbxDrv_enableEvent(IN struct Notify_DriverHandle *handle,
-IN unsigned long int        procId,
-IN unsigned long int              eventNo)
-{
-	signed long int        status = NOTIFY_SOK;
-	struct NotifyMbxDrvModule *driverObj;
-
-
-	TRC_3ENTER("NotifyMbxDrv_enableEvent", handle,
-					procId, eventNo);
-
-
-	DBC_require(NotifyMbxDrv_StateObj.iDriver_IsInit == TRUE);
-	DBC_require(handle !=  NULL);
-	DBC_require((handle !=  NULL) && (handle->driverObj != NULL));
-	DBC_require((procId == PROC_TESLA) || (procId == PROC_DUCATI));
-
-	driverObj = (struct NotifyMbxDrvModule *)&handle->driverObj;
-
-
-	if (procId == PROC_TESLA) {
-		TRC_0ENTER("Tesla EnableEvent");
-
-		DBC_assert(eventNo < NotifyMbxDrv_StateObj.
-				drvProcObjects[PROC_TESLA].eventsObj.
-				nonShmEvents.numEvents);
-
-		SET_BIT(NotifyMbxDrv_StateObj.drvProcObjects[PROC_TESLA].
-		eventsObj.nonShmEvents.regMask.enableMask, eventNo);
-
-
-		TRC_1LEAVE("Tesla EnableEvent", NotifyMbxDrv_StateObj.
-		drvProcObjects[PROC_TESLA].eventsObj.nonShmEvents.
-						regMask.enableMask);
-	}
-
-
-	TRC_1LEAVE("NotifyMbxDrv_enableEvent", status);
-
+	gt_1trace(notifymbx_debugmask, GT_5CLASS,
+			"notify_mbxdrv_disable_event", status);
 	return status;
 }
 
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_debug
+/*
+* Enable a specific event for this Notify driver.
 *
-*@desc   Print debug information for the Notify driver.
-*
-*@modif  TBD
-*----------------------------------------------------------------------------
 */
-
-signed long int
-NotifyMbxDrv_debug(IN struct Notify_DriverHandle *handle)
+signed long int notify_mbxdrv_enable_event(struct notify_driver_handle *handle,
+		unsigned long int     proc_id, unsigned long int     event_no)
 {
-	signed long int status = NOTIFY_SOK;
-	unsigned long int    procId;
+	int status = 0;
+	struct notify_mbxdrv_module *driver_object;
 
-	TRC_1ENTER("NotifyMbxDrv_debug", handle);
+	gt_3trace(notifymbx_debugmask, GT_ENTER,
+			"notify_mbxdrv_enable_event", handle,
+					proc_id, event_no);
 
-	procId = PROC_TESLA;
+	BUG_ON(notify_mbxdrv_state_obj.idriver_isinit == false);
+	BUG_ON(handle == NULL);
+	BUG_ON(handle->driver_object == NULL);
+	BUG_ON((proc_id != PROC_TESLA) && (proc_id != PROC_DUCATI));
 
-	if (procId == PROC_TESLA) {
-		TRC_0PRINT(TRC_LEVEL1,
-		"Tesla Debug: Nothing being printed currently.");
+	driver_object = (struct notify_mbxdrv_module *)&handle->driver_object;
+	if (proc_id == PROC_TESLA) {
+		gt_0trace(notifymbx_debugmask, GT_ENTER, "Tesla EnableEvent");
+
+		BUG_ON(event_no > notify_mbxdrv_state_obj.
+				drv_proc_objects[PROC_TESLA].events_obj.
+				non_shm_events.num_events);
+		SET_BIT(notify_mbxdrv_state_obj.drv_proc_objects[PROC_TESLA].
+		events_obj.non_shm_events.reg_mask.enable_mask, event_no);
+		gt_1trace(notifymbx_debugmask, GT_5CLASS,
+			"Tesla EnableEvent", notify_mbxdrv_state_obj.
+		drv_proc_objects[PROC_TESLA].events_obj.non_shm_events.
+						reg_mask.enable_mask);
 	}
-
-
-	TRC_1LEAVE("NotifyMbxDrv_debug", status);
-
+	gt_1trace(notifymbx_debugmask, GT_5CLASS,
+			"notify_mbxdrv_enable_event", status);
 	return status;
 }
 
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_ShmISR
+/*
+* Print debug information for the Notify driver.
 *
-*@desc   This function implements the interrupt service routine for the
-*interrupt received from the DSP.
-*
-*@modif  None.
-*----------------------------------------------------------------------------
 */
-
-void
-NotifyMbxDrv_NonShmISR(IN void *refData)
+signed long int notify_mbxdrv_debug(IN struct notify_driver_handle *handle)
 {
-	unsigned long int                       payload   = 0;
-	unsigned long int                       i         = 0;
-	struct list_head  *temp;
-	unsigned long int                       j;
-	struct NotifyShmDrv_EventRegEntry *regChart;
-	unsigned long int                       eventNo;
-	struct NotifyDrvProcModule *drvProcObject;
-	struct MboxConfig *mBoxHwConfig = Mailbx_GetMBoxConfig();
-	unsigned long int mBoxModuleNo = mBoxHwConfig->mBoxModules;
-	signed long int mbxRetVal = KErrNone;
-	unsigned long int numMessages = 0;
-	unsigned long int numEvents = 0;
+	int status = 0;
+	gt_1trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_debug", handle);
+	gt_0trace(notifymbx_debugmask, GT_1CLASS,
+	"Tesla Debug: Nothing being printed currently.");
+	gt_1trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_debug", status);
+	return status;
+}
+
+/*
+* This function implements the interrupt service routine for the
+* interrupt received from the DSP.
+*
+*/
+void notify_mbxdrv_nonshm_isr(void *ref_data)
+{
+	unsigned long int payload = 0;
+	unsigned long int i = 0;
+	struct list_head *temp;
+	unsigned long int j;
+	struct notify_shmdrv_eventreg *reg_chart;
+	unsigned long int event_no;
+	struct notify_drv_proc_module *drv_proc_object;
+	struct mbox_config *mbox_hw_config = mailbx_get_config();
+	unsigned long int mbox_module_no = mbox_hw_config->mbox_modules;
+	signed long int mbx_ret_val = 0;
+	unsigned long int num_messages = 0;
+	unsigned long int num_events = 0;
 
 	/* Commented out, since this function will be called in an ISR */
-	TRC_1ENTER("NotifyMbxDrv_NonShmISR", refData);
+	gt_1trace(notifymbx_debugmask, GT_ENTER,
+			"notify_mbxdrv_nonshm_isr", ref_data);
 
-	drvProcObject = (struct NotifyDrvProcModule *) refData;
-
-	DBC_require(drvProcObject != NULL);
-
-	regChart = drvProcObject->regChart;
-	numEvents = drvProcObject->eventsObj.nonShmEvents.numEvents;
-
-
-
+	drv_proc_object = (struct notify_drv_proc_module *) ref_data;
+	BUG_ON(drv_proc_object == NULL);
+	reg_chart = drv_proc_object->reg_chart;
+	num_events = drv_proc_object->events_obj.non_shm_events.num_events;
 
 	do {
-
-		eventNo = regChart[i].regEventNo;
-		if (eventNo != (unsigned long int) -1) {
-
-
-			if ((TEST_BIT(drvProcObject->eventsObj.
-			nonShmEvents.regMask.enableMask, eventNo)) == TRUE) {
-
-
-				mbxRetVal = Mailbx_Read(mBoxModuleNo,
+		event_no = reg_chart[i].reg_event_no;
+		if (event_no != (unsigned long int) -1) {
+			if ((TEST_BIT(drv_proc_object->events_obj.
+			non_shm_events.reg_mask.
+				enable_mask, event_no)) == true) {
+				mbx_ret_val = mailbx_read(mbox_module_no,
 					NOTIFYDRV_TESLA_RECV_MBX, &payload,
-					&numMessages, FALSE);
-
-
-				if (mbxRetVal == KErrNone) {
-
-					temp  = drvProcObject->eventList
-						[eventNo].
-						listeners->head.next;
-
-					for (j = 0; j <
-					drvProcObject->eventList[eventNo].
-						eventHandlerCount; j++) {
-
-
-						if (temp >
-							(struct list_head *)0) {
-
-							((struct
-							NotifyDrv_EventListener
-							 *)
-							 temp)->fnNotifyCbck(
-							drvProcObject->procId,
-							 eventNo,
-							((struct
-							NotifyDrv_EventListener
-							 *)
-							 temp)->cbckArg,
-							payload);
-
-							temp = temp->next;
-						}
-
+					&num_messages, false);
+				BUG_ON(mbx_ret_val != 0);
+				temp  = drv_proc_object->event_list
+					[event_no].listeners->head.next;
+				for (j = 0; j <
+				drv_proc_object->event_list[event_no].
+					event_handler_count; j++) {
+					if (temp > (struct list_head *)0) {
+						((struct
+						notify_drv_eventlistner
+						 *)
+						 temp)->fn_notify_cbck(
+						drv_proc_object->
+						proc_id,
+						 event_no,
+						((struct
+						notify_drv_eventlistner
+						 *)
+						 temp)->cbck_arg,
+						payload);
+						temp = temp->next;
 					}
-				} else {
-					SET_FAILURE_REASON(NOTIFY_EFAIL);
 				}
 			}
-
-
-
 			i++;
 		}
-	} while ((eventNo != (unsigned long int) -1) &&
-					(i < numEvents));
-
-
+	} while ((event_no != (unsigned long int) -1) && (i < num_events));
 }
-EXPORT_SYMBOL(NotifyMbxDrv_NonShmISR);
+EXPORT_SYMBOL(notify_mbxdrv_nonshm_isr);
 
-
-/**----------------------------------------------------------------------------
-*@func   NotifyMbxDrv_queSearchElement
+/*
+* This function searchs for a element the List.
 *
-*@desc   This function searchs for a element the List.
-*
-*@modif  None.
-*----------------------------------------------------------------------------
 */
-static
-void
-NotifyMbxDrv_queSearchElement(IN  struct lst_list *list,
-IN  struct NotifyDrv_EventListener *checkObj,
-OUT struct NotifyDrv_EventListener * *listener)
+static void notify_mbxdrv_qsearch_elem(IN  struct lst_list *list,
+			IN  struct notify_drv_eventlistner *checkObj,
+			OUT struct notify_drv_eventlistner * *listener)
 {
 	struct list_head    *temp      = NULL ;
-	struct NotifyDrv_EventListener *lTemp     = NULL ;
-	short int                         found     = FALSE;
+	struct notify_drv_eventlistner *lTemp     = NULL ;
+	short int found     = false;
 
-	TRC_3ENTER("NotifyMbxDrv_queSearchElement",
+	gt_3trace(notifymbx_debugmask, GT_ENTER, "notify_mbxdrv_qsearch_elem",
 				list, checkObj, listener);
 
-	DBC_require(list     !=  NULL);
-	DBC_require(checkObj !=  NULL);
-	DBC_require(listener !=  NULL);
+	BUG_ON(list ==  NULL);
+	BUG_ON(checkObj == NULL);
+	WARN_ON(listener == NULL);
 
-	if (listener !=  NULL) {
-		*listener = NULL;
-
-		if ((list !=  NULL) && (checkObj != NULL)) {
-			if (list_empty((struct list_head *)list) == FALSE) {
-				temp = list->head.next;
-
-				while ((found == FALSE) && (temp != NULL)) {
-
-					lTemp =
-					(struct NotifyDrv_EventListener *)
-					(temp);
-
-					if ((lTemp->fnNotifyCbck ==
-					checkObj->fnNotifyCbck) &&
-					(lTemp->cbckArg   ==
-					checkObj->cbckArg)) {
-							found = TRUE;
-					} else {
-							temp = temp->next;
-					}
-
-				}
-
-				if (found == TRUE)
-					*listener = lTemp;
-
-
+	if (listener != NULL)
+		return;
+	*listener = NULL;
+	if ((list !=  NULL) && (checkObj != NULL)) {
+		if (list_empty((struct list_head *)list) == FALSE) {
+			temp = list->head.next;
+			while ((found == FALSE) && (temp != NULL)) {
+				lTemp =
+				(struct notify_drv_eventlistner *)(temp);
+				if ((lTemp->fn_notify_cbck ==
+				checkObj->fn_notify_cbck) &&
+				(lTemp->cbck_arg == checkObj->cbck_arg)) {
+					found = TRUE;
+				} else
+					temp = temp->next;
 			}
+			if (found == TRUE)
+				*listener = lTemp;
 		}
 	}
-
-	TRC_1PRINT(TRC_LEVEL1, "  listener[0x%x]", *listener);
-	TRC_0LEAVE("NotifyMbxDrv_queSearchElement");
+	gt_1trace(notifymbx_debugmask, GT_1CLASS, "  listener[0x%x]\n",
+							*listener);
+	gt_0trace(notifymbx_debugmask, GT_ENTER,
+					"notify_mbxdrv_qsearch_elem\n");
+	return;
 }

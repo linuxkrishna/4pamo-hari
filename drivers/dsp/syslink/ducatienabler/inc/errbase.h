@@ -384,7 +384,7 @@
 /* Invalid channel mode argument. */
 #define CHNL_E_BADMODE              (CHNL_EBASE + 0x05)
 
-/* dwTimeOut parameter was CHNL_IOCNOWAIT, yet no I/O completions were
+/* dw_time_out parameter was CHNL_IOCNOWAIT, yet no I/O completions were
  * queued. */
 #define CHNL_E_NOIOC                (CHNL_EBASE + 0x06)
 
@@ -431,7 +431,7 @@
 /* Wait for flush operation on an output channel timed out. */
 #define CHNL_E_WAITTIMEOUT          (CHNL_EBASE + 0x15)
 
-/* User supplied hEvent must be specified with pstrEventName attribute */
+/* User supplied h_event must be specified with pstrEventName attribute */
 #define CHNL_E_BADUSEREVENT         (CHNL_EBASE + 0x16)
 
 /* Illegal user event name specified */
@@ -498,7 +498,7 @@
 #define E_KFILE_INVALIDBUFFER       (KFILE_EBASE + 0x05)
 
 /* Bad origin argument. */
-#define E_KFILE_BADORIGINFLAG       (KFILE_EBASE + 0x06)
+#define E_KFILE_BADORIGINflag       (KFILE_EBASE + 0x06)
 
 /* Invalid file offset value. */
 #define E_KFILE_INVALIDOFFSET       (KFILE_EBASE + 0x07)

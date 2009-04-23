@@ -124,11 +124,11 @@ DSP_STATUS CHNLSM_EnableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 	status = DEV_GetIOMgr(pDevContext->hDevObject, &hIOMgr);
 
     eventNo = ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER);
-    Notifystatus = Notify_enableEvent(handlePtr, 0, eventNo);
+    Notifystatus = notify_enable_event(handlePtr, 0, eventNo);
 
 
 	if (devType == DSP_UNIT) {
-		hwStatus = HW_MBOX_EventEnable(resources.dwMboxBase,
+		hwStatus = hw_mbox_event_enable(resources.dwMboxBase,
 						 MBOX_DSP2ARM,
 						 MBOX_ARM,
 						 HW_MBOX_INT_NEW_MSG);
@@ -152,12 +152,12 @@ DSP_STATUS CHNLSM_DisableInterrupt(struct WMD_DEV_CONTEXT *hDevContext)
 
 	eventNo = ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER);
 	DBG_Trace(DBG_ENTER, "CHNLSM_DisableInterrupt(0x%x)\n", hDevContext);
-	Notifystatus = Notify_disableEvent(handlePtr, 0, eventNo);
+	Notifystatus = notify_disable_event(handlePtr, 0, eventNo);
 
 	status = CFG_GetHostResources(
 			(struct CFG_DEVNODE *)DRV_GetFirstDevExtension(),
 			&resources);
-	hwStatus = HW_MBOX_EventDisable(resources.dwMboxBase, MBOX_DSP2ARM,
+	hwStatus = hw_mbox_event_disable(resources.dwMboxBase, MBOX_DSP2ARM,
 					  MBOX_ARM, HW_MBOX_INT_NEW_MSG);
 	return status;
 }
@@ -225,7 +225,7 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 		       (resources.dwDmmuBase) + 0x10));
 
 		/* Restore mailbox settings */
-		status = HW_MBOX_restoreSettings(resources.dwMboxBase);
+		status = hw_mbox_restore_settings(resources.dwMboxBase);
 		DBG_Trace(DBG_LEVEL6, "MailBoxSettings: SYSCONFIG = 0x%x\n",
 			  mboxsetting.sysconfig);
 		DBG_Trace(DBG_LEVEL6, "MailBoxSettings: IRQENABLE0 = 0x%x\n",
@@ -237,7 +237,7 @@ DSP_STATUS CHNLSM_InterruptDSP(struct WMD_DEV_CONTEXT *hDevContext)
 #endif
 #endif
 	}
-		notifyStatus = Notify_sendEvent(handlePtr,/*PROC_TESLA*/0,
+		notifyStatus = notify_sendevent(handlePtr,/*PROC_TESLA*/0,
 		((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER),
 		pDevContext->wIntrVal2Dsp, true);
 
@@ -287,12 +287,12 @@ bool CHNLSM_ISR(struct WMD_DEV_CONTEXT *hDevContext, OUT bool *pfSchedDPC,
 	CFG_GetHostResources(
 		(struct CFG_DEVNODE *)DRV_GetFirstDevExtension(), &resources);
 
-	HW_MBOX_NumMsgGet(resources.dwMboxBase, MBOX_DSP2ARM, &numMbxMsg);
+	hw_mbox_nomsg_get(resources.dwMboxBase, MBOX_DSP2ARM, &numMbxMsg);
 
 	if (numMbxMsg > 0) {
-		HW_MBOX_MsgRead(resources.dwMboxBase, MBOX_DSP2ARM, &mbxValue);
+		hw_mbox_msg_read(resources.dwMboxBase, MBOX_DSP2ARM, &mbxValue);
 
-		HW_MBOX_EventAck(resources.dwMboxBase, MBOX_DSP2ARM,
+		hw_mbox_event_ack(resources.dwMboxBase, MBOX_DSP2ARM,
 				 HW_MBOX_U0_ARM, HW_MBOX_INT_NEW_MSG);
 
 		DBG_Trace(DBG_LEVEL3, "Read %x from Mailbox\n", mbxValue);

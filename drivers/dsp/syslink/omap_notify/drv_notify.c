@@ -1,17 +1,19 @@
 
-/**============================================================================
-*@file   drv_notify.c
-*
-*@desc   Implementation of linux module driver interface.
-*
-*============================================================================
-*Copyright(c) Texas Instruments Incorporated 2002-2008
-*
-*Use of this software is controlled by the terms and conditions found in the
-*license agreement under which this software has been supplied or provided.
-*============================================================================
-*/
-
+/*
+ * drv_notify.c
+ *
+ * Syslink support functions for TI OMAP processors.
+ *
+ * Copyright (C) 2008-2009 Texas Instruments, Inc.
+ *
+ * This package is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 
 /*----------------------------------- OS Specific Headers         */
@@ -29,545 +31,218 @@
 
 
 /*----------------------------------- IPC headers                 */
-#include <ipc.h>
-#include <_ipc.h>
-#include <ipcdefs.h>
-#include <trc.h>
-
-/*----------------------------------- Trace & Debug               */
+#include <gt.h>
 
 /*----------------------------------- OSAL Headers                */
 #include <_drvdefs.h>
-#include <sync.h>
 
 /*----------------------------------- gen headers                 */
-#include "list.h"
 #include <mem.h>
 
 
 /*----------------------------------- Notify headers              */
+#include <notify_driver.h>
 #include <gpptypes.h>
 #include <notifyerr.h>
 #include <notify.h>
-#include <notify_driver.h>
 
-#include <_notifydefs.h>
+
 #include <global_var.h>
 
 
-
-
-
-/**============================================================================
-*@macro  COMPONENT_ID
-*
-*@desc   Identifier for sub-component.
-*============================================================================
-*/
-#define  COMPONENT_ID       ID_DRV_IPCNOTIFY
-
-/**============================================================================
-*@macro  SET_FAILURE_REASON
-*
-*@desc   Sets failure reason.
-*============================================================================
-*/
-#if defined NOTIFY_DEBUG
-#define SET_FAILURE_REASON(status) \
-TRC_SetReason(status, FID_C_DRV_IPCNOTIFY, __LINE__)
-#else
-#define SET_FAILURE_REASON(status)
-#endif
-
-
-/**============================================================================
-*@macro  MAX_PROCESSES
-*
-*@desc   Maximum number of user supported.
-*============================================================================
+/*
+* Maximum number of user supported.
 */
 #define  MAX_PROCESSES 32u
 
+/*Flag for indicating initialization status.*/
+static bool event_is_initialized = false ;
 
-/**============================================================================
-*@name   Event_IsInitialized
-*
-*@desc   Flag for indicating initialization status.
-*============================================================================
-*/
-static bool Event_IsInitialized = FALSE ;
-
-
-/**============================================================================
-*@name   struct Event_Packet_tag
-*
-*@desc   Structure of Event Packet read from notify kernel-side.
-*
-*@field  element
-*List element header
-*@field  eventNo
-*Event Number.
-*@field  data
-*Data associated with event.
-*@field  func
-*User callback function.
-*@field  param
-*User callback argument.
-*@field  isExit
-*Tells whether to terminate notify thread.
-*============================================================================
-*/
-struct Event_Packet_tag {
-struct list_head  element;
-u32                      procId       ;
-u32       	eventNo      ;
-u32       data         ;
-FnNotifyCbck func         ;
-void *param        ;
-bool         isExit       ;
+/*Structure of Event Packet read from notify kernel-side..*/
+struct event_packet_tag {
+	struct list_head  element;
+	u32     proc_id;
+	u32     event_no;
+	u32     data;
+	fn_notify_cbck func;
+	void *param;
+	bool  is_exit;
 };
 
-
-/**============================================================================
-*@name   struct Event_Cbck_tag
-*
-*@desc   Structure of Event callback argument passed to register fucntion.
-*
-*@field  element
-*List element header
-*@field  func
-*User callback function.
-*@field  param
-*User callback argument.
-*============================================================================
-*/
-struct Event_Cbck_tag {
-struct list_head  element      ;
-u32 procId       ;
-FnNotifyCbck func         ;
-void *param        ;
-u32       pid          ;
+/*Structure of Event callback argument passed to register fucntion*/
+struct event_cbck_tag {
+	struct list_head  element;
+	u32 proc_id;
+	fn_notify_cbck func;
+	void *param;
+	u32    pid;
 };
 
-
-/**============================================================================
-*@name   struct Event_State_tag
-*
-*@desc   Keeps the information related to Event.
-*
-*@field  bufList
-*head of received event list.
-*@field  pid
-*process group ID.
-*@field  refCount
-*reference count, used when multiple notify_register is called
-*from same process space(multi threads/processes).
-*@field  semObj
-*Semphore for waiting on event.
-*============================================================================
-*/
-struct Event_State_tag {
-struct lst_list *bufList  ;
-u32          pid      ;
-u32          refCount ;
-struct semaphore sem;
+/*Keeps the information related to Event.*/
+struct event_state_tag {
+	struct lst_list *buf_list;
+	u32  pid;
+	u32  ref_count;
+	struct semaphore sem;
 };
 
 static struct semaphore  drv_notify_sem;
 
-/**----------------------------------------------------------------------------
-*@name   major
-*
-*@desc   Major number of driver.
-*----------------------------------------------------------------------------
-*/
+/*Major number of driver.*/
 static signed long int major = 232 ;
 
-/**----------------------------------------------------------------------------
-*@name   Event_cbckList
-*
-*@desc   list containg callback arguments for all registered handlers from
-*user mode.
-*----------------------------------------------------------------------------
-*/
-static struct lst_list *Event_cbckList;
+/*list containg callback arguments for all registered handlers from
+* user mode.*/
+static struct lst_list *event_cbck_list;
 
-/**----------------------------------------------------------------------------
-*@name   Event_stateObj
-*
-*@desc   List for all user processes registered.
-*----------------------------------------------------------------------------
-*/
-static struct Event_State_tag Event_stateObj[MAX_PROCESSES] ;
+/*List for all user processes registered.*/
+static struct event_state_tag event_state_obj[MAX_PROCESSES] ;
 
-/*----------------------------------------------------------------------------
-*@name   Event_lockHandle
-*
-*@desc   Handle to lock used by spinlock.
-*----------------------------------------------------------------------------
-*/
-static struct SYNC_CSOBJECT *hEvent_lockHandle;
+/* Handle to lock used by spinlock.*/
 static spinlock_t drv_notify_lock;
-/*
-*	Notify_StateObject
-*/
 
-/**----------------------------------------------------------------------------
-*@name   DRV_open
-*
-*@desc   Linux driver function to open the driver object.
-*
-*@arg    inode
-*inode pointer.
-*filp
-*File structure pointer.
-*
-*@ret    0
-*Success.
-*non-zero
-*Failure.
-*
-*@enter  None.
-*
-*@leave  None.
-*
-*@see    None.
+/* open the Notify driver object..*/
+static int drv_open(struct inode *inode, struct file *filp) ;
 
-*----------------------------------------------------------------------------
-*/
-static int DRV_open(struct inode *inode, struct file *filp) ;
+/* close the Notify driver object..*/
+static int drv_close(struct inode *inode, struct file *filp) ;
 
+/* read function for of  Notify driver.*/
+static int drv_read(struct file *filp, char *dst, size_t  size, loff_t *offset);
 
-/**----------------------------------------------------------------------------
-*@name   DRV_close
-*
-*@desc   Linux driver function to close the driver object.
-*
-*@arg    inode
-*inode pointer.
-*filp
-*File structure pointer.
-*
-*@ret    0
-*Success.
-*non-zero
-*Failure.
-*
-*@enter  None.
-*
-*@leave  None.
-*
-*@see    None.
+/* ioctl function for of Linux Notify driver.*/
+static int drv_ioctl(struct inode *inode, struct file *filp, unsigned int cmd,
+						unsigned long  args);
 
-*----------------------------------------------------------------------------
-*/
-static int DRV_close(struct inode *inode, struct file *filp) ;
+/* Module initialization function for Linux driver.*/
+static int __init drv_init_module(void);
 
+/* Module finalization  function for Linux driver.*/
+static void  __exit drv_finalize_module(void) ;
 
-/**----------------------------------------------------------------------------
-*@func   DRV_read
-*
-*@desc   read function for of Linux Notify driver.
-*
-*@arg    inode
-*inode pointer.
-*@arg    dst
-*Buffer to be filled.
-*@arg    size
-*number of bytes to read.
-*@arg    offset
-*offset from where to read.
-*
-*@ret    0
-*Operation successfully completed.
-*non-zero
-*failure occured.
-*
-*@enter  None
-*
-*@leave  None
-*
-*@see    None
-*----------------------------------------------------------------------------
-*/
-static int DRV_read(struct file *filp, char *dst, size_t  size, loff_t *offset);
+/* Function to invoke the APIs through ioctl.*/
+static struct file_operations driver_ops = {
+	.open = drv_open,
+	.ioctl = drv_ioctl,
+	.release = drv_close,
+	.read = drv_read,
+};
 
+#if defined(NOTIFY_DEBUG)
+#define SET_FAILURE_REASON(status)
+#else
+#define SET_FAILURE_REASON(status)
+#endif /*if defined(NOTIFY_DEBUG) */
 
-/**----------------------------------------------------------------------------
-*@func   DRV_ioctl
-*
-*@desc   ioctl function for of Linux Notify driver.
-*
-*@arg    inode
-*inode pointer.
-*@arg    filp
-*file pointer.
-*@arg    cmd
-*IOCTL command id.
-*@arg    args
-*arguments for the command.
-*
-*@ret    0
-*Operation successfully completed.
-*non-zero
-*failure occured.
-*
-*@enter  None
-*
-*@leave  None
-*
-*@see    None
-*----------------------------------------------------------------------------
-*/
-static int DRV_ioctl(struct inode *inode, struct file *filp,
-unsigned int cmd, unsigned long  args) ;
-
-
-/**----------------------------------------------------------------------------
-*@func   DRV_initializeModule
-*
-*@desc   Module initialization function for Linux driver.
-*
-*@arg    None.
-*
-*@ret    0
-*Successful execution.
-*non-zero
-*Failure.
-*
-*@enter  None
-*
-*@leave  None
-*
-*@see    None
-*----------------------------------------------------------------------------
-*/
-static int __init DRV_initializeModule(void) ;
-
-
-/**----------------------------------------------------------------------------
-*@func   DRV_finalizeModule
-*
-*@desc   Module finalization  function for Linux driver.
-*
-*@arg    None.
-*
-*@ret    None.
-*
-*@enter  None
-*
-*@leave  None
-*
-*@see    None
-*----------------------------------------------------------------------------
-*/
-static void  __exit DRV_finalizeModule(void) ;
-
-
-/**----------------------------------------------------------------------------
-*@name   DriverOps
-*
-*@desc   Function to invoke the APIs through ioctl.
-*----------------------------------------------------------------------------
-*/
-static struct file_operations driverOps = {
-
-.open = DRV_open,
-.ioctl = DRV_ioctl,
-.release = DRV_close,
-.read = DRV_read,
-
-} ;
-
-
-
-
-
-/**----------------------------------------------------------------------------
-*@func   DRV_initializeModule
-*
-*@desc   Module initialization  function for Linux driver.
-*----------------------------------------------------------------------------
-*/
-static int __init DRV_initializeModule(void)
+/* Module initialization  function for Notify driver.*/
+static int __init drv_init_module(void)
 {
-	u32   status    = NOTIFY_SOK ;
-	int             result    = 0 ;
-	struct Notify_Attrs    attrs ;
-	u32          i ;
+	int result = 0 ;
+	struct notify_attrs attrs ;
+	u32 i ;
 
-/*Display the version info and created date/time */
-
-
-/*--------------------------------------------------------------------
-*To enable trace for a component and/or subcomponent, uncomment the
-*corresponding statements below.(This is not a comprehensive list
-*of available trace masks. See file _signature.h)
-*--------------------------------------------------------------------
-*/
-
-	TRC_ENABLE(ID_KNL_NOTIFY_ALL);
-
-/*TRC_ENABLE(ID_KNL_NOTIFY_DRIVER)  ; */
-/*TRC_ENABLE(ID_DRV_IPCNOTIFY)      ; */
-
-/*--------------------------------------------------------------------
-*To set desired severity level for trace, uncomment the statement
-*below and change the argument to the function below.
-*--------------------------------------------------------------------
-*/
-
-/*TRC_SET_SEVERITY(TRC_ENTER) ; */
-
-
-	result = register_chrdev(major, "ipcnotify", &driverOps);
+	result = register_chrdev(major, "ipcnotify", &driver_ops);
 
 	if (result < 0) {
-		status = NOTIFY_EFAIL ;
-		SET_FAILURE_REASON(status) ;
-
-		TRC_1PRINT(TRC_LEVEL7,
-		"Linux API register_chrdev returned error: %d\n",
-		result) ;
+		pr_err("Notify driver initialization failure - 1\n");
+		goto func_end;
 	}
 
-	if (NOTIFY_SUCCEEDED(status)) {
-		/*TBD: what about future */
-		attrs.maxDrivers = 1 ;
-		status = Notify_init(&attrs) ;
-
-	if (NOTIFY_FAILED(status))
-		SET_FAILURE_REASON(status) ;
-
+	/*TBD: what about future */
+	attrs.maxDrivers = 1 ;
+	result  = notify_init(&attrs) ;
+	if (result < 0) {
+		pr_err("Notify driver initialization failure - 2\n");
+		goto func_end;
 	}
 
-	if (NOTIFY_SUCCEEDED(status)) {
-		/*initializes the list */
-		Event_cbckList =
-		MEM_Calloc(sizeof(struct lst_list), MEM_NONPAGED);
+	/*initializes the list */
+	event_cbck_list = mem_calloc(sizeof(struct lst_list), MEM_NONPAGED);
 
-		INIT_LIST_HEAD(&Event_cbckList->head) ;
+	INIT_LIST_HEAD(&event_cbck_list->head);
+	BUG_ON(event_cbck_list == NULL);
 
-		if (Event_cbckList == NULL) {
-			status = NOTIFY_EFAIL ;
-			SET_FAILURE_REASON(status);
-		}
+	spin_lock_init(&drv_notify_lock);
+	for (i = 0 ; i < MAX_PROCESSES ; i++) {
+
+		event_state_obj[i].buf_list =
+		mem_calloc(sizeof(struct lst_list),
+		MEM_NONPAGED);
+
+		INIT_LIST_HEAD(&event_state_obj[i].buf_list->head);
+		event_state_obj[i].pid= -1;
+		event_state_obj[i].ref_count = 0;
 	}
-
-	if (NOTIFY_SUCCEEDED(status))
-		spin_lock_init(&drv_notify_lock);
-
-	if (NOTIFY_SUCCEEDED(status)) {
-		for (i = 0 ; i < MAX_PROCESSES ; i++) {
-
-			Event_stateObj[i].bufList =
-			MEM_Calloc(sizeof(struct lst_list),
-			MEM_NONPAGED);
-
-			INIT_LIST_HEAD(&Event_stateObj[i].
-			bufList->head);
-
-			Event_stateObj[i].pid     = -1   ;
-			Event_stateObj[i].refCount = 0   ;
-		}
-		Event_IsInitialized = TRUE ;
-	}
-	TRC_1LEAVE("DRV_initializeModule", result) ;
-
+	event_is_initialized = true;	
+	gt_1trace(notify_debugmask, GT_ENTER, "drv_init_module", result) ;
+func_end:
 	return result ;
 }
 
-
-/**--------------------------------------------------------------------------
-*@name   DRV_finalizeModule
-*
-*@desc   Linux driver function to finalize the driver module.
-*----------------------------------------------------------------------------
-*/
-static void __exit DRV_finalizeModule(void)
+/* Module finalization  function for Notify driver.*/
+static void __exit drv_finalize_module(void)
 {
-	u32  status = NOTIFY_SOK ;
-	u32     tmpStatus = DSP_SOK ;
-	struct Event_Packet_tag *packet              ;
-	struct Event_Cbck_tag *cbck                ;
-	u32         i ;
-	TRC_0ENTER("DRV_finalizeModule") ;
-
+	int status = 0 ;
+	u32     tmp_status = 0 ;
+	struct event_packet_tag *packet;
+	struct event_cbck_tag *cbck;
+	u32 i ;
+	gt_0trace(notify_debugmask, GT_ENTER, "drv_finalize_module") ;
 	unregister_chrdev(major, "ipcnotify") ;
 
-	status = Notify_exit() ;
+	status = notify_exit() ;
 
-	if (NOTIFY_FAILED(status))
-		SET_FAILURE_REASON(status) ;
-
+	if (!status)
+		goto func_end;
 
 	for (i = 0 ; i < MAX_PROCESSES ; i++) {
-
 		while (!list_empty((struct list_head *)
-		Event_stateObj[i].bufList)) {
-
-			packet =
-			(struct Event_Packet_tag *)(Event_stateObj[i].bufList);
-
-			if ((DSP_SUCCEEDED(tmpStatus)) && (packet != NULL))
-				MEM_Free(packet) ;
+		event_state_obj[i].buf_list)) {
+			packet = 	(struct event_packet_tag *)
+				(event_state_obj[i].buf_list);
+			if (packet != NULL)
+				mem_free(packet) ;
 		}
-
-	if (Event_stateObj[i].bufList)
-		list_del((struct list_head *)Event_stateObj[i].bufList);
+		if (event_state_obj[i].buf_list)
+			list_del((struct list_head *)event_state_obj[i].buf_list);
 	}
 
-
-	while (!list_empty((struct list_head *)Event_cbckList)) {
-
-		cbck = (struct Event_Cbck_tag *)(Event_cbckList) ;
-
-		if ((DSP_SUCCEEDED(tmpStatus)) && (cbck != NULL))
-			MEM_Free(cbck) ;
+	while (!list_empty((struct list_head *)event_cbck_list)) {
+		cbck = (struct event_cbck_tag *)(event_cbck_list) ;
+		if (cbck != NULL)
+			mem_free(cbck) ;
 	}
-
-
-	if (Event_cbckList)
-		list_del((struct list_head *)Event_cbckList) ;
-
-	Event_IsInitialized = FALSE ;
-
-	SYNC_DeleteCS(hEvent_lockHandle) ;
-
-	TRC_0LEAVE("DRV_finalizeModule") ;
+	if (event_cbck_list)
+		list_del((struct list_head *)event_cbck_list) ;
+	event_is_initialized = false;
+func_end:
+	gt_0trace(notify_debugmask, GT_ENTER, "drv_finalize_module") ;
+	return;
 }
 
-
-/**----------------------------------------------------------------------------
-*@func   NOTIFY_KnlMatchEvent
-*
-*@desc   This function matches an event listener with a list element.
-*
-*@modif  None.
-*----------------------------------------------------------------------------
-*/
-static bool Drv_KnlMatchEventCbck(struct list_head *elem, void *data)
+/* This function matches an event listener with a list element..*/
+static bool drv_knlmatch_eventcbck(struct list_head *elem, void *data)
 {
-	bool           retVal    = FALSE ;
-	struct Event_Cbck_tag *regInfo   = NULL  ;
-	struct Event_Cbck_tag *unRegInfo = NULL  ;
-	TRC_2ENTER("Drv_KnlMatchEventCbck", elem, data) ;
+	bool  ret_val = false ;
+	struct event_cbck_tag *reg_info = NULL;
+	struct event_cbck_tag *unreg_info = NULL;
+	gt_2trace(notify_debugmask, GT_ENTER,
+		"drv_knlmatch_eventcbck", elem, data) ;
 
-	DBC_Require(elem != NULL) ;
+	BUG_ON(elem == NULL);
 
-	regInfo   = (struct Event_Cbck_tag *) elem ;
-	unRegInfo = (struct Event_Cbck_tag *) data ;
+	reg_info   = (struct event_cbck_tag *) elem ;
+	unreg_info = (struct event_cbck_tag *) data ;
 
-	if ((regInfo->func    == unRegInfo->func)
-	&& (regInfo->param   == unRegInfo->param)
-	&& (regInfo->pid     == unRegInfo->pid)
-	&& (regInfo->procId   == unRegInfo->procId))
-		retVal = TRUE ;
+	if ((reg_info->func    == unreg_info->func)
+	&& (reg_info->param   == unreg_info->param)
+	&& (reg_info->pid     == unreg_info->pid)
+	&& (reg_info->proc_id   == unreg_info->proc_id))
+		ret_val = true ;
+	gt_1trace(notify_debugmask, GT_ENTER,
+		"drv_knlmatch_eventcbck", ret_val) ;
 
-
-	TRC_1ENTER("Drv_KnlMatchEventCbck", retVal) ;
-
-	return retVal ;
+	return ret_val ;
 }
 
 
@@ -583,107 +258,108 @@ static bool Drv_KnlMatchEventCbck(struct list_head *elem, void *data)
 *@modif  None.
 *----------------------------------------------------------------------------
 */
-static void Notify_drvCallback(IN  unsigned long int procId, IN u32 eventNo,
-IN OPT void *arg,  IN OPT u32 payload)
+static void notify_drv_cbck(IN  unsigned long int proc_id, IN u32 event_no,
+				IN OPT void *arg,  IN OPT u32 payload)
 {
-	u32     status = DSP_SOK ;
+	u32     status = NOTIFY_SOK ;
 	bool           flag   = FALSE   ;
-	struct Event_Packet_tag *uBuf = NULL;
+	struct event_packet_tag *u_buf = NULL;
 	u32         i                ;
-	struct Event_Cbck_tag *cbck ;
+	struct event_cbck_tag *cbck ;
 	unsigned long irqFlags;
-	TRC_3ENTER("Notify_drvCallback", eventNo, arg, payload) ;
+	gt_3trace(notify_debugmask, GT_ENTER,
+		"notify_drv_cbck", event_no, arg, payload) ;
 
-	if (Event_IsInitialized == TRUE) {
+	if (event_is_initialized == TRUE) {
 
-		cbck = (struct Event_Cbck_tag *) arg ;
+		cbck = (struct event_cbck_tag *) arg ;
 
 		for (i = 0 ; (i < MAX_PROCESSES) && (flag != TRUE) ; i++) {
-			if (Event_stateObj[i].pid == cbck->pid) {
+			if (event_state_obj[i].pid == cbck->pid) {
 				flag = TRUE ;
 				break ;
 			}
 		}
 
 	if (flag != TRUE) {
-		status = DSP_EFAIL ;
+		status = NOTIFY_EFAIL ;
 		SET_FAILURE_REASON(status);
 
 	} else {
 
-	uBuf = (struct Event_Packet_tag *)
-	MEM_Alloc(sizeof(struct Event_Packet_tag),
+	u_buf = (struct event_packet_tag *)
+	mem_alloc(sizeof(struct event_packet_tag),
 	MEM_NONPAGED);
 
-		if (uBuf != NULL) {
+		if (u_buf != NULL) {
 
 			INIT_LIST_HEAD((struct list_head *)
-			&uBuf->element);
+			&u_buf->element);
 
-			if (DSP_FAILED(status)) {
-				MEM_Free(uBuf) ;
+			if (NOTIFY_FAILED(status)) {
+				mem_free(u_buf) ;
 				SET_FAILURE_REASON(status) ;
 			} else {
 
-				uBuf->procId  = cbck->procId ;
-				uBuf->data    = payload ;
-				uBuf->eventNo = eventNo ;
-				uBuf->func    = cbck->func ;
-				uBuf->param   = cbck->param ;
+				u_buf->proc_id  = cbck->proc_id ;
+				u_buf->data    = payload ;
+				u_buf->event_no = event_no ;
+				u_buf->func    = cbck->func ;
+				u_buf->param   = cbck->param ;
 				spin_lock_irqsave(&drv_notify_lock,
 				irqFlags);
 
 				list_add_tail
-				((struct list_head *)&(uBuf->element),
+				((struct list_head *)&(u_buf->element),
 				(struct list_head *)
-				Event_stateObj[i].bufList);
+				event_state_obj[i].buf_list);
 
 				spin_unlock(&drv_notify_lock);
 
-					if (DSP_FAILED(status)) {
-						MEM_Free(uBuf) ;
+					if (NOTIFY_FAILED(status)) {
+						mem_free(u_buf) ;
 						SET_FAILURE_REASON
 						(status);
 
 
 					} else {
 
-						up(&(Event_stateObj
+						up(&(event_state_obj
 						[i].sem));
 					}
 				}
 			}
 		}
 	} else {
-		status = DSP_EFAIL ;
+		status = NOTIFY_EFAIL ;
 		SET_FAILURE_REASON(status) ;
 	}
 
-	TRC_1LEAVE("Notify_drvCallback", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "notify_drv_cbck", status) ;
 }
 
 
 /**----------------------------------------------------------------------------
-*@name   DRV_open
+*@name   drv_open
 *
 *@desc   Linux specific function to open the driver.
 *----------------------------------------------------------------------------
 */
-static int DRV_open(struct inode *inode, struct file *filp)
+static int drv_open(struct inode *inode, struct file *filp)
 {
-	u32      status  = DSP_SOK ;
+	u32      status  = NOTIFY_SOK ;
 	short int            flag    = FALSE ;
 	u32          pid     = (u32) current->mm ;
 	u32          doInit  = 0 ;
-	struct lst_list *bufList = NULL ;
-	s32           osStatus = 0 ;
+	struct lst_list *buf_list = NULL ;
+	s32           os_status = 0 ;
 	u32          i ;
 	unsigned long irqFlags;
 
 
-	TRC_2ENTER("DRV_open", inode, filp) ;
+	gt_2trace(notify_debugmask, GT_ENTER, "drv_open", inode, filp) ;
 
-	if (Event_IsInitialized == TRUE) {
+	if (event_is_initialized == TRUE) {
 
 		spin_lock_irqsave(&drv_notify_lock,
 		irqFlags) ;
@@ -691,8 +367,8 @@ static int DRV_open(struct inode *inode, struct file *filp)
 		for (i = 0 ;
 		(i < MAX_PROCESSES) ; i++) {
 
-			if (Event_stateObj[i].pid == pid) {
-				Event_stateObj[i].refCount++ ;
+			if (event_state_obj[i].pid == pid) {
+				event_state_obj[i].ref_count++ ;
 				doInit = 1 ;
 				break ;
 			}
@@ -702,32 +378,32 @@ static int DRV_open(struct inode *inode, struct file *filp)
 		irqFlags) ;
 
 		if (doInit == 0) {
-			INIT_LIST_HEAD((struct list_head *)bufList);
+			INIT_LIST_HEAD((struct list_head *)buf_list);
 
-			if (bufList) {
+			if (buf_list) {
 				/*Create the semaphore */
 				sema_init(&drv_notify_sem, 0);
 
-				if (DSP_SUCCEEDED(status)) {
+				if (NOTIFY_SUCCEEDED(status)) {
 					spin_lock_irqsave(&drv_notify_lock,
 					irqFlags);
 
 					for (i = 0 ; (i < MAX_PROCESSES)
 					&& (flag != TRUE) ; i++) {
 
-						if (Event_stateObj[i].
+						if (event_state_obj[i].
 								pid == -1) {
-							Event_stateObj[i].
+							event_state_obj[i].
 							sem = drv_notify_sem;
 
-							Event_stateObj[i].pid
+							event_state_obj[i].pid
 									= pid;
 
-							Event_stateObj[i].
-								refCount++;
+							event_state_obj[i].
+								ref_count++;
 
-							Event_stateObj[i].
-							bufList = bufList;
+							event_state_obj[i].
+							buf_list = buf_list;
 
 							flag = TRUE;
 							break ;
@@ -741,72 +417,72 @@ static int DRV_open(struct inode *inode, struct file *filp)
 					SET_FAILURE_REASON(status) ;
 
 				if (flag != TRUE) {
-					list_del((struct list_head *)bufList);
-					status = DSP_EFAIL ;
+					list_del((struct list_head *)buf_list);
+					status = NOTIFY_EFAIL ;
 					SET_FAILURE_REASON(status) ;
 				}
 
 
 			} else {
-				status = DSP_EFAIL
+				status = NOTIFY_EFAIL
 				SET_FAILURE_REASON(status) ;
 			}
 		}
 
 	} else {
-		status = DSP_EFAIL ;
+		status = NOTIFY_EFAIL ;
 		SET_FAILURE_REASON(status) ;
 	}
 
-	if (DSP_FAILED(status))
-		osStatus = -1 ;
+	if (NOTIFY_FAILED(status))
+		os_status = -1 ;
 
-	TRC_1LEAVE("DRV_open", osStatus) ;
-	return osStatus ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "drv_open", os_status) ;
+	return os_status ;
 }
 
 
 /**----------------------------------------------------------------------------
-*@name   DRV_close
+*@name   drv_close
 *
 *@desc   Linux specific function to close the driver.
 *----------------------------------------------------------------------------
 */
-static int DRV_close(struct inode *inode, struct file *filp)
+static int drv_close(struct inode *inode, struct file *filp)
 {
 
-	u32      status  = DSP_SOK ;
+	u32      status  = NOTIFY_SOK ;
 	bool            flag    = FALSE ;
 	u32          pid     = (u32) current->mm ;
-	struct lst_list *bufList = NULL ;
+	struct lst_list *buf_list = NULL ;
 	u32          i ;
 	unsigned long irqsave;
-	TRC_2ENTER("DRV_close", inode, filp) ;
+	gt_2trace(notify_debugmask, GT_ENTER, "drv_close", inode, filp) ;
 
-	if (Event_IsInitialized == TRUE) {
+	if (event_is_initialized == TRUE) {
 
 		spin_lock_irqsave(&drv_notify_lock, irqsave);
 
 
 		for (i = 0 ; (i < MAX_PROCESSES) && (flag != TRUE) ; i++) {
 
-			if (Event_stateObj[i].pid == pid) {
+			if (event_state_obj[i].pid == pid) {
 
-				if (Event_stateObj[i].refCount == 1) {
+				if (event_state_obj[i].ref_count == 1) {
 
-					Event_stateObj[i].pid = -1 ;
-					Event_stateObj[i].refCount-- ;
-
-
+					event_state_obj[i].pid = -1 ;
+					event_state_obj[i].ref_count-- ;
 
 
-					bufList = Event_stateObj[i].bufList ;
 
-					Event_stateObj[i].bufList = NULL ;
+
+					buf_list = event_state_obj[i].buf_list ;
+
+					event_state_obj[i].buf_list = NULL ;
 					flag = TRUE ;
 					break ;
 				} else {
-					Event_stateObj[i].refCount-- ;
+					event_state_obj[i].ref_count-- ;
 				}
 			}
 		}
@@ -816,20 +492,20 @@ static int DRV_close(struct inode *inode, struct file *filp)
 
 		if (flag != TRUE) {
 			if (i == MAX_PROCESSES) {
-				status = DSP_EFAIL ;
+				status = NOTIFY_EFAIL ;
 				SET_FAILURE_REASON(status) ;
 			}
 		} else
-			list_del((struct list_head *)bufList) ;
+			list_del((struct list_head *)buf_list) ;
 
 
 	} else {
-		status = DSP_EFAIL ;
+		status = NOTIFY_EFAIL ;
 		SET_FAILURE_REASON(status) ;
 	}
 
 
-	TRC_1LEAVE("DRV_close", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "drv_close", status) ;
 	return 0 ;
 }
 
@@ -840,171 +516,177 @@ static int DRV_close(struct inode *inode, struct file *filp)
 *@desc   Linux specific function to read data from the driver.
 *============================================================================
 */
-static int DRV_read(struct file *filp, char *dst, size_t size, loff_t *offset)
+static int drv_read(struct file *filp, char *dst, size_t size, loff_t *offset)
 {
 	short int           flag   = FALSE   ;
-	struct Event_Packet_tag *uBuf   = NULL    ;
+	struct event_packet_tag *u_buf   = NULL    ;
 	u32         pid    = (u32) current->mm ;
-	u32         retVal = 0       ;
+	u32         ret_val = 0       ;
 	u32         i                ;
 	unsigned long irqsave;
-	TRC_4ENTER("DRV_read", filp, dst, size, offset) ;
+	gt_4trace(notify_debugmask, GT_ENTER,
+		"drv_read", filp, dst, size, offset) ;
 
-	DBC_Require(dst != NULL) ;
+	dbc_require(dst != NULL) ;
 
-	if (Event_IsInitialized == TRUE) {
+	if (event_is_initialized == TRUE) {
 		for (i = 0 ; (i < MAX_PROCESSES) && (flag != TRUE) ; i++) {
-			if (Event_stateObj[i].pid == pid) {
+			if (event_state_obj[i].pid == pid) {
 				flag = TRUE ;
 				break ;
 			}
 		}
 
 		if (flag == TRUE) {
-			if (Event_stateObj[i].bufList != NULL) {
+			if (event_state_obj[i].buf_list != NULL) {
 				/*Wait for the event */
-				if (down_interruptible(&Event_stateObj[i]
+				if (down_interruptible(&event_state_obj[i]
 								.sem)) {
-					retVal = DSP_EFAIL;
+					ret_val = NOTIFY_EFAIL;
 					goto func_end;
 				}
 
 				spin_lock_irqsave(&drv_notify_lock, irqsave);
 
-				uBuf =
-				(struct Event_Packet_tag *)
-				(Event_stateObj[i].bufList);
+				u_buf =
+				(struct event_packet_tag *)
+				(event_state_obj[i].buf_list);
 
 				spin_unlock_irqrestore(&drv_notify_lock,
 								irqsave);
 
-					if (uBuf != NULL) {
-						retVal =
+					if (u_buf != NULL) {
+						ret_val =
 						copy_to_user((void *) dst,
-						uBuf,
+						u_buf,
 						sizeof(struct
-						Event_Packet_tag));
+						event_packet_tag));
 
-						if (retVal != 0) {
-							TRC_1PRINT(TRC_LEVEL4,
+						if (ret_val != 0) {
+#if 0
+TODO: Change this to gt trace
+							trc_1PRINT(trc_LEVEL4,
 							"copy_to_user call \
 							failed %d\n",
-							retVal);
+							ret_val);
+#endif
 
 						} else {
-							retVal =
+							ret_val =
 							sizeof(struct
-							Event_Packet_tag);
+							event_packet_tag);
 						}
 
-						kfree(uBuf) ;
+						kfree(u_buf) ;
 					}
 			}
 		}
 	}
 
-	TRC_1LEAVE("DRV_read", retVal) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "drv_read", ret_val) ;
 func_end:
-	return retVal ;
+	return ret_val ;
 }
 
 
 /**----------------------------------------------------------------------------
-*@name   DRV_ioctl
+*@name   drv_ioctl
 *
 *@desc   ioctl function for of Linux Notify driver.
 *----------------------------------------------------------------------------
 */
-static int DRV_ioctl(struct inode *inode,
-struct file *filp,
-unsigned int   cmd,
-unsigned long  args)
+static int drv_ioctl(struct inode *inode,
+		struct file *filp,
+		unsigned int   cmd,
+		unsigned long  args)
+
 {
 	u32        status   = NOTIFY_SOK ;
-	u32           tmpStatus = DSP_SOK ;
-	int                  osStatus = 0       ;
-	int                  retVal   = 0       ;
-	struct Notify_CmdArgs *srcArgs  =
-					(struct Notify_CmdArgs *) args;
+	u32           tmp_status = NOTIFY_SOK ;
+	int                  os_status = 0       ;
+	int                  ret_val   = 0       ;
+	struct notify_cmd_args *srcArgs  =
+					(struct notify_cmd_args *) args;
 
-	char                driverName[NOTIFY_MAX_NAMELEN]  ;
-	struct Notify_Config        config             ;
-	struct Notify_CmdArgs       uArgs              ;
+	char                driver_name[NOTIFY_MAX_NAMELEN]  ;
+	struct notify_config        config             ;
+	struct notify_cmd_args       uargs              ;
 	void *handle             ;
-	struct Event_Cbck_tag *cbck               ;
-	struct Event_Cbck_tag           tCbck              ;
+	struct event_cbck_tag *cbck               ;
+	struct event_cbck_tag           tCbck              ;
 	void *tmpUsrPtr          ;
 	unsigned long irqsave;
 
-	TRC_4ENTER("DRV_ioctl", inode, filp, cmd, args) ;
+	gt_4trace(notify_debugmask, GT_ENTER,
+		"drv_ioctl", inode, filp, cmd, args) ;
 
-	retVal = copy_from_user((void *) &uArgs,
+	ret_val = copy_from_user((void *) &uargs,
 			(const void *) srcArgs,
-			sizeof(struct Notify_CmdArgs)) ;
+			sizeof(struct notify_cmd_args)) ;
 
-	if (retVal != 0) {
-		osStatus = -EFAULT ;
+	if (ret_val != 0) {
+		os_status = -EFAULT ;
 		SET_FAILURE_REASON(NOTIFY_EFAIL) ;
 	}
 
-	if (osStatus == 0) {
+	if (os_status == 0) {
 
 		switch (cmd) {
 
 		case NOTIFY_DRV_CMD_DRIVERINIT:
 		{
 			/*Get the user passed pointers */
-			retVal = copy_from_user(
+			ret_val = copy_from_user(
 			(void *) &config,
-			(const void *) uArgs.apiArgs.driverInitArgs.config,
-			sizeof(struct Notify_Config)) ;
+			(const void *) uargs.apiargs.driverInitArgs.config,
+			sizeof(struct notify_config)) ;
 
-				if (retVal != 0) {
-					osStatus = -EFAULT ;
+				if (ret_val != 0) {
+					os_status = -EFAULT ;
 					SET_FAILURE_REASON(NOTIFY_EFAIL) ;
 				}
 
-				if (retVal == 0) {
+				if (ret_val == 0) {
 
 					tmpUsrPtr = config.driverAttrs ;
 
-					retVal = copy_from_user
+					ret_val = copy_from_user
 					((void *) config.driverAttrs,
 					(const void *) tmpUsrPtr,
 					NOTIFY_MAX_NAMELEN);
 
 
-					if (retVal != 0) {
-						osStatus = -EFAULT ;
+					if (ret_val != 0) {
+						os_status = -EFAULT ;
 						SET_FAILURE_REASON(
 							NOTIFY_EFAIL);
 					}
 				}
 
 
-			if (retVal == 0) {
+			if (ret_val == 0) {
 
-				retVal = copy_from_user(
-				(void *) driverName,
+				ret_val = copy_from_user(
+				(void *) driver_name,
 				(const void *)
-				uArgs.apiArgs.driverInitArgs.
-				driverName,
+				uargs.apiargs.driverInitArgs.
+				driver_name,
 				NOTIFY_MAX_NAMELEN);
 
-				if (retVal != 0) {
-					osStatus = -EFAULT ;
+				if (ret_val != 0) {
+					os_status = -EFAULT ;
 					SET_FAILURE_REASON(NOTIFY_EFAIL);
 				}
 			}
 
-			if (retVal == 0) {
-				status = Notify_driverInit
-				(driverName, &config, &handle);
+			if (ret_val == 0) {
+				status = notify_driver_init
+				(driver_name, &config, &handle);
 
 				if (NOTIFY_FAILED(status)) {
 					SET_FAILURE_REASON(status);
 				} else {
-					uArgs.apiArgs.driverInitArgs.handle
+					uargs.apiargs.driverInitArgs.handle
 					= handle ;
 				}
 			}
@@ -1015,8 +697,8 @@ unsigned long  args)
 
 		case NOTIFY_DRV_CMD_DRIVEREXIT:
 		{
-			handle = uArgs.apiArgs.driverExitArgs.handle;
-			status = Notify_driverExit(handle);
+			handle = uargs.apiargs.driverExitArgs.handle;
+			status = notify_driver_exit(handle);
 				if (NOTIFY_FAILED(status))
 					SET_FAILURE_REASON(status);
 
@@ -1026,39 +708,40 @@ unsigned long  args)
 
 		case NOTIFY_DRV_CMD_REGISTEREVENT:
 		{
-			handle = uArgs.apiArgs.registerEventArgs.handle,
+			handle = uargs.apiargs.register_event_args.handle,
 
 			cbck =
-			MEM_Alloc(sizeof(struct Event_Cbck_tag),
+			mem_alloc(sizeof(struct event_cbck_tag),
 			MEM_NONPAGED) ;
 
-			if (DSP_FAILED(tmpStatus)) {
+			if (NOTIFY_FAILED(tmp_status)) {
 				status = NOTIFY_EMEMORY;
 				SET_FAILURE_REASON(status);
 
 			} else {
 
-				cbck->procId =
-				uArgs.apiArgs.registerEventArgs.procId;
+				cbck->proc_id =
+				uargs.apiargs.register_event_args.proc_id;
 
 				cbck->func  =
-				uArgs.apiArgs.registerEventArgs.fnNotifyCbck;
+				uargs.apiargs.register_event_args.
+				fn_notify_cbck;
 
 				cbck->param =
-				uArgs.apiArgs.registerEventArgs.cbckArg;
+				uargs.apiargs.register_event_args.cbck_arg;
 
 				cbck->pid   = (u32) current->mm;
 
-				status = Notify_registerEvent(
+				status = notify_register_event(
 				handle,
-				uArgs.apiArgs.registerEventArgs.procId,
-				uArgs.apiArgs.registerEventArgs.eventNo,
-				(void *)Notify_drvCallback,
+				uargs.apiargs.register_event_args.proc_id,
+				uargs.apiargs.register_event_args.event_no,
+				(void *)notify_drv_cbck,
 				(void *) cbck) ;
 
 
 				if (NOTIFY_FAILED(status)) {
-						MEM_Free(cbck) ;
+						mem_free(cbck) ;
 						SET_FAILURE_REASON(status);
 				} else {
 						spin_lock_irqsave
@@ -1068,15 +751,15 @@ unsigned long  args)
 						INIT_LIST_HEAD(
 							&(cbck->element));
 
-						DBC_Assert(
-						DSP_SUCCEEDED(tmpStatus));
+						dbc_assert(
+						NOTIFY_SUCCEEDED(tmp_status));
 
 
 						list_add_tail
 						((struct list_head *)
 						&(cbck->element),
 						(struct list_head *)
-						Event_cbckList);
+						event_cbck_list);
 
 						spin_unlock_irqrestore
 						(&drv_notify_lock, irqsave);
@@ -1088,36 +771,36 @@ unsigned long  args)
 		case NOTIFY_DRV_CMD_UNREGISTEREVENT:
 		{
 			handle =
-			uArgs.apiArgs.unregisterEventArgs.handle;
+			uargs.apiargs.unregister_event_args.handle;
 
 			tCbck.func  =
-			uArgs.apiArgs.unregisterEventArgs.fnNotifyCbck;
+			uargs.apiargs.unregister_event_args.fn_notify_cbck;
 
 			tCbck.param =
-			uArgs.apiArgs.unregisterEventArgs.cbckArg;
+			uargs.apiargs.unregister_event_args.cbck_arg;
 
 			spin_lock_irqsave(&drv_notify_lock, irqsave);
 
-			tmpStatus = omap_list_search(
-			Event_cbckList,
+			tmp_status = ntfy_evt_cb_search(
+			event_cbck_list,
 			(void *) &tCbck,
 			(struct list_head **) &cbck,
 			(ListMatchFunc)
-			(&Drv_KnlMatchEventCbck));
+			(&drv_knlmatch_eventcbck));
 
 			spin_unlock_irqrestore(&drv_notify_lock, irqsave);
 
-			if (DSP_FAILED(tmpStatus)) {
+			if (NOTIFY_FAILED(tmp_status)) {
 				status = NOTIFY_EFAIL ;
 				SET_FAILURE_REASON(status) ;
 			} else {
-				status = Notify_unregisterEvent(
+				status = notify_unregister_event(
 				handle,
-				uArgs.apiArgs.unregisterEventArgs.
-				procId,
-				uArgs.apiArgs.unregisterEventArgs.
-				eventNo,
-				Notify_drvCallback,
+				uargs.apiargs.unregister_event_args.
+				proc_id,
+				uargs.apiargs.unregister_event_args.
+				event_no,
+				notify_drv_cbck,
 				(void *) cbck) ;
 
 				if (NOTIFY_FAILED(status))
@@ -1128,7 +811,7 @@ unsigned long  args)
 
 					list_del((struct list_head *)&cbck);
 
-					MEM_Free(cbck) ;
+					mem_free(cbck) ;
 
 					spin_unlock_irqrestore
 					(&drv_notify_lock, irqsave);
@@ -1140,13 +823,13 @@ unsigned long  args)
 
 		case NOTIFY_DRV_CMD_SENDEVENT:
 		{
-			handle = uArgs.apiArgs.sendEventArgs.handle ;
-			status = Notify_sendEvent(
+			handle = uargs.apiargs.send_event_args.handle ;
+			status = notify_sendevent(
 			handle,
-			uArgs.apiArgs.sendEventArgs.procId,
-			uArgs.apiArgs.sendEventArgs.eventNo,
-			uArgs.apiArgs.sendEventArgs.payload,
-			uArgs.apiArgs.sendEventArgs.waitClear);
+			uargs.apiargs.send_event_args.proc_id,
+			uargs.apiargs.send_event_args.event_no,
+			uargs.apiargs.send_event_args.payload,
+			uargs.apiargs.send_event_args.wait_clear);
 
 			if (NOTIFY_FAILED(status))
 				SET_FAILURE_REASON(status) ;
@@ -1156,16 +839,16 @@ unsigned long  args)
 
 		case NOTIFY_DRV_CMD_DISABLE:
 		{
-			uArgs.apiArgs.disableArgs.disableFlags =
-			Notify_disable() ;
+			uargs.apiargs.disableArgs.disable_flags =
+			notify_disable() ;
 		}
 		break ;
 
 
 		case NOTIFY_DRV_CMD_RESTORE:
 		{
-			status = Notify_restore
-			(uArgs.apiArgs.restoreArgs.restoreFlags);
+			status = notify_restore
+			(uargs.apiargs.restoreArgs.restoreFlags);
 
 			if (NOTIFY_FAILED(status))
 				SET_FAILURE_REASON(status) ;
@@ -1175,12 +858,12 @@ unsigned long  args)
 
 		case NOTIFY_DRV_CMD_DISABLEEVENT:
 		{
-			handle = uArgs.apiArgs.disableEventArgs.handle ;
+			handle = uargs.apiargs.disable_event_args.handle ;
 
-			status = Notify_disableEvent(
+			status = notify_disable_event(
 			handle,
-			uArgs.apiArgs.disableEventArgs.procId,
-			uArgs.apiArgs.disableEventArgs.eventNo);
+			uargs.apiargs.disable_event_args.proc_id,
+			uargs.apiargs.disable_event_args.event_no);
 
 			if (NOTIFY_FAILED(status))
 				SET_FAILURE_REASON(status) ;
@@ -1191,12 +874,12 @@ unsigned long  args)
 
 		case NOTIFY_DRV_CMD_ENABLEEVENT:
 		{
-			handle = uArgs.apiArgs.enableEventArgs.handle ;
+			handle = uargs.apiargs.enable_event_args.handle ;
 
-			status = Notify_enableEvent(
+			status = notify_enable_event(
 			handle,
-			uArgs.apiArgs.enableEventArgs.procId,
-			uArgs.apiArgs.enableEventArgs.eventNo);
+			uargs.apiargs.enable_event_args.proc_id,
+			uargs.apiargs.enable_event_args.event_no);
 
 			if (NOTIFY_FAILED(status))
 				SET_FAILURE_REASON(status) ;
@@ -1207,50 +890,48 @@ unsigned long  args)
 	}
 
 	if (NOTIFY_SUCCEEDED(status))
-		uArgs.apiStatus = status ;
+		uargs.apiStatus = status ;
 
 	}
 
-	if (osStatus == 0) {
-		retVal = copy_to_user((void *) srcArgs,
-		(const void *) &uArgs,
-		sizeof(struct Notify_CmdArgs)) ;
+	if (os_status == 0) {
+		ret_val = copy_to_user((void *) srcArgs,
+		(const void *) &uargs,
+		sizeof(struct notify_cmd_args)) ;
 
-		if (retVal != 0) {
-			osStatus = -EFAULT ;
+		if (ret_val != 0) {
+			os_status = -EFAULT ;
 			SET_FAILURE_REASON(NOTIFY_EFAIL) ;
 		}
 	}
 
-	TRC_1LEAVE("DRV_ioctl", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS, "drv_ioctl", status) ;
 
-	return osStatus ;
+	return os_status ;
 }
 
 
-signed long int omap_list_search(IN  struct lst_list *list,
-IN  void  *data,
-OUT struct list_head **elem,
-IN  ListMatchFunc  matchFunc)
+signed long int ntfy_evt_cb_search(struct lst_list *list, void  *data,
+			struct list_head **elem, ListMatchFunc  matchFunc)
 
 {
-	u32          status = DSP_SOK ;
+	u32          status = NOTIFY_SOK;
 	struct list_head *temp   = NULL    ;
 	struct list_head *temp1  = NULL    ;
 	bool                found  = FALSE   ;
 
-	DBC_Require(list != NULL) ;
-	DBC_Require(elem != NULL) ;
-	DBC_Require(matchFunc != NULL) ;
+	dbc_require(list != NULL) ;
+	dbc_require(elem != NULL) ;
+	dbc_require(matchFunc != NULL) ;
 
 	if ((list == NULL) || (elem == NULL)) {
-		status = DSP_EINVALIDARG ;
+		status = NOTIFY_EINVALIDARG ;
 	} else {
 
 		if (list_empty((struct list_head *)list))
-			status = DSP_EINVALIDARG ;
+			status = NOTIFY_EINVALIDARG ;
 
-		if (DSP_SUCCEEDED(status)) {
+		if (NOTIFY_SUCCEEDED(status)) {
 			temp = list->head.next;
 
 			while ((found == FALSE) && (temp != NULL)) {
@@ -1269,7 +950,7 @@ IN  ListMatchFunc  matchFunc)
 				*elem = temp ;
 			else {
 				*elem = NULL ;
-				status = DSP_ENOTFOUND ;
+				status = NOTIFY_ENOTFOUND ;
 			}
 		}
 	}
@@ -1291,6 +972,7 @@ IN  ListMatchFunc  matchFunc)
 *============================================================================
 */
 
-module_init(DRV_initializeModule) ;
-module_exit(DRV_finalizeModule) ;
-MODULE_LICENSE("Dual BSD/GPL");
+module_init(drv_init_module) ;
+module_exit(drv_finalize_module) ;
+MODULE_LICENSE("GPL");
+

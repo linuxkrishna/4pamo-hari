@@ -185,7 +185,7 @@
 #define MAX_PM_REQS 32
 
 
-Notify_Handle handlePtr;
+struct notify_driver_handle *handlePtr;
 u32  eventNo;
 struct IO_MGR *ext_pIOMgr;
 extern irqreturn_t (*irq_handler)(int, void *, struct pt_regs *);
@@ -298,10 +298,9 @@ DSP_STATUS WMD_IO_Create(OUT struct IO_MGR **phIOMgr,
 	struct CHNL_MGR *hChnlMgr;
 	u32 devType;
 
-    Notify_Config config;
+	struct notify_config config;
     char  driverName[32] = "NOTIFYMBXDRV";
-
-    NotifyShmDrv_Attrs  Shm_Config;
+	struct notify_shmdrv_attrs  Shm_Config;
     Notify_Status ntfystatus;
     irq_handler = (void *) IO_ISR;
 
@@ -357,13 +356,14 @@ DSP_STATUS WMD_IO_Create(OUT struct IO_MGR **phIOMgr,
 
         Shm_Config.shmBaseAddr=0x87F00000;
         Shm_Config.shmSize = 0x4000;
-        Shm_Config.numEvents = 32;
-        Shm_Config.sendEventPollCount = (u32) -1;
+        Shm_Config.num_events = 32;
+        Shm_Config.send_event_pollcount = (u32) -1;
         config.driverAttrs = (u32*)&Shm_Config;
-        ntfystatus = Notify_driverInit(driverName, (Notify_Config *)&config, &handlePtr);
+        ntfystatus = notify_driver_init(driverName, (struct notify_config *)&config, &handlePtr);
+		printk(":%s:ntfystatus= %x\n",__func__,ntfystatus);
         eventNo = ((NOTIFY_SYSTEM_KEY<<16)|NOTIFY_TESLA_EVENTNUMBER);
-        ntfystatus = Notify_registerEvent(handlePtr, /*PROC_TESLA*/0, eventNo,(void*)IO_ISR, NULL);
-        ntfystatus = Notify_disableEvent(handlePtr, 0, eventNo);
+        ntfystatus = notify_register_event(handlePtr, /*PROC_TESLA*/0, eventNo,(void*)IO_ISR, NULL);
+        ntfystatus = notify_disable_event(handlePtr, 0, eventNo);
         //hBridgeFault->handlePtr = handlePtr; // passing over the notify driverinit handle to the fault object
 
 
@@ -407,7 +407,7 @@ DSP_STATUS WMD_IO_Destroy(struct IO_MGR *hIOMgr)
 {
 	Notify_Status status;
 
-    status = Notify_driverExit (handlePtr);
+    status = notify_driver_exit(handlePtr);
 
 #if 0
 	struct WMD_DEV_CONTEXT *hWmdContext;
@@ -1121,7 +1121,7 @@ void IO_DPC(IN OUT void *pRefData)
  *      schedules a DPC to dispatch I/O.
  */
 
-void IO_ISR (IN   Processor_Id procId,
+void IO_ISR (IN  unsigned long int procId,
                     IN void *     pRefData,
                 struct pt_regs *reg)
 

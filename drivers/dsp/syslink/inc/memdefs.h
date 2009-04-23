@@ -2,9 +2,9 @@
 /*
  * memdefs.h
  *
- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
+ * Notify driver support functions for TI OMAP processors.
  *
- * Copyright (C) 2008 Texas Instruments, Inc.
+ * Copyright (C) 2008-2009 Texas Instruments, Inc.
  *
  * This package is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,24 +16,11 @@
  */
 
 
-/*
- *  ======== memdefs.h ========
- *  Purpose:
- *      Global MEM constants and types, shared between WSX, WCD, and WMD.
- *
- *! Revision History:
- *! ================
- *! 28-Aug-2001 ag:  Added MEM_[SET][GET]VIRTUALSEGID.
- *! 10-Aug-1999 kc:  Based on wsx-c18.
- *! 15-Nov-1996 gp:  Renamed from wsxmem.h and moved to kwinos.
- *! 21-Aug-1996 cr:  Created from mem.h.
- */
-
 #ifndef MEMDEFS_
 #define MEMDEFS_
 
 /* Memory Pool Attributes: */
-	enum MEM_POOLATTRS {
+	enum mem_pool_attrs {
 		MEM_PAGED = 0,
 		MEM_NONPAGED = 1,
 		MEM_LARGEVIRTMEM = 2

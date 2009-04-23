@@ -280,7 +280,7 @@ void WMD_DEH_Notify(struct DEH_MGR *hDehMgr, u32 ulEventMask,
 			}
 			/* send an interrupt to DSP */
 
-		NotifyStatus = Notify_sendEvent(handlePtr,/*PROC_TESLA*/0,
+		NotifyStatus = notify_sendevent(handlePtr,/*PROC_TESLA*/0,
                                  /*eventNo*/4,MBX_DEH_CLASS | MBX_DEH_EMMU,true);
 
 			/* Clear MMU interrupt */

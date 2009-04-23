@@ -1,27 +1,24 @@
-
-/** ============================================================================
-*  @file   notify_driver.h
-*
-*  @path   $(NOTIFY)/include
-*
-*  @desc   Defines data types and structures used by Notify driver writers.
-*
-*  @ver    1.00.00.01
-*  ============================================================================
-*  Copyright (c) Texas Instruments Incorporated 2002-2008
-*
-*  Use of this software is controlled by the terms and conditions found in the
-*  license agreement under which this software has been supplied or provided.
-*  ============================================================================
-*/
+/*
+ * notify_driver.h
+ *
+ * Notify driver support for OMAP Processors.
+ *
+ * Copyright (C) 2008-2009 Texas Instruments, Inc.
+ *
+ * This package is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 
 #if !defined NOTIFYDRIVER_H
 #define NOTIFYDRIVER_H
 
-
-/*  ----------------------------------- IPC */
-#include <ipctypes.h>
+#include<linux/list.h>
 
 /*  ----------------------------------- Notify */
 #include <notifyerr.h>
@@ -30,31 +27,53 @@
 #include <notify_driverdefs.h>
 
 
-#if defined __cplusplus
-EXTERN "C" {
-#endif /* defined (__cplusplus) */
 
+struct lst_list {
+	struct list_head head;
+} ;
 
-/** =====================================================================
-*  @func   Notify_registerDriver
+/*
+ *  name   ListMatchFunc
+ *
+ *  desc   Signature of the Matching function to be used by search algo.
+ *
+ *  arg    elem
+ *              Element to be compared.
+ *  arg    data
+ *              Comparing key data.
+ *
+ *  ret    TRUE or FALSE.
+ *
+ *  enter  None.
+ *
+ *  leave  None.
+ *
+ *  see    None.
+ *
+ */
+
+typedef bool (*ListMatchFunc)(struct list_head *elem, void  *data);
+
+/*
+*  func   notify_register_driver
 *
-*  @desc This function registers a Notify driver with the Notify module.
+*  desc This function registers a Notify driver with the Notify module.
 *      Each Notify driver must register itself with the Notify module. Once
 *      the registration is done, the user can start using the Notify APIs
 *      to interact with the Notify driver for sending and receiving
 *      notifications.
 *
-*  @arg    driverName
+*  arg    driver_name
 *              Name of the Notify driver
-*  @arg    fnTable
+*  arg    fn_table
 *              Pointer to the function table for this Notify driver
-*  @arg    drvAttrs
+*  arg    drv_attrs
 *              Attributes of the Notify driver relevant to the generic Notify
 *              module
-*  @arg    driverHandle
+*  arg    driver_handle
 *              Location to receive the pointer to the Notify driver handle
 *
-*  @ret    NOTIFY_SOK
+*  ret    NOTIFY_SOK
 *              Operation successfully completed
 *          NOTIFY_EINIT
 *              The Notify module or driver was not initialized
@@ -72,40 +91,38 @@ EXTERN "C" {
 *          NOTIFY_EFAIL
 *              General failure
 *
-*  @enter The Notify module must be initialized before calling this function.
-*          driverName must be a valid string.
-*          fnTable must be valid.
+*  enter The Notify module must be initialized before calling this function.
+*          driver_name must be a valid string.
+*          fn_table must be valid.
 *          driverAttrs must be valid.
-*          driverHandle must be a valid pointer.
+*          driver_handle must be a valid pointer.
 *
-*  @leave  On success, the Notify driver must be registered with the Notify
+*  leave  On success, the Notify driver must be registered with the Notify
 *          module
 *
-*  @see struct Notify_Interface, struct
-*Notify_DriverAttrs, Notify_unregisterDriver ()
-*  ==================================================================
-*/
-EXPORT_API
-signed long int
-Notify_registerDriver(IN  char *driverName,
-IN  struct Notify_Interface *fnTable,
-IN  struct Notify_DriverAttrs *drvAttrs,
-OUT struct Notify_DriverHandle **driverHandle) ;
-
-
-/** ============================================================================
-*  @func   Notify_unregisterDriver
+*  see struct notify_interface, struct
+* notify_driver_attrs, notify_unregister_driver ()
 *
-*  @desc   This function un-registers a Notify driver with the Notify module.
+*/
+signed long int notify_register_driver(char *driver_name,
+		struct notify_interface *fn_table,
+		struct notify_driver_attrs *drv_attrs,
+		struct notify_driver_handle **driver_handle) ;
+
+
+/*
+*  func   notify_unregister_driver
+*
+*  desc   This function un-registers a Notify driver with the Notify module.
 *          When the Notify driver is no longer required, it can un-register
 *          itself with the Notify module. This facility is also useful if a
 *          different type of Notify driver needs to be plugged in for the same
 *          physical interrupt to meet different needs.
 *
-*  @arg    drvHandle
+*  arg    drv_handle
 *              Handle to the Notify driver object
 *
-*  @ret    NOTIFY_SOK
+*  ret    NOTIFY_SOK
 *              Operation successfully completed
 *          NOTIFY_EINIT
 *              The Notify module or driver was not initialized
@@ -120,23 +137,42 @@ OUT struct Notify_DriverHandle **driverHandle) ;
 *          NOTIFY_EFAIL
 *              General failure
 *
-*  @enter  The Notify module must be initialized before calling this function.
+*  enter  The Notify module must be initialized before calling this function.
 *          handle must be a valid Notify driver handle.
 *
-*  @leave  On success, the Notify driver must be unregistered with the Notify
+*  leave  On success, the Notify driver must be unregistered with the Notify
 *          module
 *
-*  @see    struct Notify_DriverHandle *, Notify_registerDriver ()
-*  ============================================================================
+*  see    struct notify_driver_handle *, notify_register_driver ()
+*
 */
-EXPORT_API
-signed long int
-Notify_unregisterDriver(IN  struct Notify_DriverHandle *drvHandle) ;
+signed long int notify_unregister_driver(
+			IN struct notify_driver_handle *drv_handle) ;
 
+extern signed long int ntfy_evt_cb_search(struct lst_list *list,
+					void  *data,
+					struct list_head **elem,
+					ListMatchFunc  matchFunc);
 
-#if defined __cplusplus
-}
-#endif /* defined (__cplusplus) */
-
+/*
+ *  name   notify_state
+ *
+ *  desc   Defines the Notify state object, which contains all the module
+ *          specific information.
+ *
+ *  field  maxDrivers
+ *              Maximum number of Notify drivers configured
+ *  field  drivers
+ *              Array of Notify driver object.
+ *  field  disable_flags
+ *              Array of flags for Notify disable.
+ *              TBD: Currently does not support nesting of disable/restore calls
+ *
+ */
+struct notify_state {
+    unsigned short int  maxDrivers ;
+    struct notify_driver_handle  drivers[NOTIFY_MAX_DRIVERS] ;
+    void *disable_flags[NOTIFY_MAX_DRIVERS] ;
+};
 
 #endif  /* !defined (NOTIFYDRIVER_H) */

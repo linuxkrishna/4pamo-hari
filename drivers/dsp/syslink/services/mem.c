@@ -21,25 +21,25 @@
  *      Implementation of platform specific memory services.
  *
  *  Public Functions:
- *      MEM_Alloc
- *      MEM_AllocPhysMem
- *      MEM_Calloc
- *      MEM_Exit
- *      MEM_FlushCache
- *      MEM_Free
- *      MEM_FreePhysMem
- *      MEM_Init
- *      MEM_ExtPhysPoolInit
+ *      mem_alloc
+ *      mem_alloc_phymem
+ *      mem_calloc
+ *      mem_exit
+ *      mem_flush_cache
+ *      mem_free
+ *      mem_free_phymem
+ *      services_mem_init
+ *      mem_ext_phypool_init
  *
  *! Revision History:
  *! =================
  *! 18-Jan-2004 hp: Added support for External physical memory pool
  *! 19-Apr-2004 sb: Added Alloc/Free PhysMem, FlushCache, VirtualToPhysical
  *! 01-Sep-2001 ag: Code cleanup.
- *! 02-May-2001 ag: MEM_[UnMap]LinearAddress revamped to align Phys to Virt.
+ *! 02-May-2001 ag: MEM_[UnMap]linear_address revamped to align Phys to Virt.
  *!		 Set PAGE_PHYSICAL if phy addr <= 512MB. Opposite uSoft doc!
- *! 29-Aug-2000 rr: MEM_LinearAddress does not check for 512MB for non-x86.
- *! 28-Mar-2000 rr: MEM_LinearAddress changed.Handles address larger than 512MB
+ *! 29-Aug-2000 rr: MEM_linear_address does not check for 512MB for non-x86.
+ *! 28-Mar-2000 rr: MEM_linear_address changed.Handles address larger than 512MB
  *! 03-Feb-2000 rr: Module init/exit is handled by SERVICES Init/Exit.
  *!		 GT Changes.
  *! 22-Nov-1999 kc: Added changes from code review.
@@ -66,11 +66,11 @@
 
 /*  ----------------------------------- This */
 #include <mem.h>
-#include <list.h>
+#include <dspbridge/list.h>
 
 /*  ----------------------------------- Defines */
 #define MEM_512MB   0x1fffffff
-#define memInfoSign 0x464E494D	/* "MINF" (in reverse). */
+#define mem_infoSign 0x464E494D	/* "MINF" (in reverse). */
 
 #ifdef DEBUG
 #define MEM_CHECK		/* Use to detect source of memory leaks */
@@ -78,28 +78,28 @@
 
 /*  ----------------------------------- Globals */
 #if GT_TRACE
-static struct GT_Mask MEM_debugMask = { NULL, NULL };	/* GT trace variable */
+static struct gt_mask mem_debug_mask = { NULL, NULL };	/* GT trace variable */
 #endif
 
-static u32 cRefs;		/* module reference count */
+static u32 c_refs;		/* module reference count */
 
-static bool extPhysMemPoolEnabled;
+static bool ext_phys_mempool_enabled;
 
-struct extPhysMemPool {
-	u32 physMemBase;
-	u32 physMemSize;
-	u32 virtMemBase;
-	u32 nextPhysAllocPtr;
+struct ext_phys_mem_pool {
+	u32 phy_mem_base;
+	u32 phys_mem_size;
+	u32 virt_mem_base;
+	u32 next_phy_alloc_p;
 };
 
-static struct extPhysMemPool extMemPool;
+static struct ext_phys_mem_pool ext_mem_pool;
 
 /*  Information about each element allocated on heap */
-struct memInfo {
+struct mem_info {
 	struct list_head link;		/* Must be first */
 	size_t size;
 	void *caller;
-	u32 dwSignature;	/* Should be last */
+	u32 dw_signature;	/* Should be last */
 };
 
 #ifdef MEM_CHECK
@@ -109,480 +109,482 @@ struct memInfo {
  *  heap by DSP/BIOS Bridge. This is used to report memory leaks and free
  *  such elements while removing the DSP/BIOS Bridge driver
  */
-struct memMan {
+struct mem_man {
 	struct lst_list lst;
 	spinlock_t lock;
 };
 
-static struct memMan mMan;
+static struct mem_man m_man;
 
 
-static void MEM_Check(void)
+static void mem_check(void)
 {
-	struct memInfo *pMem;
-	struct list_head *last = &mMan.lst.head;
-	struct list_head *curr = mMan.lst.head.next;
+	struct mem_info *p_mem;
+	struct list_head *last = &m_man.lst.head;
+	struct list_head *curr = m_man.lst.head.next;
 
-	if (!list_empty((struct list_head *)&mMan.lst)) {
-		GT_0trace(MEM_debugMask, GT_7CLASS, "*** MEMORY LEAK ***\n");
-		GT_0trace(MEM_debugMask, GT_7CLASS,
+	if (!list_empty((struct list_head *)&m_man.lst)) {
+		gt_0trace(mem_debug_mask, GT_7CLASS, "*** MEMORY LEAK ***\n");
+		gt_0trace(mem_debug_mask, GT_7CLASS,
 			  "Addr      Size      Caller\n");
 		while (curr != last) {
-			pMem = (struct memInfo *)curr;
+			p_mem = (struct mem_info *)curr;
 			curr = curr->next;
-			if ((u32)pMem > PAGE_OFFSET &&
-			    MEM_IsValidHandle(pMem, memInfoSign)) {
-				GT_3trace(MEM_debugMask, GT_7CLASS,
+			if ((u32)p_mem > PAGE_OFFSET &&
+			    mem_is_invalid_handle(p_mem, mem_infoSign)) {
+				gt_3trace(mem_debug_mask, GT_7CLASS,
 					"%lx  %d\t [<%p>]\n",
-					(u32) pMem + sizeof(struct memInfo),
-					pMem->size, pMem->caller);
-				list_del((struct list_head *) pMem);
-				kfree(pMem);
+					(u32) p_mem + sizeof(struct mem_info),
+					p_mem->size, p_mem->caller);
+				list_del((struct list_head *) p_mem);
+				kfree(p_mem);
 			} else {
-				GT_1trace(MEM_debugMask, GT_7CLASS,
+				gt_1trace(mem_debug_mask, GT_7CLASS,
 					  "Invalid allocation or "
 					  "Buffer underflow at %x\n",
-					  (u32)pMem +	sizeof(struct memInfo));
+				  (u32)p_mem +	sizeof(struct mem_info));
 				break;
 			}
 		}
 	}
-	DBC_Ensure(list_empty((struct list_head *)&mMan.lst));
+	dbc_ensure(list_empty((struct list_head *)&m_man.lst));
 }
-EXPORT_SYMBOL(MEM_Check);
+EXPORT_SYMBOL(mem_check);
 #endif
 
-void MEM_ExtPhysPoolInit(u32 poolPhysBase, u32 poolSize)
+void mem_ext_phypool_init(u32 pool_phys_base, u32 poolSize)
 {
-	u32 poolVirtBase;
+	u32 pool_virt_base;
 
 	/* get the virtual address for the physical memory pool passed */
-	poolVirtBase = (u32)ioremap(poolPhysBase, poolSize);
+	pool_virt_base = (u32)ioremap(pool_phys_base, poolSize);
 
-	if ((void **)poolVirtBase == NULL) {
-		GT_0trace(MEM_debugMask, GT_7CLASS,
+	if ((void **)pool_virt_base == NULL) {
+		gt_0trace(mem_debug_mask, GT_7CLASS,
 			  "[PHYS_POOL]Mapping External "
 			  "physical memory to virt failed \n");
-		extPhysMemPoolEnabled = false;
+		ext_phys_mempool_enabled = false;
 	} else {
-		extMemPool.physMemBase = poolPhysBase;
-		extMemPool.physMemSize = poolSize;
-		extMemPool.virtMemBase = poolVirtBase;
-		extMemPool.nextPhysAllocPtr = poolPhysBase;
-		extPhysMemPoolEnabled = true;
-		GT_3trace(MEM_debugMask, GT_1CLASS,
+		ext_mem_pool.phy_mem_base = pool_phys_base;
+		ext_mem_pool.phys_mem_size = poolSize;
+		ext_mem_pool.virt_mem_base = pool_virt_base;
+		ext_mem_pool.next_phy_alloc_p = pool_phys_base;
+		ext_phys_mempool_enabled = true;
+		gt_3trace(mem_debug_mask, GT_1CLASS,
 			  "ExtMemory Pool details " "Pool"
 			  "Physical mem base = %0x " "Pool Physical mem size "
 			  "= %0x" "Pool Virtual mem base = %0x \n",
-			  poolPhysBase, poolSize, poolVirtBase);
+			  pool_phys_base, poolSize, pool_virt_base);
 	}
 }
-EXPORT_SYMBOL(MEM_ExtPhysPoolInit);
+EXPORT_SYMBOL(mem_ext_phypool_init);
 
 
-static void MEM_ExtPhysPoolRelease(void)
+static void mem_ext_phypool_release(void)
 {
-	GT_0trace(MEM_debugMask, GT_1CLASS,
+	gt_0trace(mem_debug_mask, GT_1CLASS,
 		  "Releasing External memory pool \n");
-	if (extPhysMemPoolEnabled) {
-		iounmap((void *)(extMemPool.virtMemBase));
-		extPhysMemPoolEnabled = false;
+	if (ext_phys_mempool_enabled) {
+		iounmap((void *)(ext_mem_pool.virt_mem_base));
+		ext_phys_mempool_enabled = false;
 	}
 }
-EXPORT_SYMBOL(MEM_ExtPhysPoolRelease);
+EXPORT_SYMBOL(mem_ext_phypool_release);
 
 /*
- *  ======== MEM_ExtPhysMemAlloc ========
+ *  ======== mem_ext_phymem_alloc ========
  *  Purpose:
  *     Allocate physically contiguous, uncached memory from external memory pool
  */
 
-static void *MEM_ExtPhysMemAlloc(u32 bytes, u32 align, OUT u32 *pPhysAddr)
+static void *mem_ext_phymem_alloc(u32 bytes, u32 align, OUT u32 *p_phy_addr)
 {
-	u32 newAllocPtr;
+	u32 new_alloc_p;
 	u32 offset;
-	u32 virtAddr;
+	u32 virt_addr;
 
-	GT_2trace(MEM_debugMask, GT_1CLASS,
+	gt_2trace(mem_debug_mask, GT_1CLASS,
 		  "Ext Memory Allocation" "bytes=0x%x , "
 		  "align=0x%x \n", bytes, align);
 	if (align == 0) {
-		GT_0trace(MEM_debugMask, GT_7CLASS,
+		gt_0trace(mem_debug_mask, GT_7CLASS,
 			  "ExtPhysical Memory Allocation "
 			  "No alignment request in allocation call !! \n");
 		align = 1;
 	}
-	if (bytes > ((extMemPool.physMemBase + extMemPool.physMemSize)
-	    - extMemPool.nextPhysAllocPtr)) {
-		GT_1trace(MEM_debugMask, GT_7CLASS,
+	if (bytes > ((ext_mem_pool.phy_mem_base + ext_mem_pool.phys_mem_size)
+	    - ext_mem_pool.next_phy_alloc_p)) {
+		gt_1trace(mem_debug_mask, GT_7CLASS,
 			  "ExtPhysical Memory Allocation "
 			  "unable to allocate memory for bytes = 0x%x \n",
 			  bytes);
-		pPhysAddr = NULL;
+		p_phy_addr = NULL;
 		return NULL;
 	} else {
-		offset = (extMemPool.nextPhysAllocPtr & (align - 1));
+		offset = (ext_mem_pool.next_phy_alloc_p & (align - 1));
 		if (offset == 0)
-			newAllocPtr = extMemPool.nextPhysAllocPtr;
+			new_alloc_p = ext_mem_pool.next_phy_alloc_p;
 		else
-			newAllocPtr = (extMemPool.nextPhysAllocPtr) +
+			new_alloc_p = (ext_mem_pool.next_phy_alloc_p) +
 				      (align - offset);
-		if ((newAllocPtr + bytes) <=
-		    (extMemPool.physMemBase + extMemPool.physMemSize)) {
+		if ((new_alloc_p + bytes) <=
+		    (ext_mem_pool.phy_mem_base + ext_mem_pool.phys_mem_size)) {
 			/* we can allocate */
-			*pPhysAddr = newAllocPtr;
-			extMemPool.nextPhysAllocPtr = newAllocPtr + bytes;
-			virtAddr = extMemPool.virtMemBase + (newAllocPtr -
-				   extMemPool.physMemBase);
-			GT_2trace(MEM_debugMask, GT_1CLASS,
+			*p_phy_addr = new_alloc_p;
+			ext_mem_pool.next_phy_alloc_p = new_alloc_p + bytes;
+			virt_addr = ext_mem_pool.virt_mem_base + (new_alloc_p -
+				   ext_mem_pool.phy_mem_base);
+			gt_2trace(mem_debug_mask, GT_1CLASS,
 				  "Ext Memory Allocation succedded "
 				  "phys address=0x%x , virtaddress=0x%x \n",
-				  newAllocPtr, virtAddr);
-			return (void *)virtAddr;
+				  new_alloc_p, virt_addr);
+			return (void *)virt_addr;
 		} else {
-			*pPhysAddr = 0;
+			*p_phy_addr = 0;
 			return NULL;
 		}
 	}
 }
-EXPORT_SYMBOL(MEM_ExtPhysMemAlloc);
+EXPORT_SYMBOL(mem_ext_phymem_alloc);
 
 
 /*
- *  ======== MEM_Alloc ========
+ *  ======== mem_alloc ========
  *  Purpose:
  *      Allocate memory from the paged or non-paged pools.
  */
-void *MEM_Alloc(u32 cBytes, enum MEM_POOLATTRS type)
+void *mem_alloc(u32 c_bytes, enum mem_pool_attrs type)
 {
-	struct memInfo *pMem = NULL;
+	struct mem_info *p_mem = NULL;
 
-	GT_2trace(MEM_debugMask, GT_ENTER,
-		  "MEM_Alloc: cBytes 0x%x\ttype 0x%x\n", cBytes, type);
-	if (cBytes > 0) {
+	gt_2trace(mem_debug_mask, GT_ENTER,
+		  "mem_alloc: c_bytes 0x%x\ttype 0x%x\n", c_bytes, type);
+	if (c_bytes > 0) {
 		switch (type) {
 		case MEM_NONPAGED:
 		/* If non-paged memory required, see note at top of file. */
 		case MEM_PAGED:
 #ifndef MEM_CHECK
-			pMem = kmalloc(cBytes, GFP_ATOMIC);
+			p_mem = kmalloc(c_bytes, GFP_ATOMIC);
 #else
-			pMem = kmalloc(cBytes + sizeof(struct memInfo),
+			p_mem = kmalloc(c_bytes + sizeof(struct mem_info),
 			       GFP_ATOMIC);
-			if (pMem) {
-				pMem->size = cBytes;
-				pMem->caller = __builtin_return_address(0);
-				pMem->dwSignature = memInfoSign;
+			if (p_mem) {
+				p_mem->size = c_bytes;
+				p_mem->caller = __builtin_return_address(0);
+				p_mem->dw_signature = mem_infoSign;
 
-				spin_lock(&mMan.lock);
+				spin_lock(&m_man.lock);
 
-				list_add_tail((struct list_head *)pMem,
-					(struct list_head *)&mMan.lst);
+				list_add_tail((struct list_head *)p_mem,
+					(struct list_head *)&m_man.lst);
 
-				spin_unlock(&mMan.lock);
+				spin_unlock(&m_man.lock);
 
-				pMem = (void *)((u32)pMem +
-					sizeof(struct memInfo));
+				p_mem = (void *)((u32)p_mem +
+					sizeof(struct mem_info));
 			}
 #endif
 			break;
 		case MEM_LARGEVIRTMEM:
 #ifndef MEM_CHECK
 			/* FIXME - Replace with 'vmalloc' after BP fix */
-			pMem = __vmalloc(cBytes, GFP_ATOMIC, PAGE_KERNEL);
+			p_mem = __vmalloc(c_bytes, GFP_ATOMIC, PAGE_KERNEL);
 #else
 			/* FIXME - Replace with 'vmalloc' after BP fix */
-			pMem = __vmalloc((cBytes + sizeof(struct memInfo)),
+			p_mem = __vmalloc((c_bytes + sizeof(struct mem_info)),
 				GFP_ATOMIC, PAGE_KERNEL);
-			if (pMem) {
-				pMem->size = cBytes;
-				pMem->caller = __builtin_return_address(0);
-				pMem->dwSignature = memInfoSign;
+			if (p_mem) {
+				p_mem->size = c_bytes;
+				p_mem->caller = __builtin_return_address(0);
+				p_mem->dw_signature = mem_infoSign;
 
-				spin_lock(&mMan.lock);
+				spin_lock(&m_man.lock);
 				list_add_tail((struct list_head *)
-					pMem, (struct list_head *)&mMan.lst);
-				spin_unlock(&mMan.lock);
+					p_mem, (struct list_head *)&m_man.lst);
+				spin_unlock(&m_man.lock);
 
-				pMem = (void *)((u32)pMem +
-					sizeof(struct memInfo));
+				p_mem = (void *)((u32)p_mem +
+					sizeof(struct mem_info));
 			}
 #endif
 			break;
 
 		default:
-			GT_0trace(MEM_debugMask, GT_6CLASS,
-				  "MEM_Alloc: unexpected "
-				  "MEM_POOLATTRS value\n");
+			gt_0trace(mem_debug_mask, GT_6CLASS,
+				  "mem_alloc: unexpected "
+				  "mem_pool_attrs value\n");
 			break;
 		}
 	}
 
-	return pMem;
+	return p_mem;
 }
-EXPORT_SYMBOL(MEM_Alloc);
+EXPORT_SYMBOL(mem_alloc);
 
 /*
- *  ======== MEM_AllocPhysMem ========
+ *  ======== mem_alloc_phymem ========
  *  Purpose:
  *      Allocate physically contiguous, uncached memory
  */
-void *MEM_AllocPhysMem(u32 cBytes, u32 ulAlign, OUT u32 *pPhysicalAddress)
+void *mem_alloc_phymem(u32 c_bytes, u32 u_allign, OUT u32 *p_physical_addr)
 {
-	void *pVaMem = NULL;
+	void *p_va_mem = NULL;
 	dma_addr_t paMem;
 
-	DBC_Require(cRefs > 0);
+	dbc_require(c_refs > 0);
 
-	GT_2trace(MEM_debugMask, GT_ENTER,
-		  "MEM_AllocPhysMem: cBytes 0x%x\tulAlign"
-		  "0x%x\n", cBytes, ulAlign);
+	gt_2trace(mem_debug_mask, GT_ENTER,
+		  "mem_alloc_phymem: c_bytes 0x%x\tu_allign"
+		  "0x%x\n", c_bytes, u_allign);
 
-	if (cBytes > 0) {
-		if (extPhysMemPoolEnabled) {
-			pVaMem = MEM_ExtPhysMemAlloc(cBytes, ulAlign,
+	if (c_bytes > 0) {
+		if (ext_phys_mempool_enabled) {
+			p_va_mem = mem_ext_phymem_alloc(c_bytes, u_allign,
 						    (u32 *)&paMem);
 		} else
-			pVaMem = dma_alloc_coherent(NULL, cBytes, &paMem,
+			p_va_mem = dma_alloc_coherent(NULL, c_bytes, &paMem,
 						   GFP_ATOMIC);
-		if (pVaMem == NULL) {
-			*pPhysicalAddress = 0;
-			GT_1trace(MEM_debugMask, GT_6CLASS,
-				  "MEM_AllocPhysMem failed: "
-				  "0x%x\n", pVaMem);
+		if (p_va_mem == NULL) {
+			*p_physical_addr = 0;
+			gt_1trace(mem_debug_mask, GT_6CLASS,
+				  "mem_alloc_phymem failed: "
+				  "0x%x\n", p_va_mem);
 		} else {
-			*pPhysicalAddress = paMem;
+			*p_physical_addr = paMem;
 		}
 	}
-	return pVaMem;
+	return p_va_mem;
 }
-EXPORT_SYMBOL(MEM_AllocPhysMem);
+EXPORT_SYMBOL(mem_alloc_phymem);
 
 
 /*
- *  ======== MEM_Calloc ========
+ *  ======== mem_calloc ========
  *  Purpose:
  *      Allocate zero-initialized memory from the paged or non-paged pools.
  */
-void *MEM_Calloc(u32 cBytes, enum MEM_POOLATTRS type)
+void *mem_calloc(u32 c_bytes, enum mem_pool_attrs type)
 {
-	struct memInfo *pMem = NULL;
+	struct mem_info *p_mem = NULL;
 
-	GT_2trace(MEM_debugMask, GT_ENTER,
-		  "MEM_Calloc: cBytes 0x%x\ttype 0x%x\n",
-		  cBytes, type);
+	gt_2trace(mem_debug_mask, GT_ENTER,
+		  "mem_calloc: c_bytes 0x%x\ttype 0x%x\n",
+		  c_bytes, type);
 
-	if (cBytes > 0) {
+	if (c_bytes > 0) {
 		switch (type) {
 		case MEM_NONPAGED:
 		/* If non-paged memory required, see note at top of file. */
 		case MEM_PAGED:
 #ifndef MEM_CHECK
-			pMem = kmalloc(cBytes, GFP_ATOMIC);
-			if (pMem)
-				memset(pMem, 0, cBytes);
+			p_mem = kmalloc(c_bytes, GFP_ATOMIC);
+			if (p_mem)
+				memset(p_mem, 0, c_bytes);
 
 #else
-			pMem = kmalloc(cBytes + sizeof(struct memInfo),
+			p_mem = kmalloc(c_bytes + sizeof(struct mem_info),
 				      GFP_ATOMIC);
-			if (pMem) {
-				memset((void *)((u32)pMem +
-					sizeof(struct memInfo)), 0, cBytes);
-				pMem->size = cBytes;
-				pMem->caller = __builtin_return_address(0);
-				pMem->dwSignature = memInfoSign;
-				spin_lock(&mMan.lock);
-				list_add_tail((struct list_head *) pMem,
-					(struct list_head *)&mMan.lst);
-				spin_unlock(&mMan.lock);
-				pMem = (void *)((u32)pMem +
-					sizeof(struct memInfo));
+			if (p_mem) {
+				memset((void *)((u32)p_mem +
+					sizeof(struct mem_info)), 0, c_bytes);
+				p_mem->size = c_bytes;
+				p_mem->caller = __builtin_return_address(0);
+				p_mem->dw_signature = mem_infoSign;
+				spin_lock(&m_man.lock);
+				list_add_tail((struct list_head *) p_mem,
+					(struct list_head *)&m_man.lst);
+				spin_unlock(&m_man.lock);
+				p_mem = (void *)((u32)p_mem +
+					sizeof(struct mem_info));
 			}
 #endif
 			break;
 		case MEM_LARGEVIRTMEM:
 #ifndef MEM_CHECK
 			/* FIXME - Replace with 'vmalloc' after BP fix */
-			pMem = __vmalloc(cBytes, GFP_ATOMIC, PAGE_KERNEL);
-			if (pMem)
-				memset(pMem, 0, cBytes);
+			p_mem = __vmalloc(c_bytes, GFP_ATOMIC, PAGE_KERNEL);
+			if (p_mem)
+				memset(p_mem, 0, c_bytes);
 
 #else
 			/* FIXME - Replace with 'vmalloc' after BP fix */
-			pMem = __vmalloc(cBytes + sizeof(struct memInfo),
+			p_mem = __vmalloc(c_bytes + sizeof(struct mem_info),
 				GFP_ATOMIC, PAGE_KERNEL);
-			if (pMem) {
-				memset((void *)((u32)pMem +
-					sizeof(struct memInfo)), 0, cBytes);
-				pMem->size = cBytes;
-				pMem->caller = __builtin_return_address(0);
-				pMem->dwSignature = memInfoSign;
-				spin_lock(&mMan.lock);
+			if (p_mem) {
+				memset((void *)((u32)p_mem +
+					sizeof(struct mem_info)), 0, c_bytes);
+				p_mem->size = c_bytes;
+				p_mem->caller = __builtin_return_address(0);
+				p_mem->dw_signature = mem_infoSign;
+				spin_lock(&m_man.lock);
 
-				list_add_tail((struct list_head *)pMem,
-					(struct list_head *)&mMan.lst);
+				list_add_tail((struct list_head *)p_mem,
+					(struct list_head *)&m_man.lst);
 
-				spin_unlock(&mMan.lock);
-				pMem = (void *)((u32)pMem +
-					sizeof(struct memInfo));
+				spin_unlock(&m_man.lock);
+				p_mem = (void *)((u32)p_mem +
+					sizeof(struct mem_info));
 			}
 #endif
 			break;
 		default:
-			GT_1trace(MEM_debugMask, GT_6CLASS,
-				  "MEM_Calloc: unexpected "
-				  "MEM_POOLATTRS value 0x%x\n", type);
+			gt_1trace(mem_debug_mask, GT_6CLASS,
+				  "mem_calloc: unexpected "
+				  "mem_pool_attrs value 0x%x\n", type);
 			break;
 		}
 	}
 
-	return pMem;
+	return p_mem;
 }
-EXPORT_SYMBOL(MEM_Calloc);
+EXPORT_SYMBOL(mem_calloc);
 
 /*
- *  ======== MEM_Exit ========
+ *  ======== mem_exit ========
  *  Purpose:
  *      Discontinue usage of the MEM module.
  */
-void MEM_Exit(void)
+void mem_exit(void)
 {
-	DBC_Require(cRefs > 0);
+	dbc_require(c_refs > 0);
 
-	GT_1trace(MEM_debugMask, GT_5CLASS, "MEM_Exit: cRefs 0x%x\n", cRefs);
+	gt_1trace(mem_debug_mask, GT_5CLASS, "mem_exit: c_refs 0x%x\n", c_refs);
 
-	cRefs--;
+	c_refs--;
 #ifdef MEM_CHECK
-	if (cRefs == 0)
-		MEM_Check();
+	if (c_refs == 0)
+		mem_check();
 
 #endif
-	MEM_ExtPhysPoolRelease();
-	DBC_Ensure(cRefs >= 0);
+	mem_ext_phypool_release();
+	dbc_ensure(c_refs >= 0);
 }
-EXPORT_SYMBOL(MEM_Exit);
+EXPORT_SYMBOL(mem_exit);
 
 /*
- *  ======== MEM_FlushCache ========
+ *  ======== mem_flush_cache ========
  *  Purpose:
  *      Flush cache
  */
-void MEM_FlushCache(void *pMemBuf, u32 cBytes, s32 FlushType)
+void mem_flush_cache(void *p_memBuf, u32 c_bytes, s32 flush_type)
 {
-	DBC_Require(cRefs > 0);
+	dbc_require(c_refs > 0);
 
-	switch (FlushType) {
+	switch (flush_type) {
 	/* invalidate only */
 	case PROC_INVALIDATE_MEM:
-		dmac_inv_range(pMemBuf, pMemBuf + cBytes - 1);
-		outer_inv_range(__pa((u32)pMemBuf), __pa((u32)pMemBuf +
-				cBytes - 1));
+		dmac_inv_range(p_memBuf, p_memBuf + c_bytes - 1);
+		outer_inv_range(__pa((u32)p_memBuf), __pa((u32)p_memBuf +
+				c_bytes - 1));
 	break;
 	/* writeback only */
 	case PROC_WRITEBACK_MEM:
-		dmac_clean_range(pMemBuf, pMemBuf + cBytes - 1);
-		outer_clean_range(__pa((u32)pMemBuf), __pa((u32)pMemBuf +
-				  cBytes - 1));
+		dmac_clean_range(p_memBuf, p_memBuf + c_bytes - 1);
+		outer_clean_range(__pa((u32)p_memBuf), __pa((u32)p_memBuf +
+				  c_bytes - 1));
 	break;
 	/* writeback and invalidate */
 	case PROC_WRITEBACK_INVALIDATE_MEM:
-		dmac_flush_range(pMemBuf, pMemBuf + cBytes - 1);
-		outer_flush_range(__pa((u32)pMemBuf), __pa((u32)pMemBuf +
-				  cBytes - 1));
+		dmac_flush_range(p_memBuf, p_memBuf + c_bytes - 1);
+		outer_flush_range(__pa((u32)p_memBuf), __pa((u32)p_memBuf +
+				  c_bytes - 1));
 	break;
 	default:
-		GT_1trace(MEM_debugMask, GT_6CLASS, "MEM_FlushCache: invalid "
-			  "FlushMemType 0x%x\n", FlushType);
+		gt_1trace(mem_debug_mask, GT_6CLASS, "mem_flush_cache: invalid "
+			  "FlushMemType 0x%x\n", flush_type);
 	break;
 	}
 
 }
-EXPORT_SYMBOL(MEM_FlushCache);
+EXPORT_SYMBOL(mem_flush_cache);
 
 
 /*
- *  ======== MEM_Free ========
+ *  ======== mem_free ========
  *  Purpose:
  *      Free the given block of system memory.
  */
-void MEM_Free(IN void *pMemBuf)
+void mem_free(IN void *p_memBuf)
 {
 #ifdef MEM_CHECK
-	struct memInfo *pMem = (void *)((u32)pMemBuf - sizeof(struct memInfo));
+	struct mem_info *p_mem =
+	(void *)((u32)p_memBuf - sizeof(struct mem_info));
 #endif
 
-	DBC_Require(pMemBuf != NULL);
+	dbc_require(p_memBuf != NULL);
 
-	GT_1trace(MEM_debugMask, GT_ENTER, "MEM_Free: pMemBufs 0x%x\n",
-		  pMemBuf);
+	gt_1trace(mem_debug_mask, GT_ENTER, "mem_free: p_memBufs 0x%x\n",
+		  p_memBuf);
 
-	if (pMemBuf) {
+	if (p_memBuf) {
 #ifndef MEM_CHECK
-		kfree(pMemBuf);
+		kfree(p_memBuf);
 #else
-		if (pMem) {
-			if (pMem->dwSignature == memInfoSign) {
-				spin_lock(&mMan.lock);
-				list_del((struct list_head *) pMem);
-				spin_unlock(&mMan.lock);
-				pMem->dwSignature = 0;
-				kfree(pMem);
+		if (p_mem) {
+			if (p_mem->dw_signature == mem_infoSign) {
+				spin_lock(&m_man.lock);
+				list_del((struct list_head *) p_mem);
+				spin_unlock(&m_man.lock);
+				p_mem->dw_signature = 0;
+				kfree(p_mem);
 			} else {
-				GT_1trace(MEM_debugMask, GT_7CLASS,
+				gt_1trace(mem_debug_mask, GT_7CLASS,
 					"Invalid allocation or "
 					"Buffer underflow at %x\n",
-					(u32) pMem + sizeof(struct memInfo));
+					(u32) p_mem + sizeof(struct mem_info));
 			}
 		}
 #endif
 	}
 }
-EXPORT_SYMBOL(MEM_Free);
+EXPORT_SYMBOL(mem_free);
 /*
- *  ======== MEM_FreePhysMem ========
+ *  ======== mem_free_phymem ========
  *  Purpose:
  *      Free the given block of physically contiguous memory.
  */
-void MEM_FreePhysMem(void *pVirtualAddress, u32 pPhysicalAddress,
-		     u32 cBytes)
+void mem_free_phymem(void *pVirtualAddress, u32 p_physical_addr,
+		     u32 c_bytes)
 {
-	DBC_Require(cRefs > 0);
-	DBC_Require(pVirtualAddress != NULL);
+	dbc_require(c_refs > 0);
+	dbc_require(pVirtualAddress != NULL);
 
-	GT_1trace(MEM_debugMask, GT_ENTER, "MEM_FreePhysMem: pVirtualAddress "
+	gt_1trace(mem_debug_mask, GT_ENTER, "mem_free_phymem: pVirtualAddress "
 		  "0x%x\n", pVirtualAddress);
 
-	if (!extPhysMemPoolEnabled)
-		dma_free_coherent(NULL, cBytes, pVirtualAddress,
-				 pPhysicalAddress);
+	if (!ext_phys_mempool_enabled)
+		dma_free_coherent(NULL, c_bytes, pVirtualAddress,
+				 p_physical_addr);
 }
-EXPORT_SYMBOL(MEM_FreePhysMem);
+EXPORT_SYMBOL(mem_free_phymem);
 /*
- *  ======== MEM_Init ========
+ *  ======== services_mem_init ========
  *  Purpose:
  *      Initialize MEM module private state.
  */
-bool MEM_Init(void)
+bool services_mem_init(void)
 {
-	DBC_Require(cRefs >= 0);
+	dbc_require(c_refs >= 0);
 
-	if (cRefs == 0) {
-		GT_create(&MEM_debugMask, "MM");	/* MM for MeM module */
+	if (c_refs == 0) {
+		GT_create(&mem_debug_mask, "MM");	/* MM for MeM module */
 
 #ifdef MEM_CHECK
-		mMan.lst.head.next = &mMan.lst.head;
-		mMan.lst.head.prev = &mMan.lst.head;
-		mMan.lst.head.self = NULL;
+		m_man.lst.head.next = &m_man.lst.head;
+		m_man.lst.head.prev = &m_man.lst.head;
+		m_man.lst.head.self = NULL;
 #endif
 
 	}
 
-	cRefs++;
+	c_refs++;
 
-	GT_1trace(MEM_debugMask, GT_5CLASS, "MEM_Init: cRefs 0x%x\n", cRefs);
+	gt_1trace(mem_debug_mask, GT_5CLASS,
+	"services_mem_init: c_refs 0x%x\n", c_refs);
 
-	DBC_Ensure(cRefs > 0);
+	dbc_ensure(c_refs > 0);
 
 	return true;
 }
-EXPORT_SYMBOL(MEM_Init);
+EXPORT_SYMBOL(services_mem_init);

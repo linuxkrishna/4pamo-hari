@@ -1,34 +1,28 @@
+/*
+ * MBXAccInt.h
+ *
+ * Notify mailbox driver support for OMAP Processors.
+ *
+ * Copyright (C) 2008-2009 Texas Instruments, Inc.
+ *
+ * This package is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
-/*  =================================================================
-File    MLBAccInt.h
 
-Path    $ (PROJROOT)\mpu\src\hal\common\inc
-
-Descs   MLB register access internal header file
-
-Rev     0.1.0
-
-This computer program is copyright to Texas Instruments Incorporated.
-The program may not be used without the written permission of
-Texas Instruments Incorporated or against the terms and conditions
-stipulated in the agreement under which this program has been supplied.
-
-(c) Texas Instruments Incorporated 2008
-
-=====================================================================
-*/
 #ifndef _MLB_ACC_INT_H
 #define _MLB_ACC_INT_H
 
-#if defined __cplusplus
-extern "C" {
-#endif  /*defined(__cplusplus)*/
 
-
-/************************************************************************
-* EXPORTED DEFINITIONS
-*************************************************************************
-*/
+/*
+ * EXPORTED DEFINITIONS
+ *
+ */
 
 
 #define MLB_MAILBOX_MESSAGE___REGSET_0_15_OFFSET (unsigned long)(0x0040)
@@ -77,6 +71,7 @@ offset, bank address increment and number of banks */
 #define MLB_MAILBOX_IRQSTATUS_CLR___REGSET_0_3_OFFSET  (unsigned long)(0x0104)
 #define MLB_MAILBOX_IRQSTATUS_CLR___REGSET_0_3_STEP    (unsigned long)(0x0010)
 #define MLB_MAILBOX_IRQSTATUS_CLR___REGSET_0_3_BANKS   (unsigned long)(4)
+
 /* Register offset address definitions relative to
 register set MAILBOX_IRQSTATUS___REGSET_0_3 */
 
@@ -97,6 +92,7 @@ address offset, bank address increment and number of banks */
 #define MLB_MAILBOX_IRQENABLE_CLR___REGSET_0_3_OFFSET   (unsigned long)(0x010C)
 #define MLB_MAILBOX_IRQENABLE_CLR___REGSET_0_3_STEP     (unsigned long)(0x0010)
 #define MLB_MAILBOX_IRQENABLE_CLR___REGSET_0_3_BANKS    (unsigned long)(4)
+
 /* Register offset address definitions relative to register
 set MAILBOX_IRQENABLE___REGSET_0_3 */
 
@@ -521,10 +517,10 @@ set MAILBOX_IRQENABLE___REGSET_0_3 */
 (unsigned long)(0)
 
 
-/*****************************************************************************
-* EXPORTED TYPES
-******************************************************************************
-*/
+/*
+ * EXPORTED TYPES
+ *
+ */
 
 /* The following type definitions
 represent the enumerated values for each bitfield */
@@ -550,19 +546,5 @@ enum MLBMAILBOX_SYSSTATUSResetDoneE {
 MLBMAILBOX_SYSSTATUSResetDonerstongoing = 0x0000,
 MLBMAILBOX_SYSSTATUSResetDonerstcomp = 0x0001
 };
-
-/*****************************************************************************
-* EXPORTED VARIABLES
-******************************************************************************
-*/
-
-/*****************************************************************************
-* EXPORTED FUNCTIONS
-******************************************************************************
-*/
-
-#if defined(__cplusplus)
-}    /* End of C++ extern block */
-#endif /* defined(__cplusplus) */
 
 #endif /* _MLB_ACC_INT_H */

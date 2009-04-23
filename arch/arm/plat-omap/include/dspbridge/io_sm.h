@@ -136,7 +136,7 @@
  *      Interrupts are disabled and EOI for this interrupt has been sent.
  *  Ensures:
  */
-void IO_ISR (IN   Processor_Id procId,
+void IO_ISR (IN unsigned long int  procId,
                     IN void *     pRefData,
                 struct pt_regs *reg);
 

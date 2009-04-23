@@ -1,74 +1,50 @@
-/** ============================================================================
- *  @file   notifyerr.h
+/*
+ * notifyerr.h
  *
- *  @path   $(NOTIFY)/include
+ * Notify driver support for OMAP Processors.
  *
- *  @desc   Central repository for error and status code bases and ranges for
- *          Notify module and any Algorithm Framework built on top of it.
+ * Copyright (C) 2008-2009 Texas Instruments, Inc.
  *
- *  @rev    00.01
- *  ============================================================================
- *  Copyright (c) Texas Instruments Incorporated 2002-2008
+ * This package is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
- *  Use of this software is controlled by the terms and conditions found in the
- *  license agreement under which this software has been supplied or provided.
- *  ============================================================================
- *
- *  JUN 24, 2008    TYP=ORG             REF=            Mugdha Kamoolkar
- *      Original Version.
- *      Adapted from DSPLink errbase.h
- *  ============================================================================
+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
 
-#if !defined (NOTIFYERR_H)
+#if !defined NOTIFYERR_H
 #define NOTIFYERR_H
 
 
-/*  ----------------------------------- IPC */
-//#include <ipctypes.h>
-
-
-#if defined (__cplusplus)
-extern "C" {
-#endif /* defined (__cplusplus) */
-
-
-/** ============================================================================
- *  @name   Notify_Status
+/*
+ *  name   NOTIFY_SUCCEEDED
  *
- *  @desc   Defines the type for the return status codes from the Notify module
- *  ============================================================================
- */
-//typedef u32  Notify_Status ;
-
-
-/** ============================================================================
- *  @name   NOTIFY_SUCCEEDED
+ *  desc   Check if the provided status code indicates a success code.
  *
- *  @desc   Check if the provided status code indicates a success code.
- *
- *  @arg    status
+ *  arg    status
  *              Status code to be checked
  *
- *  @ret    TRUE
+ *  ret    TRUE
  *              If status code indicates success
  *          FALSE
  *              If status code indicates failure
  *
- *  @enter  None.
+ *  enter  None.
  *
- *  @leave  None.
+ *  leave  None.
  *
- *  @see    NOTIFY_FAILED
- *  ============================================================================
+ *  see    NOTIFY_FAILED
+ *
  */
-#define NOTIFY_SUCCEEDED(status)                  \
-              (    ((Notify_Status) (status) >= (NOTIFY_SBASE))   \
-               &&  ((Notify_Status) (status) <= (NOTIFY_SLAST)))
+#define NOTIFY_SUCCEEDED(status)\
+(((signed long int) (status) >= (NOTIFY_SBASE)) \
+&& ((signed long int) (status) <= (NOTIFY_SLAST)))
 
 
-/** ============================================================================
+/*
  *  @name   NOTIFY_FAILED
  *
  *  @desc   Check if the provided status code indicates a failure code.
@@ -86,36 +62,36 @@ extern "C" {
  *  @leave  None.
  *
  *  @see    NOTIFY_FAILED
- *  ============================================================================
- */
-#define NOTIFY_FAILED(status)      (!NOTIFY_SUCCEEDED (status))
-
-
-
-/** ============================================================================
- *  @name   NOTIFY_SBASE, NOTIFY_SLAST
  *
- *  @desc   Defines the base and range for the success codes used by the
- *          Notify module
- *  ============================================================================
  */
-#define NOTIFY_SBASE               (Notify_Status)0x00002000l
-#define NOTIFY_SLAST               (Notify_Status)0x000020FFl
+#define NOTIFY_FAILED(status)      (!NOTIFY_SUCCEEDED(status))
 
-/** ============================================================================
- *  @name   NOTIFY_EBASE, NOTIFY_ELAST
+
+
+/*
+ *  name   NOTIFY_SBASE, NOTIFY_SLAST
  *
- *  @desc   Defines the base and range for the failure codes used by the
+ *   desc   Defines the base and range for the success codes used by the
  *          Notify module
- *  ============================================================================
+ *
  */
-#define NOTIFY_EBASE               (Notify_Status)0x80002000l
-#define NOTIFY_ELAST               (Notify_Status)0x800020FFl
+#define NOTIFY_SBASE               (signed long int)0x00002000l
+#define NOTIFY_SLAST               (signed long int)0x000020FFl
+
+/*
+ *  name   NOTIFY_EBASE, NOTIFY_ELAST
+ *
+ *  desc   Defines the base and range for the failure codes used by the
+ *          Notify module
+ *
+ */
+#define NOTIFY_EBASE               (signed long int)0x80002000l
+#define NOTIFY_ELAST               (signed long int)0x800020FFl
 
 
-/*  ============================================================================
+/*
  *  SUCCESS Codes
- *  ============================================================================
+ *
  */
 
 /* Generic success code for Notify module */
@@ -128,15 +104,15 @@ extern "C" {
 #define NOTIFY_SALREADYINIT       (NOTIFY_SBASE + 0x02l)
 
 /* Indicates that the Notify module (or driver) is now being finalized, since
- * the calling client is the last one finalizing the module, and all open
+  * the calling client is the last one finalizing the module, and all open
  * handles to it have been closed.
  */
 #define NOTIFY_SEXIT              (NOTIFY_SBASE + 0x03l)
 
 
-/*  ============================================================================
+/*
  *  FAILURE Codes
- *  ============================================================================
+ *
  */
 
 /* Generic failure code for Notify module */
@@ -165,7 +141,8 @@ extern "C" {
  */
 #define NOTIFY_ENOTSUPPORTED      (NOTIFY_EBASE + 0x06l)
 
-/* This failure code indicates that the specified event number is not supported
+/* This failure code indicates that the specified event number is 
+ * not supported
  */
 #define NOTIFY_EINVALIDEVENT      (NOTIFY_EBASE + 0x07l)
 
@@ -217,11 +194,5 @@ extern "C" {
  * notifications.
  */
 #define NOTIFY_ENOTREADY          (NOTIFY_EBASE + 0x12l)
-
-
-#if defined (__cplusplus)
-}
-#endif /* defined (__cplusplus) */
-
 
 #endif /* !defined (NOTIFYERR_H) */

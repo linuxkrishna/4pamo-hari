@@ -21,11 +21,8 @@
 
 /*  ----------------------------------- IPC Headers                 */
 #include <gpptypes.h>
-#include <ipctypes.h>
 #include <dbc.h>
 
-/*  ----------------------------------- IPC */
-#include <ipctypes.h>
 
 /*  ----------------------------------- NOTIFY Headers*/
 #include <notify.h>
@@ -61,17 +58,17 @@ EXTERN "C" {
 
 *  @field  apiStatus
 *              Status returned by this API.
-*          apiArgs
+*          apiargs
 *              Union representing arguments for different APIs.
 *  ============================================================================
 */
-struct Notify_CmdArgs {
+struct notify_cmd_args {
 signed long int apiStatus ;
 union {
 struct {
 void *handle ;
-struct Notify_Config *config ;
-char *driverName ;
+struct notify_config *config ;
+char *driver_name ;
 } driverInitArgs ;
 
 struct {
@@ -80,30 +77,30 @@ void *handle ;
 
 struct {
 void *handle ;
-unsigned long int          eventNo ;
-unsigned long int     procId ;
-FnNotifyCbck    fnNotifyCbck ;
-void *cbckArg ;
-} unregisterEventArgs ;
+unsigned long int          event_no ;
+unsigned long int     proc_id ;
+fn_notify_cbck    fn_notify_cbck ;
+void *cbck_arg ;
+} unregister_event_args ;
 
 struct {
 void *handle ;
-unsigned long int          eventNo ;
-unsigned long int     procId ;
-FnNotifyCbck    fnNotifyCbck ;
-void *cbckArg ;
-} registerEventArgs ;
+unsigned long int          event_no ;
+unsigned long int     proc_id ;
+fn_notify_cbck    fn_notify_cbck ;
+void *cbck_arg ;
+} register_event_args ;
 
 struct {
 void *handle ;
-unsigned long int          eventNo ;
-unsigned long int    procId ;
+unsigned long int          event_no ;
+unsigned long int    proc_id ;
 unsigned long int          payload;
-short int            waitClear;
-} sendEventArgs ;
+short int            wait_clear;
+} send_event_args ;
 
 struct {
-void *disableFlags ;
+void *disable_flags ;
 } disableArgs ;
 
 struct {
@@ -112,16 +109,16 @@ void *restoreFlags ;
 
 struct {
 void *handle ;
-unsigned long int          eventNo ;
-unsigned long int     procId ;
-} disableEventArgs ;
+unsigned long int          event_no ;
+unsigned long int     proc_id ;
+} disable_event_args ;
 
 struct {
 void *handle ;
-unsigned long int          eventNo ;
-unsigned long int     procId ;
-} enableEventArgs ;
-} apiArgs ;
+unsigned long int          event_no ;
+unsigned long int     proc_id ;
+} enable_event_args ;
+} apiargs ;
 };
 
 #if defined __cplusplus
@@ -130,3 +127,4 @@ unsigned long int     procId ;
 
 
 #endif  /* !defined _DRVDEFS_H */
+

@@ -37,8 +37,8 @@
 #define HW_PAGE_SIZE_1MB   0x100000
 #define HW_PAGE_SIZE_16MB  0x1000000
 
-/* HW_STATUS:  return type for HW API */
-typedef long HW_STATUS;
+/* hw_status:  return type for HW API */
+typedef long hw_status;
 
 /* HW_SetClear_t:  Enumerated Type used to set and clear any bit */
 enum HW_SetClear_t {
@@ -46,17 +46,17 @@ enum HW_SetClear_t {
     HW_SET
 } ;
 
-/* HW_Endianism_t:  Enumerated Type used to specify the endianism
+/* hw_endianism_t:  Enumerated Type used to specify the endianism
  *		Do NOT change these values. They are used as bit fields. */
-enum HW_Endianism_t {
+enum hw_endianism_t {
     HW_LITTLE_ENDIAN,
     HW_BIG_ENDIAN
 
 } ;
 
-/* HW_ElementSize_t:  Enumerated Type used to specify the element size
+/* hw_elemnt_siz_t:  Enumerated Type used to specify the element size
  *		Do NOT change these values. They are used as bit fields. */
-enum HW_ElementSize_t {
+enum hw_elemnt_siz_t {
     HW_ELEM_SIZE_8BIT,
     HW_ELEM_SIZE_16BIT,
     HW_ELEM_SIZE_32BIT,

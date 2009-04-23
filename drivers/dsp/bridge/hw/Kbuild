@@ -8,17 +8,17 @@ obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
 endif
 
 ifeq ($(CONFIG_MPU_BRIDGE_NOTIFY),y)
-obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+obj-y += hw_mmu.o ../../syslink/services/mem.o 
 endif
 ifeq ($(CONFIG_MPU_BRIDGE_NOTIFY),m)
-obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+obj-y += hw_mmu.o ../../syslink/services/mem.o 
 endif
 
 ifeq ($(CONFIG_BRIDGE_MAILBOX),y)
-obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+obj-y += hw_mmu.o ../../syslink/services/mem.o 
 endif
 ifeq ($(CONFIG_BRIDGE_MAILBOX),m)
-obj-y += hw_mmu.o ../../syslink/services/mem.o ../../syslink/services/sync.o
+obj-y += hw_mmu.o ../../syslink/services/mem.o 
 endif
 
 

@@ -35,6 +35,7 @@
  *!                 to eliminate preprocessor confusion with other macros.
  */
 #include <linux/types.h>
+#include <std.h>
 #ifndef GT_
 #define GT_
 
@@ -57,7 +58,7 @@ struct GT_Config {
 
 extern struct GT_Config *GT;
 
-struct GT_Mask {
+struct gt_mask {
 	char *modName;
 	u8 *flags;
 } ;
@@ -102,7 +103,7 @@ struct GT_Mask {
  *  ======== GT_assert ========
  */
 /* ARGSUSED */
-void GT_assert(struct GT_Mask mask, s32 expr)
+void GT_assert(struct gt_mask mask, s32 expr)
 {
 }
 
@@ -118,21 +119,21 @@ void GT_config(struct GT_Config config)
  *  ======== GT_create ========
  */
 /* ARGSUSED */
-void GT_create(struct GT_Mask *mask, char *modName)
+void GT_create(struct gt_mask *mask, char *modName)
 {
 }
 
 /*
- *  ======== GT_curLine ========
+ *  ======== GT_curline ========
  *  Purpose:
  *      Returns the current source code line number. Is useful for performing
  *      branch testing using trace.  For example,
  *
- *      GT_1trace(curTrace, GT_1CLASS,
- *          "in module XX_mod, executing line %u\n", GT_curLine());
+ *      gt_1trace(curTrace, GT_1CLASS,
+ *          "in module XX_mod, executing line %u\n", GT_curline());
  */
 /* ARGSUSED */
-u16 GT_curLine(void)
+u16 GT_curline(void)
 {
 	return (u16)NULL;
 }
@@ -157,7 +158,7 @@ void GT_init(void)
  *  ======== GT_query ========
  */
 /* ARGSUSED */
-bool GT_query(struct GT_Mask mask, u8 class)
+bool GT_query(struct gt_mask mask, u8 class)
 {
 	return false;
 }
@@ -183,37 +184,37 @@ void GT_setprintf(Fxn fxn)
 }
 
 /* ARGSUSED */
-void GT_0trace(struct GT_Mask mask, u8 class, char *format)
+void gt_0trace(struct gt_mask mask, u8 class, char *format)
 {
 }
 
 /* ARGSUSED */
-void GT_1trace(struct GT_Mask mask, u8 class, char *format, ...)
+void gt_1trace(struct gt_mask mask, u8 class, char *format, ...)
 {
 }
 
 /* ARGSUSED */
-void GT_2trace(struct GT_Mask mask, u8 class, char *format, ...)
+void gt_2trace(struct gt_mask mask, u8 class, char *format, ...)
 {
 }
 
 /* ARGSUSED */
-void GT_3trace(struct GT_Mask mask, u8 class, char *format, ...)
+void gt_3trace(struct gt_mask mask, u8 class, char *format, ...)
 {
 }
 
 /* ARGSUSED */
-void GT_4trace(struct GT_Mask mask, u8 class, char *format, ...)
+void gt_4trace(struct gt_mask mask, u8 class, char *format, ...)
 {
 }
 
 /* ARGSUSED */
-void GT_5trace(struct GT_Mask mask, u8 class, char *format, ...)
+void gt_5trace(struct gt_mask mask, u8 class, char *format, ...)
 {
 }
 
 /* ARGSUSED */
-void GT_6trace(struct GT_Mask mask, u8 class, char *format, ...)
+void GT_6trace(struct gt_mask mask, u8 class, char *format, ...)
 {
 }
 
@@ -221,13 +222,13 @@ void GT_6trace(struct GT_Mask mask, u8 class, char *format, ...)
 
 #define	GT_BOUND    26		/* 26 letters in alphabet */
 
-extern void _GT_create(struct GT_Mask *mask, char *modName);
+extern void _GT_create(struct gt_mask *mask, char *modName);
 
 #define GT_exit()
 
 extern void GT_init(void);
 extern void _GT_set(char *str);
-extern s32 _GT_trace(struct GT_Mask *mask, char *format, ...);
+extern s32 _GT_trace(struct gt_mask *mask, char *format, ...);
 
 #if GT_ASSERT == 0
 
@@ -253,7 +254,7 @@ extern struct GT_Config _GT_params;
 
 #if GT_TRACE == 0
 
-#define GT_curLine()                ((u16)__LINE__)
+#define GT_curline()                ((u16)__LINE__)
 #define GT_create(mask, modName)
 #define GT_exit()
 #define GT_init()
@@ -262,44 +263,44 @@ extern struct GT_Config _GT_params;
 
 #define GT_query(mask, class)     false
 
-#define GT_0trace(mask, class, format)
-#define GT_1trace(mask, class, format, arg1)
-#define GT_2trace(mask, class, format, arg1, arg2)
-#define GT_3trace(mask, class, format, arg1, arg2, arg3)
-#define GT_4trace(mask, class, format, arg1, arg2, arg3, arg4)
-#define GT_5trace(mask, class, format, arg1, arg2, arg3, arg4, arg5)
+#define gt_0trace(mask, class, format)
+#define gt_1trace(mask, class, format, arg1)
+#define gt_2trace(mask, class, format, arg1, arg2)
+#define gt_3trace(mask, class, format, arg1, arg2, arg3)
+#define gt_4trace(mask, class, format, arg1, arg2, arg3, arg4)
+#define gt_5trace(mask, class, format, arg1, arg2, arg3, arg4, arg5)
 #define GT_6trace(mask, class, format, arg1, arg2, arg3, arg4, arg5, arg6)
 
 #else				/* GT_TRACE == 1 */
 
 #define GT_create(mask, modName)    _GT_create((mask), (modName))
-#define GT_curLine()                ((u16)__LINE__)
+#define GT_curline()                ((u16)__LINE__)
 #define GT_set(settings)          _GT_set(settings)
 #define GT_setprintf(fxn)         (_GT_params.PRINTFXN = (Fxn)(fxn))
 
 #define GT_query(mask, class) ((*(mask).flags & (class)))
 
-#define GT_0trace(mask, class, format) \
+#define gt_0trace(mask, class, format) \
     ((*(mask).flags & (class)) ? \
     _GT_trace(&(mask), (format)) : 0)
 
-#define GT_1trace(mask, class, format, arg1) \
+#define gt_1trace(mask, class, format, arg1) \
     ((*(mask).flags & (class)) ? \
     _GT_trace(&(mask), (format), (arg1)) : 0)
 
-#define GT_2trace(mask, class, format, arg1, arg2) \
+#define gt_2trace(mask, class, format, arg1, arg2) \
     ((*(mask).flags & (class)) ? \
     _GT_trace(&(mask), (format), (arg1), (arg2)) : 0)
 
-#define GT_3trace(mask, class, format, arg1, arg2, arg3) \
+#define gt_3trace(mask, class, format, arg1, arg2, arg3) \
     ((*(mask).flags & (class)) ? \
     _GT_trace(&(mask), (format), (arg1), (arg2), (arg3)) : 0)
 
-#define GT_4trace(mask, class, format, arg1, arg2, arg3, arg4) \
+#define gt_4trace(mask, class, format, arg1, arg2, arg3, arg4) \
     ((*(mask).flags & (class)) ? \
     _GT_trace(&(mask), (format), (arg1), (arg2), (arg3), (arg4)) : 0)
 
-#define GT_5trace(mask, class, format, arg1, arg2, arg3, arg4, arg5) \
+#define gt_5trace(mask, class, format, arg1, arg2, arg3, arg4, arg5) \
     ((*(mask).flags & (class)) ? \
     _GT_trace(&(mask), (format), (arg1), (arg2), (arg3), (arg4), (arg5)) : 0)
 

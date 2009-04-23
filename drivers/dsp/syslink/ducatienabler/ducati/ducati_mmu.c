@@ -53,9 +53,9 @@
      this code is stabilized on Ducati
  */
 #ifndef TESLA_DEBUG
-#define      BaseDucatiL2MMUPhys          0x55082000
+#define      base_ducati_l2_mmuPhys          0x55082000
 #else
-#define      BaseDucatiL2MMUPhys     0x5D000000
+#define      base_ducati_l2_mmuPhys     0x5D000000
 #endif
 
 
@@ -64,33 +64,33 @@
 #define PG_ALIGN_HIGH(addr, pg_size) (((addr)+(pg_size)-1) & PG_MASK(pg_size))
 
 /* Attributes used to manage the DSP MMU page tables */
-struct PgTableAttrs {
-	struct SYNC_CSOBJECT *hCSObj;	/* Critical section object handle */
+struct pg_table_attrs {
+	struct sync_cs_object *hcs_object;/* Critical section object handle */
 
-	u32 L1BasePa;		/* Physical address of the L1 PT */
-	u32 L1BaseVa;		/* Virtual  address of the L1 PT */
-	u32 L1size;		/* Size of the L1 PT */
-	u32 L1TblAllocPa;
+	u32 l1_base_pa;		/* Physical address of the L1 PT */
+	u32 l1_base_va;		/* Virtual  address of the L1 PT */
+	u32 l1_size;		/* Size of the L1 PT */
+	u32 l1_tbl_alloc_pa;
 	/* Physical address of Allocated mem for L1 table. May not be aligned */
-	u32 L1TblAllocVa;
+	u32 l1_tbl_alloc_va;
 	/* Virtual address of Allocated mem for L1 table. May not be aligned */
-	u32 L1TblAllocSz;
+	u32 l1_tbl_alloc_sz;
 	/* Size of consistent memory allocated for L1 table.
 	 * May not be aligned */
 
-	u32 L2BasePa;		/* Physical address of the L2 PT */
-	u32 L2BaseVa;		/* Virtual  address of the L2 PT */
-	u32 L2size;		/* Size of the L2 PT */
-	u32 L2TblAllocPa;
+	u32 l2_base_pa;		/* Physical address of the L2 PT */
+	u32 l2_base_va;		/* Virtual  address of the L2 PT */
+	u32 l2_size;		/* Size of the L2 PT */
+	u32 l2_tbl_alloc_pa;
 	/* Physical address of Allocated mem for L2 table. May not be aligned */
-	u32 L2TblAllocVa;
+	u32 l2_tbl_alloc_va;
 	/* Virtual address of Allocated mem for L2 table. May not be aligned */
-	u32 L2TblAllocSz;
+	u32 ls_tbl_alloc_sz;
 	/* Size of consistent memory allocated for L2 table.
 	 * May not be aligned */
 
-	u32 L2NumPages;	/* Number of allocated L2 PT */
-	struct PageInfo *pgInfo;  /* Array [L2NumPages] of L2 PT info structs */
+	u32 l2_num_pages;	/* Number of allocated L2 PT */
+	struct page_info *pg_info;
 
 } ;
 
@@ -102,277 +102,288 @@ enum pagetype {
 	TINY_PAGE  = 3
 };
 
-static struct PgTableAttrs *pPtAttrs;
-static u32 idwNextMMUIndex;
-static u32 BaseDucatiL2MMU;
+static struct pg_table_attrs *p_pt_attrs;
+static u32 idw_next_mmu_index;
+static u32 base_ducati_l2_mmu;
 
-u32 initpage_attributes(u32 L1Size, u32 L1Align, u32 L2NumOfPages)
+u32 initpage_attributes(u32 l1_size, u32 l1_allign, u32 ls_num_of_pages)
 {
 	u32   pg_tbl_pa;
 	u32   pg_tbl_va;
 	u32   align_size;
 
 #ifndef TESLA_DEBUG
-	BaseDucatiL2MMU = (u32)ioremap(BaseDucatiL2MMUPhys, 0x4000);
+	base_ducati_l2_mmu = (u32)ioremap(base_ducati_l2_mmuPhys, 0x4000);
 #else
 	/* TODO: HK FOR DEBUGGING PRUPOSE*/
-	BaseDucatiL2MMU = (u32)ioremap(BaseDucatiL2MMUPhys, 0x1000);
+	base_ducati_l2_mmu = (u32)ioremap(base_ducati_l2_mmuPhys, 0x1000);
 #endif
-	pPtAttrs = (struct PgTableAttrs *)
-	MEM_Calloc(sizeof(struct PgTableAttrs), MEM_NONPAGED);
+	p_pt_attrs = (struct pg_table_attrs *)
+	mem_calloc(sizeof(struct pg_table_attrs), MEM_NONPAGED);
 
-	if (pPtAttrs != NULL) {
-		pPtAttrs->L1size = L1Size;
-		align_size = pPtAttrs->L1size;
+	if (p_pt_attrs != NULL) {
+		p_pt_attrs->l1_size = l1_size;
+		align_size = p_pt_attrs->l1_size;
 		/* Align sizes are expected to be power of 2 */
 		/* we like to get aligned on L1 table size */
-		pg_tbl_va = (u32)MEM_AllocPhysMem(pPtAttrs->L1size,
+		pg_tbl_va = (u32)mem_alloc_phymem(p_pt_attrs->l1_size,
 		    align_size, &pg_tbl_pa);
 		/* Check if the PA is aligned for us */
 		if ((pg_tbl_pa) & (align_size-1)) {
 			/* PA not aligned to page table size ,*/
 			/* try with more allocation and align */
-					MEM_FreePhysMem(
+					mem_free_phymem(
 						(void *)pg_tbl_va
 						, pg_tbl_pa,
-						pPtAttrs->L1size);
+						p_pt_attrs->l1_size);
 			/* we like to get aligned on L1 table size */
-			pg_tbl_va = (u32) MEM_AllocPhysMem((pPtAttrs->L1size)*2,
+			pg_tbl_va = (u32)
+				mem_alloc_phymem((p_pt_attrs->l1_size)*2,
 				 align_size, &pg_tbl_pa);
 			/* We should be able to get aligned table now */
-			pPtAttrs->L1TblAllocPa = pg_tbl_pa;
-			pPtAttrs->L1TblAllocVa = pg_tbl_va;
-			pPtAttrs->L1TblAllocSz = pPtAttrs->L1size * 2;
+			p_pt_attrs->l1_tbl_alloc_pa = pg_tbl_pa;
+			p_pt_attrs->l1_tbl_alloc_va = pg_tbl_va;
+			p_pt_attrs->l1_tbl_alloc_sz = p_pt_attrs->l1_size * 2;
 			/* Align the PA to the next 'align'  boundary */
-			pPtAttrs->L1BasePa = ((pg_tbl_pa) + (align_size-1)) &
+			p_pt_attrs->l1_base_pa = ((pg_tbl_pa) +
+					(align_size-1)) &
 					 (~(align_size-1));
-			pPtAttrs->L1BaseVa = pg_tbl_va + (pPtAttrs->L1BasePa -
+
+			p_pt_attrs->l1_base_va = pg_tbl_va +
+					(p_pt_attrs->l1_base_pa -
 					 pg_tbl_pa);
 		} else {
 			    /* We got aligned PA, cool */
-			    pPtAttrs->L1TblAllocPa = pg_tbl_pa;
-			    pPtAttrs->L1TblAllocVa = pg_tbl_va;
-			    pPtAttrs->L1TblAllocSz = pPtAttrs->L1size;
-			    pPtAttrs->L1BasePa = pg_tbl_pa;
-			    pPtAttrs->L1BaseVa = pg_tbl_va;
+			    p_pt_attrs->l1_tbl_alloc_pa = pg_tbl_pa;
+			    p_pt_attrs->l1_tbl_alloc_va = pg_tbl_va;
+			    p_pt_attrs->l1_tbl_alloc_sz = p_pt_attrs->l1_size;
+			    p_pt_attrs->l1_base_pa = pg_tbl_pa;
+			    p_pt_attrs->l1_base_va = pg_tbl_va;
 		}
 
-		if (pPtAttrs->L1BaseVa) {
-			memset((u8 *)pPtAttrs->L1BaseVa, 0x00,
-			pPtAttrs->L1size);
+		if (p_pt_attrs->l1_base_va) {
+			memset((u8 *)p_pt_attrs->l1_base_va, 0x00,
+			p_pt_attrs->l1_size);
 		}
-		pPtAttrs->L2NumPages = L2NumOfPages;
-		pPtAttrs->L2size = HW_MMU_COARSE_PAGE_SIZE *
-				   pPtAttrs->L2NumPages;
+		p_pt_attrs->l2_num_pages = ls_num_of_pages;
+		p_pt_attrs->l2_size = HW_MMU_COARSE_PAGE_SIZE *
+				   p_pt_attrs->l2_num_pages;
 		align_size = 4; /* Make it u32 aligned  */
 		/* we like to get aligned on L1 table size */
-		pg_tbl_va = (u32)MEM_AllocPhysMem(pPtAttrs->L2size,
+		pg_tbl_va = (u32)mem_alloc_phymem(p_pt_attrs->l2_size,
 			    align_size, &pg_tbl_pa);
-		pPtAttrs->L2TblAllocPa = pg_tbl_pa;
-		pPtAttrs->L2TblAllocVa = pg_tbl_va;
-		pPtAttrs->L2TblAllocSz = pPtAttrs->L2size;
-		pPtAttrs->L2BasePa = pg_tbl_pa;
-		pPtAttrs->L2BaseVa = pg_tbl_va;
-		if (pPtAttrs->L2BaseVa) {
-				memset((u8 *)pPtAttrs->L2BaseVa, 0x00,
-				pPtAttrs->L2size);
+		p_pt_attrs->l2_tbl_alloc_pa = pg_tbl_pa;
+		p_pt_attrs->l2_tbl_alloc_va = pg_tbl_va;
+		p_pt_attrs->ls_tbl_alloc_sz = p_pt_attrs->l2_size;
+		p_pt_attrs->l2_base_pa = pg_tbl_pa;
+		p_pt_attrs->l2_base_va = pg_tbl_va;
+		if (p_pt_attrs->l2_base_va) {
+				memset((u8 *)p_pt_attrs->l2_base_va, 0x00,
+				p_pt_attrs->l2_size);
 		}
-		pPtAttrs->pgInfo = MEM_Calloc(pPtAttrs->L2NumPages *
-				sizeof(struct PageInfo), MEM_NONPAGED);
+		p_pt_attrs->pg_info = mem_calloc(p_pt_attrs->l2_num_pages *
+				sizeof(struct page_info), MEM_NONPAGED);
 		DPRINTK("L1 pa %x, va %x, size %x\n L2 pa %x, va "
-			 "%x, size %x\n", pPtAttrs->L1BasePa,
-			 pPtAttrs->L1BaseVa, pPtAttrs->L1size,
-			 pPtAttrs->L2BasePa, pPtAttrs->L2BaseVa,
-			 pPtAttrs->L2size);
-		DPRINTK("pPtAttrs %x L2 NumPages %x pgInfo %x\n",
-			 (u32)pPtAttrs, pPtAttrs->L2NumPages,
-			(u32)pPtAttrs->pgInfo);
+			 "%x, size %x\n", p_pt_attrs->l1_base_pa,
+			 p_pt_attrs->l1_base_va, p_pt_attrs->l1_size,
+			 p_pt_attrs->l2_base_pa, p_pt_attrs->l2_base_va,
+			 p_pt_attrs->l2_size);
+		DPRINTK("p_pt_attrs %x L2 NumPages %x pg_info %x\n",
+			 (u32)p_pt_attrs, p_pt_attrs->l2_num_pages,
+			(u32)p_pt_attrs->pg_info);
 	}
 	return 0;
 }
 
 
 /*  ........................................................................
-  func    PrintPTEs
+  func    print_ptes
 
   desc    Print the DSP MMU Table Entries
 
   modif   None
   ........................................................................
 */
-void  PrintPTEs(bool aShowInvEntries, bool aShowRepeatEntries)
+void  print_ptes(bool ashow_inv_entries, bool ashow_repeat_entries)
 {
-	u32               pteVal;
-	u32               pteSize;
-	u32               lastSect = 0;
-	u32               thisSect = 0;
-	u32               curL1Entry;
-	u32               curL2Entry;
-	u32               pgTblVa;
-	u32               L1BaseVa;
-	u32               L2BaseVa    = 0;
-	u32               L2BasePa    = 0;
+	u32               pte_val;
+	u32               pte_size;
+	u32               last_sect = 0;
+	u32               this_sect = 0;
+	u32               cur_l1_entry;
+	u32               cur_l2_entry;
+	u32               pg_tbl_va;
+	u32               l1_base_va;
+	u32               l2_base_va    = 0;
+	u32               l2_base_pa    = 0;
 
-	L1BaseVa = pPtAttrs->L1BaseVa;
-	pgTblVa = L1BaseVa;
+	l1_base_va = p_pt_attrs->l1_base_va;
+	pg_tbl_va = l1_base_va;
 
 	DPRINTK("\n*** Currently programmed PTEs : Max possible L1 Entries"
-			"[%d] ***\n", (pPtAttrs->L1size / sizeof(u32)));
+			"[%d] ***\n", (p_pt_attrs->l1_size / sizeof(u32)));
 
 	/*  Walk all L1 entries, dump out info.  Dive into L2 if necessary  */
-	for (curL1Entry = 0; curL1Entry < (pPtAttrs->L1size / sizeof(u32));
-						curL1Entry++) {
+	for (cur_l1_entry = 0;
+	cur_l1_entry < (p_pt_attrs->l1_size / sizeof(u32));
+					cur_l1_entry++) {
 
-		/*pteVal = pL1PgTbl[curL1Entry];*/
-		pteVal = *((u32 *)(pgTblVa + (curL1Entry * sizeof(u32))));
-		pteSize = HW_MMU_PteSizeL1(pteVal);
+		/*pte_val = pL1PgTbl[cur_l1_entry];*/
+		pte_val = *((u32 *)(pg_tbl_va + (cur_l1_entry * sizeof(u32))));
+		pte_size = hw_mmu_pte_sizel1(pte_val);
 
-		if (pteSize == HW_PAGE_SIZE_16MB) {
-			thisSect = HW_MMU_PtePhyAddr(pteVal, pteSize);
-			if (thisSect != lastSect) {
+		if (pte_size == HW_PAGE_SIZE_16MB) {
+			this_sect = hw_mmu_pte_phyaddr(pte_val, pte_size);
+			if (this_sect != last_sect) {
 
-				lastSect = thisSect;
+				last_sect = this_sect;
 
 				DPRINTK("PTE L1 [16 MB] -> VA =  \
 						0x%x PA = 0x%x\n",
-						curL1Entry << 24, thisSect);
+						cur_l1_entry << 24, this_sect);
 
-			} else if (aShowRepeatEntries != FALSE)
+			} else if (ashow_repeat_entries != FALSE)
 				DPRINTK("    {REPEAT}\n");
-		} else if (pteSize == HW_PAGE_SIZE_1MB) {
-			thisSect = HW_MMU_PtePhyAddr(pteVal, pteSize);
-			if (thisSect != lastSect) {
+		} else if (pte_size == HW_PAGE_SIZE_1MB) {
+			this_sect = hw_mmu_pte_phyaddr(pte_val, pte_size);
+			if (this_sect != last_sect) {
 
-				lastSect = thisSect;
+				last_sect = this_sect;
 
 				DPRINTK("PTE L1 [1 MB ] -> VA =  \
 						0x%x PA = 0x%x\n",
-						curL1Entry << 20, thisSect);
+						cur_l1_entry << 20, this_sect);
 
-			} else if (aShowRepeatEntries != FALSE)
+			} else if (ashow_repeat_entries != FALSE)
 				DPRINTK("    {REPEAT}\n");
 
-		} else if (pteSize == HW_MMU_COARSE_PAGE_SIZE) {
+		} else if (pte_size == HW_MMU_COARSE_PAGE_SIZE) {
 			/*  Get the L2 data for this  */
 			DPRINTK("PTE L1 [L2   ] -> VA = \
-					0x%x\n", curL1Entry << 20);
+					0x%x\n", cur_l1_entry << 20);
 
 /* Get the L2 PA from the L1 PTE, and find corresponding L2 VA*/
-			L2BasePa    = HW_MMU_PteCoarseL1(pteVal) ;
-			L2BaseVa    = L2BasePa - pPtAttrs->L2BasePa +
-						pPtAttrs->L2BaseVa ;
+			l2_base_pa    = hw_mmu_pte_coarsel1(pte_val) ;
+			l2_base_va    = l2_base_pa - p_pt_attrs->l2_base_pa +
+						p_pt_attrs->l2_base_va ;
 
-			for (curL2Entry = 0;
-			 curL2Entry < (HW_MMU_COARSE_PAGE_SIZE / sizeof(u32));
-			 curL2Entry++) {
+			for (cur_l2_entry = 0;
+			 cur_l2_entry < (HW_MMU_COARSE_PAGE_SIZE / sizeof(u32));
+			 cur_l2_entry++) {
 
-				pteVal = *((u32 *)(L2BaseVa +
-						(curL2Entry * sizeof(u32))));
+				pte_val = *((u32 *)(l2_base_va +
+						(cur_l2_entry * sizeof(u32))));
 
-				pteSize = HW_MMU_PteSizeL2(pteVal);
+				pte_size = hw_mmu_pte_sizel2(pte_val);
 
-				if ((pteSize == HW_PAGE_SIZE_64KB) ||
-				    (pteSize == HW_PAGE_SIZE_4KB)) {
+				if ((pte_size == HW_PAGE_SIZE_64KB) ||
+				    (pte_size == HW_PAGE_SIZE_4KB)) {
 
-					thisSect = HW_MMU_PtePhyAddr
-						(pteVal, pteSize);
+					this_sect = hw_mmu_pte_phyaddr
+						(pte_val, pte_size);
 
-					if (thisSect != lastSect) {
-						lastSect = thisSect;
+					if (this_sect != last_sect) {
+						last_sect = this_sect;
 						DPRINTK("PTE L2 [%s KB] ->"
 						"VA = 0x%x   PA = 0x%x\n",
-						(pteSize == HW_PAGE_SIZE_64KB) ?
+						(pte_size ==
+						HW_PAGE_SIZE_64KB) ?
 						"64" : "4",
-						((curL1Entry << 20)
-						| (curL2Entry << 12)),
-						thisSect);
-					} else if (aShowRepeatEntries != FALSE)
+						((cur_l1_entry << 20)
+						| (cur_l2_entry << 12)),
+						this_sect);
+
+					} else if (ashow_repeat_entries
+								!= FALSE)
+
 						DPRINTK("        {REPEAT}");
-				} else  if (aShowInvEntries != FALSE) {
+				} else  if (ashow_inv_entries != FALSE) {
 
 
 					DPRINTK("PTE L2 [INVALID] -> VA = \
 						0x%x",
-						((curL1Entry << 20) |
-						(curL2Entry << 12)));
+						((cur_l1_entry << 20) |
+						(cur_l2_entry << 12)));
 					continue;
 				}
 			 }
-		} else if (aShowInvEntries != FALSE) {
+		} else if (ashow_inv_entries != FALSE) {
 			/*  Entry is invalid (not set), skip it  */
 			DPRINTK("PTE L1 [INVALID] -> VA = 0x%x",
-						curL1Entry << 20);
+						cur_l1_entry << 20);
 			continue;
 		}
 	}
 	/*  Dump the TLB entries as well  */
 	DPRINTK("\n*** Currently programmed TLBs ***\n");
-	HW_MMU_TLBDump(BaseDucatiL2MMU, FALSE);
+	hw_mmi_tlb_dump(base_ducati_l2_mmu, FALSE);
 	DPRINTK("*** DSP MMU DUMP COMPLETED ***\n");
 }
 
 
 
 /*
- *  ======== PteSet ========
+ *  ======== pte_set ========
  *      This function calculates PTE address (MPU virtual) to be updated
  *      It also manages the L2 page tables
  */
-static DSP_STATUS PteSet(u32 pa, u32 va,
-			 u32 size, struct HW_MMUMapAttrs_t *attrs)
+static DSP_STATUS pte_set(u32 pa, u32 va,
+			 u32 size, struct hw_mmu_map_attrs_t *attrs)
 {
 	u32 i;
-	u32 pteVal;
-	u32 pteAddrL1;
-	u32 pteSize;
-	u32 pgTblVa;      /* Base address of the PT that will be updated */
-	u32 L1BaseVa;
+	u32 pte_val;
+	u32 pte_addr_l1;
+	u32 pte_size;
+	u32 pg_tbl_va;      /* Base address of the PT that will be updated */
+	u32 l1_base_va;
 	 /* Compiler warns that the next three variables might be used
 	 * uninitialized in this function. Doesn't seem so. Working around,
 	 * anyways.  */
-	u32 L2BaseVa = 0;
-	u32 L2BasePa = 0;
-	u32 L2PageNum = 0;
-	struct PgTableAttrs *pt = pPtAttrs;
+	u32 l2_base_va = 0;
+	u32 l2_base_pa = 0;
+	u32 l2_page_num = 0;
+	struct pg_table_attrs *pt = p_pt_attrs;
 	DSP_STATUS status = DSP_SOK;
-	DPRINTK("> PteSet pPgTableAttrs %x, pa %x, va %x, "
+	DPRINTK("> pte_set ppg_table_attrs %x, pa %x, va %x, "
 		 "size %x, attrs %x\n", (u32)pt, pa, va, size, (u32)attrs);
-	L1BaseVa = pt->L1BaseVa;
-	pgTblVa = L1BaseVa;
+	l1_base_va = pt->l1_base_va;
+	pg_tbl_va = l1_base_va;
 	if ((size == HW_PAGE_SIZE_64KB) || (size == HW_PAGE_SIZE_4KB)) {
 		/* Find whether the L1 PTE points to a valid L2 PT */
-		pteAddrL1 = HW_MMU_PteAddrL1(L1BaseVa, va);
-		if (pteAddrL1 <= (pt->L1BaseVa + pt->L1size)) {
-			pteVal = *(u32 *)pteAddrL1;
-			pteSize = HW_MMU_PteSizeL1(pteVal);
+		pte_addr_l1 = hw_mmu_pte_addr_l1(l1_base_va, va);
+		if (pte_addr_l1 <= (pt->l1_base_va + pt->l1_size)) {
+			pte_val = *(u32 *)pte_addr_l1;
+			pte_size = hw_mmu_pte_sizel1(pte_val);
 		} else {
 			return DSP_EFAIL;
 		}
 		/* TODO: ADD synchronication element*/
-		/*		SYNC_EnterCS(pt->hCSObj);*/
-		if (pteSize == HW_MMU_COARSE_PAGE_SIZE) {
+		/*		sync_enter_cs(pt->hcs_object);*/
+		if (pte_size == HW_MMU_COARSE_PAGE_SIZE) {
 			/* Get the L2 PA from the L1 PTE, and find
 			 * corresponding L2 VA */
-			L2BasePa = HW_MMU_PteCoarseL1(pteVal);
-			L2BaseVa = L2BasePa - pt->L2BasePa + pt->L2BaseVa;
-			L2PageNum = (L2BasePa - pt->L2BasePa) /
+			l2_base_pa = hw_mmu_pte_coarsel1(pte_val);
+			l2_base_va = l2_base_pa - pt->l2_base_pa +
+			pt->l2_base_va;
+			l2_page_num = (l2_base_pa - pt->l2_base_pa) /
 				    HW_MMU_COARSE_PAGE_SIZE;
-		} else if (pteSize == 0) {
+		} else if (pte_size == 0) {
 			/* L1 PTE is invalid. Allocate a L2 PT and
 			 * point the L1 PTE to it */
 			/* Find a free L2 PT. */
-			for (i = 0; (i < pt->L2NumPages) &&
-			    (pt->pgInfo[i].numEntries != 0); i++)
+			for (i = 0; (i < pt->l2_num_pages) &&
+			    (pt->pg_info[i].num_entries != 0); i++)
 				;;
-			if (i < pt->L2NumPages) {
-				L2PageNum = i;
-				L2BasePa = pt->L2BasePa + (L2PageNum *
+			if (i < pt->l2_num_pages) {
+				l2_page_num = i;
+				l2_base_pa = pt->l2_base_pa + (l2_page_num *
 					   HW_MMU_COARSE_PAGE_SIZE);
-				L2BaseVa = pt->L2BaseVa + (L2PageNum *
+				l2_base_va = pt->l2_base_va + (l2_page_num *
 					   HW_MMU_COARSE_PAGE_SIZE);
 				/* Endianness attributes are ignored for
 				 * HW_MMU_COARSE_PAGE_SIZE */
-				status = HW_MMU_PteSet(L1BaseVa, L2BasePa, va,
+				status =
+				hw_mmu_pte_set(l1_base_va, l2_base_pa, va,
 					 HW_MMU_COARSE_PAGE_SIZE, attrs);
 			} else {
 				status = DSP_EMEMORY;
@@ -383,65 +394,67 @@ static DSP_STATUS PteSet(u32 pa, u32 va,
 			status = DSP_EFAIL;
 		}
 		if (DSP_SUCCEEDED(status)) {
-			pgTblVa = L2BaseVa;
+			pg_tbl_va = l2_base_va;
 			if (size == HW_PAGE_SIZE_64KB)
-				pt->pgInfo[L2PageNum].numEntries += 16;
+				pt->pg_info[l2_page_num].num_entries += 16;
 			else
-				pt->pgInfo[L2PageNum].numEntries++;
+				pt->pg_info[l2_page_num].num_entries++;
 
 			DPRINTK("L2 BaseVa %x, BasePa %x, "
-				 "PageNum %x numEntries %x\n", L2BaseVa,
-				 L2BasePa, L2PageNum,
-				 pt->pgInfo[L2PageNum].numEntries);
+				 "PageNum %x num_entries %x\n", l2_base_va,
+				 l2_base_pa, l2_page_num,
+				 pt->pg_info[l2_page_num].num_entries);
 		}
-/*		SYNC_LeaveCS(pt->hCSObj);*/
+/*		sync_leave_cs(pt->hcs_object);*/
 	}
 	if (DSP_SUCCEEDED(status)) {
-		DPRINTK("PTE pgTblVa %x, pa %x, va %x, size %x\n",
-			 pgTblVa, pa, va, size);
-		DPRINTK("PTE endianism %x, elementSize %x, "
+		DPRINTK("PTE pg_tbl_va %x, pa %x, va %x, size %x\n",
+			 pg_tbl_va, pa, va, size);
+		DPRINTK("PTE endianism %x, element_size %x, "
 			  "mixedSize %x\n", attrs->endianism,
-			  attrs->elementSize, attrs->mixedSize);
-		status = HW_MMU_PteSet(pgTblVa, pa, va, size, attrs);
+			  attrs->element_size, attrs->mixedSize);
+		status = hw_mmu_pte_set(pg_tbl_va, pa, va, size, attrs);
 	}
-	DPRINTK("< PteSet status %x\n", status);
+	DPRINTK("< pte_set status %x\n", status);
 	return status;
 }
 
 
 /*
- *  ======== PteUpdate ========
+ *  ======== pte_update ========
  *      This function calculates the optimum page-aligned addresses and sizes
  *      Caller must pass page-aligned values
  */
-static DSP_STATUS PteUpdate(u32 pa, u32 va, u32 size,
-			    struct HW_MMUMapAttrs_t *mapAttrs)
+static DSP_STATUS pte_update(u32 pa, u32 va, u32 size,
+			    struct hw_mmu_map_attrs_t *map_attrs)
 {
 	u32 i;
-	u32 allBits;
-	u32 paCurr = pa;
-	u32 vaCurr = va;
-	u32 numBytes = size;
+	u32 all_bits;
+	u32 pa_curr = pa;
+	u32 va_curr = va;
+	u32 num_bytes = size;
 	DSP_STATUS status = DSP_SOK;
-	u32 pgSize[] = { HW_PAGE_SIZE_16MB, HW_PAGE_SIZE_1MB,
+	u32 pg_size[] = { HW_PAGE_SIZE_16MB, HW_PAGE_SIZE_1MB,
 			   HW_PAGE_SIZE_64KB, HW_PAGE_SIZE_4KB };
-	DPRINTK("> PteUpdate  pa %x, va %x, "
-		 "size %x, mapAttrs %x\n", pa, va, size, (u32)mapAttrs);
-	while (numBytes && DSP_SUCCEEDED(status)) {
+	DPRINTK("> pte_update  pa %x, va %x, "
+		 "size %x, map_attrs %x\n", pa, va, size, (u32)map_attrs);
+	while (num_bytes && DSP_SUCCEEDED(status)) {
 		/* To find the max. page size with which both PA & VA are
 		 * aligned */
-		allBits = paCurr | vaCurr;
-		DPRINTK("allBits %x, paCurr %x, vaCurr %x, "
-			 "numBytes %x\n ", allBits, paCurr, vaCurr, numBytes);
+		all_bits = pa_curr | va_curr;
+		DPRINTK("all_bits %x, pa_curr %x, va_curr %x, "
+			 "num_bytes %x\n ",
+			all_bits, pa_curr, va_curr, num_bytes);
+
 		for (i = 0; i < 4; i++) {
-			if ((numBytes >= pgSize[i]) && ((allBits &
-			   (pgSize[i] - 1)) == 0)) {
-				DPRINTK("pgSize %x\n", pgSize[i]);
-				status = PteSet(paCurr,
-						vaCurr, pgSize[i], mapAttrs);
-				paCurr += pgSize[i];
-				vaCurr += pgSize[i];
-				numBytes -= pgSize[i];
+			if ((num_bytes >= pg_size[i]) && ((all_bits &
+			   (pg_size[i] - 1)) == 0)) {
+				DPRINTK("pg_size %x\n", pg_size[i]);
+				status = pte_set(pa_curr,
+					va_curr, pg_size[i], map_attrs);
+				pa_curr += pg_size[i];
+				va_curr += pg_size[i];
+				num_bytes -= pg_size[i];
 				 /* Don't try smaller sizes. Hopefully we have
 				 * reached an address aligned to a bigger page
 				 * size */
@@ -449,7 +462,7 @@ static DSP_STATUS PteUpdate(u32 pa, u32 va, u32 size,
 			}
 		}
 	}
-	DPRINTK("< PteUpdate status %x numBytes %x\n", status, numBytes);
+	DPRINTK("< pte_update status %x num_bytes %x\n", status, num_bytes);
 	return status;
 }
 
@@ -462,47 +475,47 @@ static DSP_STATUS PteUpdate(u32 pa, u32 va, u32 size,
  *  All address & size arguments are assumed to be page aligned (in proc.c)
  *
  */
-static DSP_STATUS Ducati_MemMap(u32 ulMpuAddr, u32 ulVirtAddr,
-				 u32 ulNumBytes, u32 ulMapAttr)
+static DSP_STATUS ducati_mem_map(u32 ul_mpu_addr, u32 ul_virt_addr,
+				 u32 ul_num_bytes, u32 ul_map_attr)
 {
 	u32 attrs;
 	DSP_STATUS status = DSP_SOK;
-	struct HW_MMUMapAttrs_t hwAttrs;
+	struct hw_mmu_map_attrs_t hw_attrs;
 
 	DPRINTK("> WMD_BRD_MemMap  pa %x, va %x, "
-		 "size %x, ulMapAttr %x\n", ulMpuAddr, ulVirtAddr,
-		 ulNumBytes, ulMapAttr);
-	if (ulNumBytes == 0)
+		 "size %x, ul_map_attr %x\n", ul_mpu_addr, ul_virt_addr,
+		 ul_num_bytes, ul_map_attr);
+	if (ul_num_bytes == 0)
 		return DSP_EINVALIDARG;
 
-	if (ulMapAttr != 0) {
-		attrs = ulMapAttr;
+	if (ul_map_attr != 0) {
+		attrs = ul_map_attr;
 	} else {
 		/* Assign default attributes */
 		attrs = DSP_MAPVIRTUALADDR | DSP_MAPELEMSIZE16;
 	}
 	/* Take mapping properties */
 	if (attrs & DSP_MAPBIGENDIAN)
-		hwAttrs.endianism = HW_BIG_ENDIAN;
+		hw_attrs.endianism = HW_BIG_ENDIAN;
 	else
-		hwAttrs.endianism = HW_LITTLE_ENDIAN;
+		hw_attrs.endianism = HW_LITTLE_ENDIAN;
 
-	hwAttrs.mixedSize = (enum HW_MMUMixedSize_t)
+	hw_attrs.mixedSize = (enum hw_mmu_mixed_size_t)
 			     ((attrs & DSP_MAPMIXEDELEMSIZE) >> 2);
-	/* Ignore elementSize if mixedSize is enabled */
-	if (hwAttrs.mixedSize == 0) {
+	/* Ignore element_size if mixedSize is enabled */
+	if (hw_attrs.mixedSize == 0) {
 		if (attrs & DSP_MAPELEMSIZE8) {
 			/* Size is 8 bit */
-			hwAttrs.elementSize = HW_ELEM_SIZE_8BIT;
+			hw_attrs.element_size = HW_ELEM_SIZE_8BIT;
 		} else if (attrs & DSP_MAPELEMSIZE16) {
 			/* Size is 16 bit */
-			hwAttrs.elementSize = HW_ELEM_SIZE_16BIT;
+			hw_attrs.element_size = HW_ELEM_SIZE_16BIT;
 		} else if (attrs & DSP_MAPELEMSIZE32) {
 			/* Size is 32 bit */
-			hwAttrs.elementSize = HW_ELEM_SIZE_32BIT;
+			hw_attrs.element_size = HW_ELEM_SIZE_32BIT;
 		} else if (attrs & DSP_MAPELEMSIZE64) {
 			/* Size is 64 bit */
-			hwAttrs.elementSize = HW_ELEM_SIZE_64BIT;
+			hw_attrs.element_size = HW_ELEM_SIZE_64BIT;
 		} else {
 			/* Mixedsize isn't enabled, so size can't be
 			 * zero here */
@@ -510,20 +523,20 @@ static DSP_STATUS Ducati_MemMap(u32 ulMpuAddr, u32 ulVirtAddr,
 			return DSP_EINVALIDARG;
 		}
 	}
-	status = PteUpdate(ulMpuAddr, ulVirtAddr,
-			 ulNumBytes, &hwAttrs);
+	status = pte_update(ul_mpu_addr, ul_virt_addr,
+			 ul_num_bytes, &hw_attrs);
 
 	 /* In any case, flush the TLB
-	 * This is called from here instead from PteUpdate to avoid unnecessary
+	 * This is called from here instead from pte_update to avoid unnecessary
 	 * repetition while mapping non-contiguous physical regions of a virtual
 	 * region */
-	HW_MMU_TLBFlushAll(BaseDucatiL2MMU);
+	hw_mmu_tlb_flushAll(base_ducati_l2_mmu);
 	DPRINTK("< WMD_BRD_MemMap status %x\n", status);
 	return status;
 }
 
 /*  ............................................................................
-*  func    GetMMUEntrySize
+*  func    get_mmu_entry_size
 *
 *  desc    Decides a TLB entry size
 *
@@ -531,64 +544,65 @@ static DSP_STATUS Ducati_MemMap(u32 ulMpuAddr, u32 ulVirtAddr,
 *............................................................................
 */
 static DSP_STATUS
-GetMMUEntrySize(u32  dwPhyAddr,
-				u32  dwSize,
-				enum pagetype *sizeTlb,
-				u32  *entrySize)
+get_mmu_entry_size(u32  dw_phy_addr,
+				u32  dw_size,
+				enum pagetype *size_tlb,
+				u32  *entry_size)
 {
 	DSP_STATUS  status        = DSP_SOK ;
-	bool        pageAlign4KB  = false;
-	bool        pageAlign64KB = false ;
-	bool        pageAlign1MB  = false ;
+	bool        page_align_4kb  = false;
+	bool        page_align_64kb = false ;
+	bool        page_align_1mb  = false ;
 
 	/*  First check the page alignment*/
-	if ((dwPhyAddr % PAGE_SIZE_4KB)  == 0)
-		pageAlign4KB  = true ;
-	if ((dwPhyAddr % PAGE_SIZE_64KB) == 0)
-		pageAlign64KB = true ;
-	if ((dwPhyAddr % PAGE_SIZE_1MB)  == 0)
-		pageAlign1MB  = true ;
+	if ((dw_phy_addr % PAGE_SIZE_4KB)  == 0)
+		page_align_4kb  = true ;
+	if ((dw_phy_addr % PAGE_SIZE_64KB) == 0)
+		page_align_64kb = true ;
+	if ((dw_phy_addr % PAGE_SIZE_1MB)  == 0)
+		page_align_1mb  = true ;
 
-	if ((!pageAlign64KB) && (!pageAlign1MB)  && (!pageAlign4KB))
+	if ((!page_align_64kb) && (!page_align_1mb)  && (!page_align_4kb))
 		status = DSP_EFAIL;;
 
 	if (DSP_SUCCEEDED(status)) {
 
 		/*  Now decide the entry size */
-		if (dwSize >= PAGE_SIZE_1MB) {
+		if (dw_size >= PAGE_SIZE_1MB) {
 
-			if (pageAlign1MB) {
+			if (page_align_1mb) {
 
-				*sizeTlb   = SECTION ;
-				*entrySize = PAGE_SIZE_1MB ;
-			} else if (pageAlign64KB) {
+				*size_tlb   = SECTION ;
+				*entry_size = PAGE_SIZE_1MB ;
+			} else if (page_align_64kb) {
 
-				*sizeTlb   = LARGE_PAGE ;
-				*entrySize = PAGE_SIZE_64KB ;
-			} else if (pageAlign4KB) {
+				*size_tlb   = LARGE_PAGE ;
+				*entry_size = PAGE_SIZE_64KB ;
+			} else if (page_align_4kb) {
 
-				*sizeTlb   = SMALL_PAGE ;
-				*entrySize = PAGE_SIZE_4KB ;
+				*size_tlb   = SMALL_PAGE ;
+				*entry_size = PAGE_SIZE_4KB ;
 			} else
 				status = DSP_EFAIL;;
-		} else if (dwSize > PAGE_SIZE_4KB && dwSize < PAGE_SIZE_1MB) {
+		} else if (dw_size > PAGE_SIZE_4KB &&
+				dw_size < PAGE_SIZE_1MB) {
 
-			if (pageAlign64KB) {
+			if (page_align_64kb) {
 
-				*sizeTlb   = LARGE_PAGE ;
-				*entrySize = PAGE_SIZE_64KB ;
-			} else if (pageAlign4KB) {
+				*size_tlb   = LARGE_PAGE ;
+				*entry_size = PAGE_SIZE_64KB ;
+			} else if (page_align_4kb) {
 
-				*sizeTlb   = SMALL_PAGE ;
-				*entrySize = PAGE_SIZE_4KB ;
+				*size_tlb   = SMALL_PAGE ;
+				*entry_size = PAGE_SIZE_4KB ;
 			} else
 				status = DSP_EFAIL;
-		} else if (dwSize == PAGE_SIZE_4KB) {
+		} else if (dw_size == PAGE_SIZE_4KB) {
 
-				if (pageAlign4KB) {
+				if (page_align_4kb) {
 
-					*sizeTlb   = SMALL_PAGE ;
-					*entrySize = PAGE_SIZE_4KB ;
+					*size_tlb   = SMALL_PAGE ;
+					*entry_size = PAGE_SIZE_4KB ;
 				} else
 					status = DSP_EFAIL;
 			} else
@@ -600,7 +614,7 @@ GetMMUEntrySize(u32  dwPhyAddr,
 
 
 /*  ............................................................................
-  func    AddDSPMMUEntry
+  func    add_dsp_mmu_entry
 
   desc    Add DSP MMU entries corresponding to given MPU-Physical address
 				and DSP-virtual address
@@ -608,71 +622,72 @@ GetMMUEntrySize(u32  dwPhyAddr,
   modif   none
   ............................................................................
 */
-static DSP_STATUS AddDSPMMUEntry(u32  *dwPhyAddr, u32  *dwDspAddr,
-						u32  dwEntrySize)
+static DSP_STATUS add_dsp_mmu_entry(u32  *dw_phy_addr, u32  *dw_dsp_addr,
+						u32  dw_entry_size)
 {
-	u32       mappedSize = 0 ;
-	enum pagetype      sizeTlb    = SECTION ;
-	u32       entrySize  = 0 ;
+	u32       mapped_size = 0 ;
+	enum pagetype      size_tlb    = SECTION ;
+	u32       entry_size  = 0 ;
 	DSP_STATUS  status     = 0;/*DSP_SOK ;*/
-	u32 pageSize   = HW_PAGE_SIZE_1MB ;
+	u32 page_size   = HW_PAGE_SIZE_1MB ;
 
-	struct HW_MMUMapAttrs_t  mapAttrs = { HW_LITTLE_ENDIAN,
+	struct hw_mmu_map_attrs_t  map_attrs = { HW_LITTLE_ENDIAN,
 						HW_ELEM_SIZE_16BIT,
 						HW_MMU_CPUES };
 
-	DPRINTK("Entered AddDSPMMUEntry dwPhyAddr = \
-						0x%x, dwDspAddr = 0x%x, "
-						"dwEntrySize = 0x%x\n",
-		*dwPhyAddr, *dwDspAddr, dwEntrySize);
+	DPRINTK("Entered add_dsp_mmu_entry dw_phy_addr = \
+						0x%x, dw_dsp_addr = 0x%x, "
+						"dw_entry_size = 0x%x\n",
+		*dw_phy_addr, *dw_dsp_addr, dw_entry_size);
 
 
-	while ((mappedSize < dwEntrySize) && (DSP_SUCCEEDED(status))) {
+	while ((mapped_size < dw_entry_size) && (DSP_SUCCEEDED(status))) {
 
 
 
-		status = GetMMUEntrySize(*dwPhyAddr,
-				(dwEntrySize - mappedSize),
-				&sizeTlb,
-				&entrySize);
+		status = get_mmu_entry_size(*dw_phy_addr,
+				(dw_entry_size - mapped_size),
+				&size_tlb,
+				&entry_size);
 
-		if (sizeTlb == SECTION)
-			pageSize = HW_PAGE_SIZE_1MB ;
+		if (size_tlb == SECTION)
+			page_size = HW_PAGE_SIZE_1MB ;
 
-		else if (sizeTlb == LARGE_PAGE)
-			pageSize = HW_PAGE_SIZE_64KB ;
+		else if (size_tlb == LARGE_PAGE)
+			page_size = HW_PAGE_SIZE_64KB ;
 
-		else if (sizeTlb == SMALL_PAGE)
-			pageSize = HW_PAGE_SIZE_4KB ;
+		else if (size_tlb == SMALL_PAGE)
+			page_size = HW_PAGE_SIZE_4KB ;
 
 		if (DSP_SUCCEEDED(status)) {
 
-			HW_MMU_TLBAdd((BaseDucatiL2MMU),
-						*dwPhyAddr,
-						*dwDspAddr,
-						pageSize,
-						idwNextMMUIndex++,
-						&mapAttrs,
+			hw_mmu_tlb_add((base_ducati_l2_mmu),
+						*dw_phy_addr,
+						*dw_dsp_addr,
+						page_size,
+						idw_next_mmu_index++,
+						&map_attrs,
 						HW_SET, /* preserved*/
 						HW_SET); /* valid*/
 
-			mappedSize  += entrySize ;
-			*dwPhyAddr   += entrySize ;
-			*dwDspAddr   += entrySize ;
+			mapped_size  += entry_size ;
+			*dw_phy_addr   += entry_size ;
+			*dw_dsp_addr   += entry_size ;
 
-			if (idwNextMMUIndex > 32)
+			if (idw_next_mmu_index > 32)
 				status = DSP_EFAIL;
 /*set  a valid value here;DSP_EFAIL ;*/
 		}
 	}
-	DPRINTK("Exited AddDSPMMUEntrydwPhyAddr = 0x%x, dwDspAddr = 0x%x\n",
-		*dwPhyAddr, *dwDspAddr);
+	DPRINTK("Exited add_dsp_mmu_entrydw_phy_addr = \
+		0x%x, dw_dsp_addr = 0x%x\n",
+		*dw_phy_addr, *dw_dsp_addr);
 	return status ;
  }
 
 
 /*  ............................................................................
-*  func    AddDSPMMUEntry
+*  func    add_dsp_mmu_entry
 *
 *  desc    Add DSP MMU entries corresponding to given MPU-Physical address
 *          and DSP-virtual address
@@ -680,39 +695,40 @@ static DSP_STATUS AddDSPMMUEntry(u32  *dwPhyAddr, u32  *dwDspAddr,
 *  modif   none
 *  ............................................................................
 */
-static DSP_STATUS AddEntryExt(u32  *dwPhyAddr, u32  *dwDspAddr,
-					u32  dwEntrySize)
+static DSP_STATUS add_entry_ext(u32  *dw_phy_addr, u32  *dw_dsp_addr,
+					u32  dw_entry_size)
 {
-	u32       mappedSize = 0 ;
-	enum pagetype     sizeTlb    = SECTION ;
-	u32       entrySize  = 0 ;
+	u32       mapped_size = 0 ;
+	enum pagetype     size_tlb    = SECTION ;
+	u32       entry_size  = 0 ;
 	DSP_STATUS  status     = 0;
-	u32       pageSize   = HW_PAGE_SIZE_1MB ;
+	u32       page_size   = HW_PAGE_SIZE_1MB ;
 	u32      flags = DSP_MAPELEMSIZE32;
 
-	while ((mappedSize < dwEntrySize) && (DSP_SUCCEEDED(status))) {
+	while ((mapped_size < dw_entry_size) && (DSP_SUCCEEDED(status))) {
 
-		/*  GetMMUEntrySize fills the sizeTlb and entrySize
+		/*  get_mmu_entry_size fills the size_tlb and entry_size
 		based on alignment and size of memory to map
-		to DSP - dwEntrySize */
-		status = GetMMUEntrySize(*dwPhyAddr,
-				(dwEntrySize - mappedSize),
-				&sizeTlb,
-				&entrySize);
+		to DSP - dw_entry_size */
+		status = get_mmu_entry_size(*dw_phy_addr,
+				(dw_entry_size - mapped_size),
+				&size_tlb,
+				&entry_size);
 
-		if (sizeTlb == SECTION)
-			pageSize = HW_PAGE_SIZE_1MB ;
-		else if (sizeTlb == LARGE_PAGE)
-			pageSize = HW_PAGE_SIZE_64KB ;
-		else if (sizeTlb == SMALL_PAGE)
-			pageSize = HW_PAGE_SIZE_4KB ;
+		if (size_tlb == SECTION)
+			page_size = HW_PAGE_SIZE_1MB ;
+		else if (size_tlb == LARGE_PAGE)
+			page_size = HW_PAGE_SIZE_64KB ;
+		else if (size_tlb == SMALL_PAGE)
+			page_size = HW_PAGE_SIZE_4KB ;
 
 		if (DSP_SUCCEEDED(status)) {
 
-			Ducati_MemMap(*dwPhyAddr, *dwDspAddr, pageSize, flags);
-			mappedSize  += entrySize ;
-			*dwPhyAddr   += entrySize ;
-			*dwDspAddr   += entrySize ;
+			ducati_mem_map(*dw_phy_addr,
+			*dw_dsp_addr, page_size, flags);
+			mapped_size  += entry_size ;
+			*dw_phy_addr   += entry_size ;
+			*dw_dsp_addr   += entry_size ;
 		}
 	}
 	return status ;
@@ -721,143 +737,156 @@ static DSP_STATUS AddEntryExt(u32  *dwPhyAddr, u32  *dwDspAddr,
 
 
 /*  ========================================================================
-*  func    MMUInit
+*  func    ducati_mmu_init
 *
 * desc    Initialize the Ducati MMU.
 *  =========================================================================
 */
-u32 MMUInit(u32 aPhysAddr, int aSize)
+u32 ducati_mmu_init(u32 a_phy_addr, int a_size)
 {
-	u32 retVal = 0;
-	u32 ducatiMMULinAddr = BaseDucatiL2MMU;
-	u32 regValue = 0;
+	u32 ret_val = 0;
+	u32 ducati_mmu_linear_addr = base_ducati_l2_mmu;
+	u32 reg_value = 0;
 	DSP_STATUS status = 0 ;
-	u32 dwPhyAddr = 0 ;
-	u32 numL4Entries;
-	u32 dwDspTotalSize;
-	u32 dwExtMemMapBeg      = 0 ;
-	u32 dwINTERM3SHMEnd      = 0 ;
+	u32 dw_phy_addr = 0 ;
+	u32 num_l4_entries;
+	u32 dw_dsp_total_size;
+	u32 dw_ext_mem_mapbeg      = 0 ;
+	u32 dw_interm3_shmend      = 0 ;
 	u32 i = 0;
-	u32 mapAttrs;
-	u32 dwDucatiBootAddr = 0;
+	u32 map_attrs;
+	u32 dw_ducati_boot_addr = 0;
 
-	numL4Entries = (sizeof(L4Map) / sizeof(struct MMUEntry));
+	num_l4_entries = (sizeof(l4_map) / sizeof(struct mmu_entry));
 
 
 	DPRINTK("\n  Programming Ducati MMU using linear address [0x%x]",
-						ducatiMMULinAddr);
+						ducati_mmu_linear_addr);
 
 	/*  Disable the MMU & TWL */
-	HW_MMU_Disable(BaseDucatiL2MMU);
-	HW_MMU_TWLDisable(BaseDucatiL2MMU);
+	hw_mmu_disable(base_ducati_l2_mmu);
+	hw_mmu_twl_disable(base_ducati_l2_mmu);
 
-	idwNextMMUIndex = 0 ;
+	idw_next_mmu_index = 0 ;
 
-	dwINTERM3SHMEnd = DUCATI_BASEADDRESS +
+	dw_interm3_shmend = DUCATI_BASEADDRESS +
 		INTERM3SHM_BASEADDR_OFFSET + INTERM3SHM_LENGTH - 0x1;
 
 	/*   Calculate Total Size of Memory */
-	dwDspTotalSize = dwINTERM3SHMEnd + 0x1 - DUCATI_BASEADDRESS;
-	dwExtMemMapBeg = DUCATI_BASEADDRESS + PAGE_SIZE_4KB;
-	dwDspTotalSize = PG_ALIGN_HIGH(dwDspTotalSize, PAGE_SIZE_4KB);
+	dw_dsp_total_size = dw_interm3_shmend + 0x1 - DUCATI_BASEADDRESS;
+	dw_ext_mem_mapbeg = DUCATI_BASEADDRESS + PAGE_SIZE_4KB;
+	dw_dsp_total_size = PG_ALIGN_HIGH(dw_dsp_total_size, PAGE_SIZE_4KB);
 
-	dwDspTotalSize -= PAGE_SIZE_4KB;
+	dw_dsp_total_size -= PAGE_SIZE_4KB;
 
-	dwPhyAddr = aPhysAddr;
-	DPRINTK("Value before calling AddDSPMMUEntry dwPhyAddr = 0x%x,"
-		"dwDucatiBootAddr = 0x%x\n", dwPhyAddr, dwDucatiBootAddr);
-		AddDSPMMUEntry(&dwPhyAddr, &dwDucatiBootAddr, PAGE_SIZE_4KB);
-	DPRINTK("Value after calling AddDSPMMUEntry dwPhyAddr = 0x%x,"
-		"dwDucatiBootAddr = 0x%x\n", dwPhyAddr, dwDucatiBootAddr);
+	dw_phy_addr = a_phy_addr;
+	DPRINTK("Value before calling add_dsp_mmu_entry dw_phy_addr = 0x%x,"
+		"dw_ducati_boot_addr = 0x%x\n",
+		dw_phy_addr, dw_ducati_boot_addr);
+		add_dsp_mmu_entry(&dw_phy_addr,
+		&dw_ducati_boot_addr, PAGE_SIZE_4KB);
+
+
+	DPRINTK("Value after calling add_dsp_mmu_entry dw_phy_addr = 0x%x,"
+		"dw_ducati_boot_addr = 0x%x\n",
+		dw_phy_addr, dw_ducati_boot_addr);
 
 	/* Lock the base counter*/
-	HW_MMU_NumLockedSet(ducatiMMULinAddr,
-						idwNextMMUIndex);
+	hw_mmu_numlocked_set(ducati_mmu_linear_addr,
+						idw_next_mmu_index);
 
-	HW_MMU_VictimNumSet(ducatiMMULinAddr,
-						idwNextMMUIndex);
-
-
-	mapAttrs = 0x00000000;
-	mapAttrs |= DSP_MAPLITTLEENDIAN;
-	mapAttrs |= DSP_MAPPHYSICALADDR;
-	mapAttrs |= DSP_MAPELEMSIZE32;
-
-	for (i = 0; i < numL4Entries; i++) {
+	hw_mmu_victim_numset(ducati_mmu_linear_addr,
+						idw_next_mmu_index);
 
 
-		Ducati_MemMap(L4Map[i].ulPhysAddr,  L4Map[i].ulVirtAddr,
-						L4Map[i].ulSize, mapAttrs);
+	map_attrs = 0x00000000;
+	map_attrs |= DSP_MAPLITTLEENDIAN;
+	map_attrs |= DSP_MAPPHYSICALADDR;
+	map_attrs |= DSP_MAPELEMSIZE32;
+
+	for (i = 0; i < num_l4_entries; i++) {
+
+
+		ducati_mem_map(l4_map[i].ul_phy_addr,  l4_map[i].ul_virt_addr,
+						l4_map[i].ulSize, map_attrs);
 
 		if (DSP_FAILED(status)) {
 
 			DPRINTK("**** Failed to map Peripheral ****");
 			DPRINTK("Phys addr [0x%x] Virt addr [0x%x] size [0x%x]",
-			    L4Map[i].ulPhysAddr, L4Map[i].ulVirtAddr,
-			    L4Map[i].ulSize);
+			    l4_map[i].ul_phy_addr, l4_map[i].ul_virt_addr,
+			    l4_map[i].ulSize);
 			DPRINTK(" Status [0x%x]", status);
 			break ;
 		}
 	}
 
-	DPRINTK(" >> AddEntryExt2 entry [0x%x]  [0x%x] [0x%x]\n",
-		dwPhyAddr, dwExtMemMapBeg, dwDspTotalSize);
-	status = AddEntryExt(&dwPhyAddr, &dwExtMemMapBeg, dwDspTotalSize);
+	DPRINTK(" >> add_entry_ext2 entry [0x%x]  [0x%x] [0x%x]\n",
+		dw_phy_addr, dw_ext_mem_mapbeg, dw_dsp_total_size);
+	status = add_entry_ext(&dw_phy_addr,
+		&dw_ext_mem_mapbeg, dw_dsp_total_size);
 
 	/*    Set the TTB to point to the L1 page table's physical address */
-	HW_MMU_TTBSet(ducatiMMULinAddr, pPtAttrs->L1BasePa);
+	hw_mmu_ttbset(ducati_mmu_linear_addr, p_pt_attrs->l1_base_pa);
 
 	/*    Enable the TWL */
-	HW_MMU_TWLEnable(ducatiMMULinAddr);
-	/*HW_MMU_AutoIdleEnable(ducatiMMULinAddr);*/
+	hw_mmu_twl_enable(ducati_mmu_linear_addr);
+	/*hw_mmu_autoidle_en(ducati_mmu_linear_addr);*/
 
-	HW_MMU_Enable(ducatiMMULinAddr);
+	hw_mmu_enable(ducati_mmu_linear_addr);
 
 	/*  MMU Debug Statements */
-	regValue = *((REG u32 *)(ducatiMMULinAddr + 0x40));
-	DPRINTK("  Ducati TWL Status [0x%x]\n", regValue);
+	reg_value = *((REG u32 *)(ducati_mmu_linear_addr + 0x40));
+	DPRINTK("  Ducati TWL Status [0x%x]\n", reg_value);
 
-	regValue = *((REG u32 *)(ducatiMMULinAddr + 0x4C));
-	DPRINTK("  Ducati TTB Address [0x%x]\n", regValue);
+	reg_value = *((REG u32 *)(ducati_mmu_linear_addr + 0x4C));
+	DPRINTK("  Ducati TTB Address [0x%x]\n", reg_value);
 
-	regValue = *((REG u32 *)(ducatiMMULinAddr + 0x44));
-	DPRINTK("  Ducati MMU Status [0x%x]\n", regValue);
+	reg_value = *((REG u32 *)(ducati_mmu_linear_addr + 0x44));
+	DPRINTK("  Ducati MMU Status [0x%x]\n", reg_value);
 
 	/*  Dump the MMU Entries */
-	PrintPTEs(FALSE, FALSE);
+	print_ptes(FALSE, FALSE);
 
 	DPRINTK("  Programmed Ducati BootVectors 0x0 to first page at [0x%x]",
-							aPhysAddr);
+							a_phy_addr);
 	DPRINTK("  Programmed Mailbox into Ducati MMU at [0xAA0F4000]\n");
 
 	DPRINTK("  Make sure your BaseImage Code is within [0x%x] & [0x%x]",
-			aPhysAddr + 0x1000, aPhysAddr + aSize);
+			a_phy_addr + 0x1000, a_phy_addr + a_size);
 
-	DPRINTK("  Leaving DDucati_MMUManager::MMUInit [0x%x]", retVal);
+	DPRINTK("  Leaving DDucati_MMUManager::ducati_mmu_init [0x%x]",
+								ret_val);
 
-	return retVal;
+	return ret_val;
 }
 
 /*  ========================================================================
-*  func    MMUDeInit
+*  func    mmu_de_init
 *
 * desc    De-Initialize the Ducati MMU and free the
 * memory allocation for L1 and L2 pages
 *  =========================================================================
 */
-u32 MMUDeInit(void)
+u32 mmu_de_init(void)
 {
-	DPRINTK("  Freeing memory allocated in MMUDeInit\n");
-	if (pPtAttrs->L2TblAllocVa) {
-		MEM_FreePhysMem((void *)pPtAttrs->L2TblAllocVa,
-				pPtAttrs->L2TblAllocPa, pPtAttrs->L2TblAllocSz);
+	DPRINTK("  Freeing memory allocated in mmu_de_init\n");
+	if (p_pt_attrs->l2_tbl_alloc_va) {
+		mem_free_phymem((void *)p_pt_attrs->l2_tbl_alloc_va,
+		p_pt_attrs->l2_tbl_alloc_pa, p_pt_attrs->ls_tbl_alloc_sz);
 	}
-	if (pPtAttrs->L1TblAllocVa) {
-		MEM_FreePhysMem((void *)pPtAttrs->L1TblAllocVa,
-				pPtAttrs->L1TblAllocPa, pPtAttrs->L1TblAllocSz);
+	if (p_pt_attrs->l1_tbl_alloc_va) {
+		mem_free_phymem((void *)p_pt_attrs->l1_tbl_alloc_va,
+		p_pt_attrs->l1_tbl_alloc_pa, p_pt_attrs->l1_tbl_alloc_sz);
 	}
-	if (pPtAttrs)
-		MEM_Free((void *)pPtAttrs);
+	if (p_pt_attrs)
+		mem_free((void *)p_pt_attrs);
 	return 0;
 }
+
+
+
+
+
+
 

@@ -26,27 +26,21 @@
 
 #include <linux/io.h>
 #include <asm/pgtable.h>
+#include <gt.h>
 MODULE_LICENSE("GPL");
 
 
 /*----------------------------------- IPC Headers                 */
 #include <gpptypes.h>
-#include <ipctypes.h>
 #include <dbc.h>
-
-/*----------------------------------- OSAL Headers                */
-#include <sync.h>
 
 /*----------------------------------- Notify Headers              */
 #include <notify.h>
 #include <notify_driver.h>
-#include <_notifydefs.h>
 #include <notifyerr.h>
 
 /*----------------------------------- Generic Headers             */
-#include <gen_utils.h>
 #include <mem.h>
-#include <trc.h>
 #include <global_var.h>
 
 /* *============================================================================
@@ -64,8 +58,7 @@ MODULE_LICENSE("GPL");
 *============================================================================
 */
 #if defined(NOTIFY_DEBUG)
-#define SET_FAILURE_REASON(status) (TRC_SetReason \
-(status, FID_C_KNL_NOTIFY_DRIVER, __LINE__))
+#define SET_FAILURE_REASON(status)
 #else
 #define SET_FAILURE_REASON(status)
 #endif /*if defined(NOTIFY_DEBUG) */
@@ -86,14 +79,14 @@ MODULE_LICENSE("GPL");
 
 
 /* *============================================================================
-*@name   Notify_isInit
+*@name   notify_is_init
 *
 *@desc   Extern declaration to the Notify module initialization flag.
 *============================================================================
 */
 
 /* *============================================================================
-*@name  struct Notify_StateObj
+*@name  struct notify_state_obj
 *
 *@desc   Extern declaration to the Notify state object instance.
 *============================================================================
@@ -101,103 +94,103 @@ MODULE_LICENSE("GPL");
 
 
 /* *============================================================================
-*@func   Notify_registerDriver
+*@func   notify_register_driver
 *
 *@desc   This function registers a Notify driver with the Notify module.
 *
-*@modif struct Notify_StateObj.drivers
+*@modif struct notify_state_obj.drivers
 *============================================================================
 */
 
-signed long int
-Notify_registerDriver(IN  char  *driverName,
-		IN  struct Notify_Interface  *fnTable,
-		IN  struct Notify_DriverAttrs  *drvAttrs,
-		OUT struct Notify_DriverHandle  **driverHandle)
+signed long int notify_register_driver(IN  char  *driver_name,
+		IN  struct notify_interface  *fn_table,
+		IN  struct notify_driver_attrs  *drv_attrs,
+		OUT struct notify_driver_handle  **driver_handle)
 {
-	signed long int       status    = NOTIFY_SOK ;
-	struct Notify_DriverHandle  *drvHandle = NULL ;
+	signed long int       status    = 0 ;
+	struct notify_driver_handle  *drv_handle = NULL ;
 	unsigned short int              i ;
-	TRC_4ENTER("Notify_registerDriver",
-			driverName,
-			fnTable,
-			drvAttrs,
-			driverHandle) ;
+	gt_4trace(notify_debugmask, GT_ENTER, "notify_register_driver",
+			driver_name,
+			fn_table,
+			drv_attrs,
+			driver_handle) ;
 
-	DBC_require(Notify_isInit == TRUE) ;
-	DBC_require(driverName    != NULL) ;
-	DBC_require(fnTable       != NULL) ;
-	DBC_require(drvAttrs      != NULL) ;
-	DBC_require(driverHandle  != NULL) ;
+	BUG_ON(notify_is_init != TRUE) ;
+	BUG_ON(driver_name == NULL) ;
+	BUG_ON(fn_table == NULL) ;
+	BUG_ON(drv_attrs == NULL) ;
+	BUG_ON(driver_handle == NULL) ;
 
-	if (Notify_isInit == FALSE) {
-		status = NOTIFY_EINIT ;
-		SET_FAILURE_REASON(status) ;
-	} else if ((driverName   == NULL)
-			|| (fnTable      == NULL)
-			|| (drvAttrs     == NULL)
-			|| (driverHandle == NULL)) {
-		status = NOTIFY_EPOINTER ;
-		SET_FAILURE_REASON(status) ;
+	if (notify_is_init == FALSE) {
+		status = -EPERM ;
+		goto error_exit;
+	} else if ((driver_name   == NULL)
+			|| (fn_table      == NULL)
+			|| (drv_attrs     == NULL)
+			|| (driver_handle == NULL)) {
+		status = -EINVAL ;
+		goto error_exit;
 	} else {
-		*driverHandle = NULL ;
+		*driver_handle = NULL ;
 		/*Initialize to status that indicates that an empty slot was not
 		  *found for the driver.
 		 */
-		status = NOTIFY_ERESOURCE ;
+		status = -ENOENT ;
 
 
-		for (i = 0 ; i < Notify_StateObj.maxDrivers ; i++) {
+		for (i = 0 ; i < notify_state_obj.maxDrivers ; i++) {
 
-			drvHandle = &(Notify_StateObj.drivers[i]) ;
+			drv_handle = &(notify_state_obj.drivers[i]) ;
 
-			if ((drvHandle->fnTable != NULL) &&
-					(drvHandle->fnTable !=
-				(struct Notify_Interface *) TRUE)) {
+			if ((drv_handle->fn_table != NULL) &&
+					(drv_handle->fn_table !=
+				(struct notify_interface *) TRUE)) {
 
-				if (GEN_strncmp(driverName,
-					drvHandle->name,
+				if (strncmp(driver_name,
+					drv_handle->name,
 					NOTIFY_MAX_NAMELEN)
 							== 0) {
 
-					status = NOTIFY_EALREADYEXISTS ;
+					status = -EEXIST ;
 					break ;
 				}
 			}
 
-			if (drvHandle->fnTable == NULL) {
+			if (drv_handle->fn_table == NULL) {
 				/*Found an empty slot, so block it. */
-				drvHandle->fnTable =
-					(struct Notify_Interface *) TRUE ;
-				status = NOTIFY_SOK ;
+				drv_handle->fn_table =
+					(struct notify_interface *) TRUE ;
+				status = 0 ;
 				break ;
 			}
 		}
 
-		if (NOTIFY_FAILED(status)) {
+		if (status != 0) {
 			SET_FAILURE_REASON(status) ;
 		} else {
 			/*Complete registration of the driver. */
-			GEN_strncpy(drvHandle->name,
-					driverName, NOTIFY_MAX_NAMELEN) ;
-			memcpy(&(drvHandle->attrs),
-					drvAttrs,
-					sizeof(struct Notify_DriverAttrs)) ;
-			drvHandle->fnTable = fnTable ;
+			strncpy(drv_handle->name,
+					driver_name, NOTIFY_MAX_NAMELEN) ;
+			memcpy(&(drv_handle->attrs),
+					drv_attrs,
+					sizeof(struct notify_driver_attrs)) ;
+			drv_handle->fn_table = fn_table ;
 			/*notifyId is set by default. */
 			/*isInit is set when driverInit is called. */
-			*driverHandle = drvHandle ;
+			*driver_handle = drv_handle ;
 		}
 	}
 
-	TRC_1LEAVE("Notify_registerDriver", status) ;
-
+	gt_1trace(notify_debugmask, GT_5CLASS,
+		"notify_register_driver", status) ;
+error_exit:
 	return status ;
 }
-EXPORT_SYMBOL(Notify_registerDriver);
+EXPORT_SYMBOL(notify_register_driver);
 
 /* *============================================================================
-*@func   Notify_unregisterDriver
+*@func   notify_unregister_driver
 *
 *@desc   This function un-registers a Notify driver with the Notify module.
 *
@@ -206,29 +199,31 @@ EXPORT_SYMBOL(Notify_registerDriver);
 */
 
 signed long int
-Notify_unregisterDriver(IN  struct Notify_DriverHandle  *drvHandle)
+notify_unregister_driver(IN  struct notify_driver_handle  *drv_handle)
 {
-	signed long int status = NOTIFY_SOK ;
+	signed long int status = 0;
 
-	TRC_1ENTER("Notify_unregisterDriver", drvHandle) ;
+	gt_1trace(notify_debugmask, GT_ENTER,
+		"notify_unregister_driver", drv_handle) ;
 
-	DBC_require(Notify_isInit  == TRUE) ;
-	DBC_require(drvHandle      != NULL) ;
+	dbc_require(notify_is_init  == TRUE) ;
+	dbc_require(drv_handle      != NULL) ;
 
-	if (Notify_isInit == FALSE) {
-		status = NOTIFY_EINIT ;
+	if (notify_is_init == FALSE) {
+		status = -ENODEV ;
 		SET_FAILURE_REASON(status) ;
-	} else if (drvHandle == NULL) {
-		status = NOTIFY_EHANDLE ;
+	} else if (drv_handle == NULL) {
+		status = -EFAULT;
 		SET_FAILURE_REASON(status) ;
 	} else {
 		/*Unregister the driver. */
-		drvHandle->fnTable = NULL ;
+		drv_handle->fn_table = NULL ;
 	}
 
-	TRC_1LEAVE("Notify_unregisterDriver", status) ;
+	gt_1trace(notify_debugmask, GT_5CLASS,
+		"notify_unregister_driver", status) ;
 
 	return status ;
 }
-EXPORT_SYMBOL(Notify_unregisterDriver);
+EXPORT_SYMBOL(notify_unregister_driver);
 

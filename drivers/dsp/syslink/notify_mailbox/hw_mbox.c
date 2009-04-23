@@ -29,7 +29,7 @@
 #include <GlobalTypes.h>
 #include <MBXRegAcM.h>
 #include <MBXAccInt.h>
-#include <hal_defs.h>
+#include <hw_defs.h>
 #include <hw_mbox.h>
 #include<linux/module.h>
 MODULE_LICENSE("GPL");
@@ -59,22 +59,24 @@ MODULE_LICENSE("GPL");
  * =============================================================================
  */
 #if defined(OMAP3430)
-struct MAILBOX_CONTEXT mboxsetting = {0, 0, 0};
+struct mailbox_context mboxsetting = {0, 0, 0};
 /*
  *  ======== HAL_MBOX_saveSettings ========
  *  purpose:
  *      Saves the mailbox context
  */
-long HW_MBOX_saveSettings(unsigned long    baseAddress)
+long hw_mbox_save_settings(unsigned long    base_address)
 {
 	long status = RET_OK;
 
-	mboxsetting.sysconfig = MLBMAILBOX_SYSCONFIGReadRegister32(baseAddress);
+	mboxsetting.sysconfig =
+	MLBMAILBOX_SYSCONFIGReadRegister32(base_address);
+
 	/* Get current enable status */
 	mboxsetting.irqEnable0 = MLBMAILBOX_IRQENABLE___0_3ReadRegister32
-		(baseAddress, HW_MBOX_U0_ARM11);
+		(base_address, HW_MBOX_U0_ARM11);
 	mboxsetting.irqEnable1 = MLBMAILBOX_IRQENABLE___0_3ReadRegister32
-		(baseAddress, HW_MBOX_U1_UMA);
+		(base_address, HW_MBOX_U1_UMA);
 
 	return status;
 }
@@ -86,152 +88,153 @@ long HW_MBOX_saveSettings(unsigned long    baseAddress)
  *  purpose:
  *      Restores the mailbox context
  */
-long HW_MBOX_restoreSettings(unsigned long    baseAddress)
+long hw_mbox_restore_settings(unsigned long    base_address)
 {
 	long status = RET_OK;
 
 	/* Restore IRQ enable status */
 	MLBMAILBOX_IRQENABLE___0_3WriteRegister32
-	(baseAddress, HW_MBOX_U0_ARM11, mboxsetting.irqEnable0);
-	MLBMAILBOX_IRQENABLE___0_3WriteRegister32(baseAddress, HW_MBOX_U1_UMA,
+	(base_address, HW_MBOX_U0_ARM11, mboxsetting.irqEnable0);
+	MLBMAILBOX_IRQENABLE___0_3WriteRegister32(base_address, HW_MBOX_U1_UMA,
 			mboxsetting.irqEnable1);
 
 	/* Restore Sysconfig register */
-	MLBMAILBOX_SYSCONFIGWriteRegister32(baseAddress, mboxsetting.sysconfig);
+	MLBMAILBOX_SYSCONFIGWriteRegister32(base_address,
+				mboxsetting.sysconfig);
 
 	return status;
 }
-EXPORT_SYMBOL(HW_MBOX_restoreSettings);
+EXPORT_SYMBOL(hw_mbox_restore_settings);
 #endif
 
-long HW_MBOX_MsgRead(
-		const unsigned long    baseAddress,
-		const enum HW_MBOX_Id_t   mailBoxId,
-		unsigned long *const   pReadValue
+long hw_mbox_msg_read(
+		const unsigned long    base_address,
+		const enum hw_mbox_id_t   mail_box_id,
+		unsigned long *const   p_read_value
 		)
 {
 	long status = RET_OK;
 	/* Check input parameters */
-	CHECK_INPUT_PARAM(baseAddress, 0,  RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(base_address, 0,  RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
-	CHECK_INPUT_PARAM(pReadValue,  NULL, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(p_read_value,  NULL, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
-	CHECK_INPUT_RANGE_MIN0(mailBoxId,
+	CHECK_INPUT_RANGE_MIN0(mail_box_id,
 			HAL_MBOX_ID_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 	/* Read 32-bit message in mail box */
-	*pReadValue = MLBMAILBOX_MESSAGE___0_15ReadRegister32
-		(baseAddress, (unsigned long)mailBoxId);
+	*p_read_value = MLBMAILBOX_MESSAGE___0_15ReadRegister32
+		(base_address, (unsigned long)mail_box_id);
 
 	return status;
 }
-EXPORT_SYMBOL(HW_MBOX_MsgRead);
+EXPORT_SYMBOL(hw_mbox_msg_read);
 /* ==================== Function Separator =============================*/
 
-long HW_MBOX_MsgWrite(const unsigned long   baseAddress,
-			 const enum HW_MBOX_Id_t  mailBoxId,
-			 const unsigned long   writeValue)
+long hw_mbox_msg_write(const unsigned long   base_address,
+			 const enum hw_mbox_id_t  mail_box_id,
+			 const unsigned long   write_value)
 {
 
 	long status = RET_OK;
 	/* Check input parameters */
-	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
-	CHECK_INPUT_RANGE_MIN0(mailBoxId,
+	CHECK_INPUT_RANGE_MIN0(mail_box_id,
 			HAL_MBOX_ID_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 
 	/* Write 32-bit value to mailbox */
-	MLBMAILBOX_MESSAGE___0_15WriteRegister32(baseAddress,
-		(unsigned long)mailBoxId, (unsigned long)writeValue);
+	MLBMAILBOX_MESSAGE___0_15WriteRegister32(base_address,
+		(unsigned long)mail_box_id, (unsigned long)write_value);
 
 	return status;
 }
 
 /* ==================== Function Separator =============================*/
 
-long HW_MBOX_IsFull(
-		const unsigned long    baseAddress,
-		const enum HW_MBOX_Id_t   mailBoxId,
-		unsigned long  *const     pIsFull
+long hw_mbox_is_full(
+		const unsigned long    base_address,
+		const enum hw_mbox_id_t   mail_box_id,
+		unsigned long  *const     p_is_full
 		)
 {
 	long status = RET_OK;
 	unsigned long fullStatus;
 	/* Check input parameters */
-	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
-	CHECK_INPUT_PARAM(pIsFull,  NULL, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(p_is_full,  NULL, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
-	CHECK_INPUT_RANGE_MIN0(mailBoxId,
+	CHECK_INPUT_RANGE_MIN0(mail_box_id,
 			HAL_MBOX_ID_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 	/* read the is full status parameter for Mailbox */
 	fullStatus = MLBMAILBOX_FIFOSTATUS___0_15FifoFullMBmRead32
-		(baseAddress, (unsigned long)mailBoxId);
+		(base_address, (unsigned long)mail_box_id);
 
 	/* fill in return parameter */
-	*pIsFull = (fullStatus & 0xFF);
+	*p_is_full = (fullStatus & 0xFF);
 
 	return status;
 }
 
 /* ==================== Function Separator =============================*/
 
-long HW_MBOX_NumMsgGet(
-		const   unsigned long   baseAddress,
-		const   enum HW_MBOX_Id_t  mailBoxId,
-		unsigned long *const    pNumMsg
+long hw_mbox_nomsg_get(
+		const   unsigned long   base_address,
+		const   enum hw_mbox_id_t  mail_box_id,
+		unsigned long *const    p_num_msg
 		)
 {
 	long status = RET_OK;
 	/* Check input parameters */
-	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
-	CHECK_INPUT_PARAM(pNumMsg,  NULL, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(p_num_msg,  NULL, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
-	CHECK_INPUT_RANGE_MIN0(mailBoxId,
+	CHECK_INPUT_RANGE_MIN0(mail_box_id,
 			HAL_MBOX_ID_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 	/* Get number of messages available for MailBox */
-	*pNumMsg = MLBMAILBOX_MSGSTATUS___0_15NbOfMsgMBmRead32
-		(baseAddress, (unsigned long)mailBoxId);
+	*p_num_msg = MLBMAILBOX_MSGSTATUS___0_15NbOfMsgMBmRead32
+		(base_address, (unsigned long)mail_box_id);
 
 	return status;
 }
-EXPORT_SYMBOL(HW_MBOX_NumMsgGet);
+EXPORT_SYMBOL(hw_mbox_nomsg_get);
 /* ==================== Function Separator =============================*/
 
-long HW_MBOX_EventEnable(
-		const unsigned long             baseAddress,
-		const enum HW_MBOX_Id_t       mailBoxId,
-		const enum HW_MBOX_UserId_t   userId,
+long hw_mbox_event_enable(
+		const unsigned long             base_address,
+		const enum hw_mbox_id_t       mail_box_id,
+		const enum hw_mbox_userid_t   user_id,
 		const unsigned long             events
 		)
 {
 	long status = RET_OK;
 	unsigned long      irqEnableReg;
 	/* Check input parameters */
-	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 	CHECK_INPUT_RANGE_MIN0(
-			mailBoxId,
+			mail_box_id,
 			HAL_MBOX_ID_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
@@ -241,54 +244,54 @@ long HW_MBOX_EventEnable(
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 	CHECK_INPUT_RANGE_MIN0(
-			userId,
+			user_id,
 			HAL_MBOX_USER_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 #if  defined(OMAP44XX) || defined(VPOM4430_1_06)
  /* update enable value */
     irqEnableReg = (((unsigned long)(events)) <<
-		(((unsigned long)(mailBoxId))*HW_MBOX_ID_WIDTH));
+		(((unsigned long)(mail_box_id))*HW_MBOX_ID_WIDTH));
 
     /* write new enable status */
-    MLBMAILBOX_IRQENABLE_SET___0_3WriteRegister32(baseAddress,
-		(unsigned long)userId, (unsigned long)irqEnableReg);
+    MLBMAILBOX_IRQENABLE_SET___0_3WriteRegister32(base_address,
+		(unsigned long)user_id, (unsigned long)irqEnableReg);
 
 
 #else
 	/* Get current enable status */
 	irqEnableReg = MLBMAILBOX_IRQENABLE___0_3ReadRegister32
-		(baseAddress, (unsigned long)userId);
+		(base_address, (unsigned long)user_id);
 
 	/* update enable value */
 	irqEnableReg |= ((unsigned long)(events)) <<
-		(((unsigned long)(mailBoxId))*HW_MBOX_ID_WIDTH);
+		(((unsigned long)(mail_box_id))*HW_MBOX_ID_WIDTH);
 
 	/* write new enable status */
 	MLBMAILBOX_IRQENABLE___0_3WriteRegister32
-(baseAddress, (unsigned long)userId, (unsigned long)irqEnableReg);
+(base_address, (unsigned long)user_id, (unsigned long)irqEnableReg);
 #endif
 	return status;
 }
-EXPORT_SYMBOL(HW_MBOX_EventEnable);
+EXPORT_SYMBOL(hw_mbox_event_enable);
 
 /* ==================== Function Separator =============================*/
 
-long HW_MBOX_EventDisable(
-		const unsigned long             baseAddress,
-		const enum HW_MBOX_Id_t       mailBoxId,
-		const enum HW_MBOX_UserId_t   userId,
+long hw_mbox_event_disable(
+		const unsigned long             base_address,
+		const enum hw_mbox_id_t       mail_box_id,
+		const enum hw_mbox_userid_t   user_id,
 		const unsigned long             events
 		)
 {
 	long status = RET_OK;
 	unsigned long      irqDisableReg;
 	/* Check input parameters */
-	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 	CHECK_INPUT_RANGE_MIN0(
-			mailBoxId,
+			mail_box_id,
 			HAL_MBOX_ID_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
@@ -298,77 +301,77 @@ long HW_MBOX_EventDisable(
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 	CHECK_INPUT_RANGE_MIN0(
-			userId,
+			user_id,
 			HAL_MBOX_USER_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 #if defined(OMAP44XX) || defined(VPOM4430_1_06)
     irqDisableReg = (((unsigned long)(events)) <<
-		(((unsigned long)(mailBoxId))*HW_MBOX_ID_WIDTH));
+		(((unsigned long)(mail_box_id))*HW_MBOX_ID_WIDTH));
 
     /* write new enable status */
-    MLBMAILBOX_IRQENABLE_CLR___0_3WriteRegister32(baseAddress,
-	(unsigned long)userId, (unsigned long)irqDisableReg);
+    MLBMAILBOX_IRQENABLE_CLR___0_3WriteRegister32(base_address,
+	(unsigned long)user_id, (unsigned long)irqDisableReg);
 
 #else
 	/* Get current enable status */
 	irqDisableReg = MLBMAILBOX_IRQENABLE___0_3ReadRegister32
-		(baseAddress, (unsigned long)userId);
+		(base_address, (unsigned long)user_id);
 
 	/* update enable value */
 	irqDisableReg &= ~(((unsigned long)(events)) <<
-		(((unsigned long)(mailBoxId))*HW_MBOX_ID_WIDTH));
+		(((unsigned long)(mail_box_id))*HW_MBOX_ID_WIDTH));
 
 	/* write new enable status */
-	MLBMAILBOX_IRQENABLE___0_3WriteRegister32(baseAddress,
-		(unsigned long)userId, (unsigned long)irqDisableReg);
+	MLBMAILBOX_IRQENABLE___0_3WriteRegister32(base_address,
+		(unsigned long)user_id, (unsigned long)irqDisableReg);
 #endif
 	return status;
 }
-EXPORT_SYMBOL(HW_MBOX_EventDisable);
+EXPORT_SYMBOL(hw_mbox_event_disable);
 
 /* ==================== Function Separator =============================*/
 
-long HW_MBOX_EventStatus(
-		const unsigned long              baseAddress,
-		const enum HW_MBOX_Id_t        mailBoxId,
-		const enum HW_MBOX_UserId_t    userId,
-		unsigned long *const             pEventStatus
+long hw_mbox_event_status(
+		const unsigned long              base_address,
+		const enum hw_mbox_id_t        mail_box_id,
+		const enum hw_mbox_userid_t    user_id,
+		unsigned long *const             p_eventStatus
 		)
 {
 	long status = RET_OK;
-	unsigned long      irqStatusReg;
+	unsigned long      irq_status_reg;
 	/* Check input parameters */
-	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 	CHECK_INPUT_PARAM(pIrqStatus, NULL, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 	CHECK_INPUT_RANGE_MIN0(
-			mailBoxId,
+			mail_box_id,
 			HAL_MBOX_ID_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 	CHECK_INPUT_RANGE_MIN0(
-			userId,
+			user_id,
 			HAL_MBOX_USER_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 #if defined(OMAP44XX) || defined(VPOM4430_1_06)
-    irqStatusReg = MLBMAILBOX_IRQSTATUS_CLR___0_3ReadRegister32(baseAddress,
-							(unsigned long)userId);
+    irq_status_reg = MLBMAILBOX_IRQSTATUS_CLR___0_3ReadRegister32(base_address,
+							(unsigned long)user_id);
 #else
 	/* Get Irq Status for specified mailbox/User Id */
-	irqStatusReg = MLBMAILBOX_IRQSTATUS___0_3ReadRegister32
-		(baseAddress, (unsigned long)userId);
+	irq_status_reg = MLBMAILBOX_IRQSTATUS___0_3ReadRegister32
+		(base_address, (unsigned long)user_id);
 #endif
 
 	/* update status value */
-	*pEventStatus = (unsigned long)((((unsigned long)(irqStatusReg)) >>
-		(((unsigned long)(mailBoxId))*HW_MBOX_ID_WIDTH)) &
+	*p_eventStatus = (unsigned long)((((unsigned long)(irq_status_reg)) >>
+		(((unsigned long)(mail_box_id))*HW_MBOX_ID_WIDTH)) &
 		((unsigned long)(HW_MBOX_INT_ALL)));
 
 	return status;
@@ -376,17 +379,17 @@ long HW_MBOX_EventStatus(
 
 /* ==================== Function Separator =============================*/
 
-long HW_MBOX_EventAck(
-		const unsigned long          baseAddress,
-		const enum HW_MBOX_Id_t        mailBoxId,
-		const enum HW_MBOX_UserId_t    userId,
+long hw_mbox_event_ack(
+		const unsigned long          base_address,
+		const enum hw_mbox_id_t        mail_box_id,
+		const enum hw_mbox_userid_t    user_id,
 		const unsigned long              event
 		)
 {
 	long status = RET_OK;
-	unsigned long      irqStatusReg;
+	unsigned long      irq_status_reg;
 	/* Check input parameters */
-	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
 		RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 	CHECK_INPUT_RANGE_MIN0(
@@ -395,32 +398,32 @@ long HW_MBOX_EventAck(
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 	CHECK_INPUT_RANGE_MIN0(
-			mailBoxId,
+			mail_box_id,
 			HAL_MBOX_ID_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 	CHECK_INPUT_RANGE_MIN0(
-			userId,
+			user_id,
 			HAL_MBOX_USER_MAX,
 			RET_INVALID_ID,
 			RES_MBOX_BASE + RES_INVALID_INPUT_PARAM);
 
 
 	/* calculate status to write */
-	irqStatusReg = ((unsigned long)event) <<
-		(((unsigned long)(mailBoxId))*HW_MBOX_ID_WIDTH);
+	irq_status_reg = ((unsigned long)event) <<
+		(((unsigned long)(mail_box_id))*HW_MBOX_ID_WIDTH);
 
 #if defined(OMAP44XX) || defined(VPOM4430_1_06)
     /* clear Irq Status for specified mailbox/User Id */
-    MLBMAILBOX_IRQSTATUS_CLR___0_3WriteRegister32(baseAddress,
-			(unsigned long)userId, (unsigned long)irqStatusReg);
+    MLBMAILBOX_IRQSTATUS_CLR___0_3WriteRegister32(base_address,
+			(unsigned long)user_id, (unsigned long)irq_status_reg);
 
 #else
 	/* clear Irq Status for specified mailbox/User Id */
-	MLBMAILBOX_IRQSTATUS___0_3WriteRegister32(baseAddress,
-		(unsigned long)userId, (unsigned long)irqStatusReg);
+	MLBMAILBOX_IRQSTATUS___0_3WriteRegister32(base_address,
+		(unsigned long)user_id, (unsigned long)irq_status_reg);
 #endif
 
 	return status;
 }
-EXPORT_SYMBOL(HW_MBOX_EventAck);
+EXPORT_SYMBOL(hw_mbox_event_ack);

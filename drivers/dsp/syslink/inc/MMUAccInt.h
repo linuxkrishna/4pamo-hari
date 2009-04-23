@@ -1,10 +1,9 @@
-
 /*
  * MMUAccInt.h
  *
- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
+ * Notify driver driver support functions for TI OMAP processors.
  *
- * Copyright (C) 2007 Texas Instruments, Inc.
+ * Copyright (C) 2008-2009 Texas Instruments, Inc.
  *
  * This package is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -32,14 +31,14 @@
 #define EASIL1_MMUMMU_CNTLMMUEnableWrite32     (MMU_BASE_EASIL1 + 190)
 #define EASIL1_MMUMMU_FAULT_ADReadRegister32   (MMU_BASE_EASIL1 + 194)
 #define EASIL1_MMUMMU_TTBWriteRegister32  (MMU_BASE_EASIL1 + 198)
-#define EASIL1_MMUMMU_LOCKReadRegister32   (MMU_BASE_EASIL1 + 203)
-#define EASIL1_MMUMMU_LOCKWriteRegister32  (MMU_BASE_EASIL1 + 204)
+#define EASIL1_mmu_lckread_reg_32   (MMU_BASE_EASIL1 + 203)
+#define EASIL1_mmu_lck_write_reg32  (MMU_BASE_EASIL1 + 204)
 #define EASIL1_MMUMMU_LOCKBaseValueRead32  (MMU_BASE_EASIL1 + 205)
 #define EASIL1_MMUMMU_LOCKCurrentVictimRead32 (MMU_BASE_EASIL1 + 209)
-#define EASIL1_MMUMMU_LOCKCurrentVictimWrite32 (MMU_BASE_EASIL1 + 211)
+#define EASIL1_mmu_lck_crnt_vctmwite32 (MMU_BASE_EASIL1 + 211)
 #define EASIL1_MMUMMU_LOCKCurrentVictimSet32  (MMU_BASE_EASIL1 + 212)
 #define EASIL1_MMUMMU_LD_TLBReadRegister32    (MMU_BASE_EASIL1 + 213)
-#define EASIL1_MMUMMU_LD_TLBWriteRegister32   (MMU_BASE_EASIL1 + 214)
+#define EASIL1_mmu_ld_tlbwrt_reg32   (MMU_BASE_EASIL1 + 214)
 #define EASIL1_MMUMMU_CAMWriteRegister32   (MMU_BASE_EASIL1 + 226)
 #define EASIL1_MMUMMU_RAMWriteRegister32 (MMU_BASE_EASIL1 + 268)
 #define EASIL1_MMUMMU_GFLUSHGlobalFlushWrite32 (MMU_BASE_EASIL1 + 317)

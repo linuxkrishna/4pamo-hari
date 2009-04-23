@@ -22,594 +22,723 @@
  *! Revision History:
  *! ================
  *! 19-Apr-2004 sb  TLBAdd and TLBFlush input the page size in bytes instead
-		    of an enum. TLBAdd inputs mapping attributes struct instead
-		    of individual arguments.
-		    Removed MMU.h and other cosmetic updates.
+*of an enum. TLBAdd inputs mapping attributes struct instead
+*of individual arguments.
+*Removed MMU.h and other cosmetic updates.
  *! 08-Mar-2004 sb  Added the Page Table Management APIs
  *! 16 Feb 2003 sb: Initial version
  */
 
+/* ============================================================================
+* STANDARD INCLUDE FILES
+* =============================================================================
+*/
+
+/* ============================================================================
+* PROJECT SPECIFIC INCLUDE FILES
+* =============================================================================
+*/
 #include <GlobalTypes.h>
 #include <MMURegAcM.h>
 #include <hw_defs.h>
 #include <hw_mmu.h>
-#include <linux/types.h>
+#include<linux/kernel.h>
+#include<linux/module.h>
 
-#include <host_os.h>
+/* ============================================================================
+* GLOBAL VARIABLES DECLARATIONS
+* =============================================================================
+*/
 
-#define MMU_BASE_VAL_MASK	0xFC00
-#define MMU_PAGE_MAX	     3
+/* ============================================================================
+* LOCAL TYPES AND DEFINITIONS
+* =============================================================================
+*/
+#define MMU_BASE_VAL_MASK        0xFC00
+#define MMU_PAGE_MAX             3
 #define MMU_ELEMENTSIZE_MAX      3
-#define MMU_ADDR_MASK	    0xFFFFF000
-#define MMU_TTB_MASK	     0xFFFFC000
+#define MMU_ADDR_MASK            0xFFFFF000
+#define MMU_TTB_MASK             0xFFFFC000
 #define MMU_SECTION_ADDR_MASK    0xFFF00000
 #define MMU_SSECTION_ADDR_MASK   0xFF000000
 #define MMU_PAGE_TABLE_MASK      0xFFFFFC00
 #define MMU_LARGE_PAGE_MASK      0xFFFF0000
 #define MMU_SMALL_PAGE_MASK      0xFFFFF000
-#define NUM_TLB_ENTRIES	32
 
-#define MMU_LOAD_TLB	0x00000001
+#define MMU_LOAD_TLB        0x00000001
+#define NUM_TLB_ENTRIES 32
 
-/* HW_MMUPageSize_t:  Enumerated Type used to specify the MMU Page Size(SLSS) */
-enum HW_MMUPageSize_t {
-    HW_MMU_SECTION,
-    HW_MMU_LARGE_PAGE,
-    HW_MMU_SMALL_PAGE,
-    HW_MMU_SUPERSECTION
-} ;
 
+
+/* ----------------------------------------------------------------------------
+* TYPE:         hw_mmu_pgsiz_t
+*
+* DESCRIPTION:  Enumerated Type used to specify the MMU Page Size(SLSS)
+*
+* -----------------------------------------------------------------------------
+*/
+enum hw_mmu_pgsiz_t {
+	HW_MMU_SECTION,
+	HW_MMU_LARGE_PAGE,
+	HW_MMU_SMALL_PAGE,
+	HW_MMU_SUPERSECTION
+
+};
+
+/* ============================================================================
+* LOCAL VARIABLES DECLARATIONS
+* =============================================================================
+*/
+
+/* ============================================================================
+* LOCAL FUNCTIONS PROTOTYPES
+* =============================================================================
+*/
 /*
-* FUNCTION	      : MMU_FlushEntry
+-------------------------------------------------------------------------
+* FUNCTION              : mmu_flsh_entry
 *
 * INPUTS:
 *
-*       Identifier      : baseAddress
-*       Type		: const u32
+*       Identifier      : base_address
+*       Type            : const u32
 *       Description     : Base Address of instance of MMU module
 *
 * RETURNS:
 *
-*       Type		: long
-*       Description     : RET_OK		 -- No errors occured
-*			 RET_BAD_NULL_PARAM     -- A Pointer
-*						Paramater was set to NULL
+*       Type            : hw_status
+*       Description     : RET_OK                 -- No errors occured
+*                         RET_BAD_NULL_PARAM     -- A Pointer Paramater was set to NULL
 *
-* PURPOSE:	      : Flush the TLB entry pointed by the
-*			lock counter register
-*			even if this entry is set protected
+* PURPOSE:              : Flush the TLB entry pointed by the lock counter register
+*                         even if this entry is set protected
 *
-* METHOD:	       : Check the Input parameter and Flush a
-*			 single entry in the TLB.
+* METHOD:               : Check the Input parameter and Flush a single entry in the TLB.
+-------------------------------------------------------------------------
 */
-static long MMU_FlushEntry(const u32 baseAddress);
 
-/*
-* FUNCTION	      : MMU_SetCAMEntry
+static hw_status mmu_flsh_entry(const u32   base_address);
+
+ /*
+-------------------------------------------------------------------------
+* FUNCTION              : mme_set_cam_entry
 *
 * INPUTS:
 *
-*       Identifier      : baseAddress
-*       TypE		: const u32
+*       Identifier      : base_address
+*       Type            : const u32
 *       Description     : Base Address of instance of MMU module
 *
-*       Identifier      : pageSize
-*       TypE		: const u32
+*       Identifier      : page_size
+*       Type            : const u32
 *       Description     : It indicates the page size
 *
-*       Identifier      : preservedBit
-*       Type		: const u32
-*       Description     : It indicates the TLB entry is preserved entry
-*							or not
+*       Identifier      : preserve_bit
+*       Type            : const u32
+*       Description     : It indicates the TLB entry is preserved entry or not
 *
-*       Identifier      : validBit
-*       Type		: const u32
+*       Identifier      : valid_bit
+*       Type            : const u32
 *       Description     : It indicates the TLB entry is valid entry or not
 *
 *
-*       Identifier      : virtualAddrTag
-*       Type	    	: const u32
+*       Identifier      : virt_addr_tag
+*       Type            : const u32
 *       Description     : virtual Address
 *
 * RETURNS:
 *
-*       Type	    	: long
-*       Description     : RET_OK		 -- No errors occured
-*			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
-*						   was set to NULL
-*			 RET_PARAM_OUT_OF_RANGE -- Input Parameter out
-*						   of Range
+*       Type            : hw_status
+*       Description     : RET_OK                 -- No errors occured
+*                         RET_BAD_NULL_PARAM     -- A Pointer Paramater was set to NULL
+*                         RET_PARAM_OUT_OF_RANGE -- Input Parameter out of Range
 *
-* PURPOSE:	      	: Set MMU_CAM reg
+* PURPOSE:              : Set MMU_CAM reg
 *
-* METHOD:	       	: Check the Input parameters and set the CAM entry.
+* METHOD:               : Check the Input parameters and set the CAM entry.
+-------------------------------------------------------------------------
 */
-static long MMU_SetCAMEntry(const u32    baseAddress,
-				   const u32    pageSize,
-				   const u32    preservedBit,
-				   const u32    validBit,
-				   const u32    virtualAddrTag);
+
+static hw_status mme_set_cam_entry(const u32    base_address,
+	const u32    page_size,
+	const u32    preserve_bit,
+	const u32    valid_bit,
+	const u32    virt_addr_tag);
 
 /*
-* FUNCTION	      : MMU_SetRAMEntry
+-------------------------------------------------------------------------
+* FUNCTION              : mmu_set_ram_entry
 *
 * INPUTS:
 *
-*       Identifier      : baseAddress
-*       Type	    	: const u32
+*       Identifier      : base_address
+*       Type            : const u32
 *       Description     : Base Address of instance of MMU module
 *
-*       Identifier      : physicalAddr
-*       Type	    	: const u32
-*       Description     : Physical Address to which the corresponding
-*			 virtual   Address shouldpoint
+*       Identifier      : physical_addr
+*       Type            : const u32
+*       Description     : Physical Address to which the corresponding virtual
+*                         Address should point
 *
 *       Identifier      : endianism
-*       Type	    	: HW_Endianism_t
+*       Type            : hw_endianism_t
 *       Description     : endianism for the given page
 *
-*       Identifier      : elementSize
-*       Type	    	: HW_ElementSize_t
+*       Identifier      : element_size
+*       Type            : hw_elemnt_siz_t
 *       Description     : The element size ( 8,16, 32 or 64 bit)
 *
 *       Identifier      : mixedSize
-*       Type	    	: HW_MMUMixedSize_t
+*       Type            : hw_mmu_mixed_size_t
 *       Description     : Element Size to follow CPU or TLB
 *
 * RETURNS:
 *
-*       Type	    	: long
-*       Description     : RET_OK		 -- No errors occured
-*			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
-*							was set to NULL
-*			 RET_PARAM_OUT_OF_RANGE -- Input Parameter
-*							out of Range
+*       Type            : hw_status
+*       Description     : RET_OK                 -- No errors occured
+*                         RET_BAD_NULL_PARAM     -- A Pointer Paramater was set to NULL
+*                         RET_PARAM_OUT_OF_RANGE -- Input Parameter out of Range
 *
-* PURPOSE:	      : Set MMU_CAM reg
+* PURPOSE:              : Set MMU_CAM reg
 *
-* METHOD:	       : Check the Input parameters and set the RAM entry.
+* METHOD:               : Check the Input parameters and set the RAM entry.
+-------------------------------------------------------------------------
 */
-static long MMU_SetRAMEntry(const u32	baseAddress,
-				   const u32	physicalAddr,
-				   enum HW_Endianism_t      endianism,
-				   enum HW_ElementSize_t    elementSize,
-				   enum HW_MMUMixedSize_t   mixedSize);
+static hw_status mmu_set_ram_entry(const u32        base_address,
+	const u32        physical_addr,
+	enum hw_endianism_t      endianism,
+	enum hw_elemnt_siz_t    element_size,
+	enum hw_mmu_mixed_size_t   mixedSize);
 
-/* HW FUNCTIONS */
 
-long HW_MMU_Enable(const u32 baseAddress)
+
+/* ============================================================================
+* HW FUNCTIONS
+* =============================================================================
+*/
+
+hw_status hw_mmu_enable(const u32 base_address)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
 
-    MMUMMU_CNTLMMUEnableWrite32(baseAddress, HW_SET);
+	MMUMMU_CNTLMMUEnableWrite32(base_address, HW_SET);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_enable);
 
-long HW_MMU_Disable(const u32 baseAddress)
+hw_status hw_mmu_disable(const u32 base_address)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
 
-    MMUMMU_CNTLMMUEnableWrite32(baseAddress, HW_CLEAR);
+	MMUMMU_CNTLMMUEnableWrite32(base_address, HW_CLEAR);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_disable);
 
-long HW_MMU_NumLockedSet(const u32 baseAddress,
-				u32 numLockedEntries)
+hw_status hw_mmu_autoidle_en(const u32 base_address)
 {
-    long status = RET_OK;
+	hw_status status;
 
-    MMUMMU_LOCKBaseValueWrite32(baseAddress, numLockedEntries);
-
-    return status;
+	status = mmu_sisconf_auto_idle_set32(base_address, HW_SET);
+	status = RET_OK;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_autoidle_en);
 
-long HW_MMU_VictimNumSet(const u32 baseAddress,
-				u32 victimEntryNum)
+hw_status hw_mmu_nulck_set(const u32 base_address, u32 *num_lcked_entries)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
 
-    MMUMMU_LOCKCurrentVictimWrite32(baseAddress, victimEntryNum);
+	*num_lcked_entries = MMUMMU_LOCKBaseValueRead32(base_address);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_nulck_set);
 
-long HW_MMU_TLBFlushAll(const u32 baseAddress)
+
+hw_status hw_mmu_numlocked_set(const u32 base_address, u32 num_lcked_entries)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
 
-    MMUMMU_GFLUSHGlobalFlushWrite32(baseAddress, HW_SET);
+	MMUMMU_LOCKBaseValueWrite32(base_address, num_lcked_entries);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_numlocked_set);
 
-long HW_MMU_EventAck(const u32 baseAddress, u32 irqMask)
+
+hw_status hw_mmu_vctm_numget(const u32 base_address, u32 *vctm_entry_num)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
 
-    MMUMMU_IRQSTATUSWriteRegister32(baseAddress, irqMask);
+	*vctm_entry_num = MMUMMU_LOCKCurrentVictimRead32(base_address);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_vctm_numget);
 
-long HW_MMU_EventDisable(const u32 baseAddress,
-				u32 irqMask)
+
+hw_status hw_mmu_victim_numset(const u32 base_address, u32 vctm_entry_num)
 {
-    long status = RET_OK;
-    u32 irqReg;
+	hw_status status = RET_OK;
 
-    irqReg = MMUMMU_IRQENABLEReadRegister32(baseAddress);
+	mmu_lck_crnt_vctmwite32(base_address, vctm_entry_num);
 
-    MMUMMU_IRQENABLEWriteRegister32(baseAddress, irqReg & ~irqMask);
-
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_victim_numset);
 
-long HW_MMU_EventEnable(const u32 baseAddress, u32 irqMask)
+hw_status hw_mmu_tlb_flushAll(const u32 base_address)
 {
-    long status = RET_OK;
-    u32 irqReg;
+	hw_status status = RET_OK;
 
-    irqReg = MMUMMU_IRQENABLEReadRegister32(baseAddress);
+	MMUMMU_GFLUSHGlobalFlushWrite32(base_address, HW_SET);
 
-    MMUMMU_IRQENABLEWriteRegister32(baseAddress, irqReg | irqMask);
-
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_tlb_flushAll);
 
-
-long HW_MMU_EventStatus(const u32 baseAddress, u32 *irqMask)
+hw_status hw_mmu_eventack(const u32 base_address, u32 irq_mask)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
 
-    *irqMask = MMUMMU_IRQSTATUSReadRegister32(baseAddress);
+	MMUMMU_IRQSTATUSWriteRegister32(base_address, irq_mask);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_eventack);
 
-
-long HW_MMU_FaultAddrRead(const u32 baseAddress, u32 *addr)
+hw_status hw_mmu_event_disable(const u32 base_address, u32 irq_mask)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
+	u32 irqReg;
+	irqReg = MMUMMU_IRQENABLEReadRegister32(base_address);
 
-    /*Check the input Parameters*/
-    CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-		      RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+	MMUMMU_IRQENABLEWriteRegister32(base_address, irqReg & ~irq_mask);
 
-    /* read values from register */
-    *addr = MMUMMU_FAULT_ADReadRegister32(baseAddress);
-
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_event_disable);
 
-long HW_MMU_TTBSet(const u32 baseAddress, u32 TTBPhysAddr)
+hw_status hw_mmu_event_enable(const u32 base_address, u32 irq_mask)
 {
-    long status = RET_OK;
-    u32 loadTTB;
+	hw_status status = RET_OK;
+	u32 irqReg;
 
-   /*Check the input Parameters*/
-   CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-		     RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+	irqReg = MMUMMU_IRQENABLEReadRegister32(base_address);
 
-   loadTTB = TTBPhysAddr & ~0x7FUL;
-   /* write values to register */
-   MMUMMU_TTBWriteRegister32(baseAddress, loadTTB);
+	MMUMMU_IRQENABLEWriteRegister32(base_address, irqReg | irq_mask);
 
-   return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_event_enable);
 
-long HW_MMU_TWLEnable(const u32 baseAddress)
+hw_status hw_mmu_event_status(const u32 base_address, u32 *irq_mask)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
 
-    MMUMMU_CNTLTWLEnableWrite32(baseAddress, HW_SET);
+	*irq_mask = MMUMMU_IRQSTATUSReadRegister32(base_address);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_event_status);
 
-long HW_MMU_TWLDisable(const u32 baseAddress)
+hw_status hw_mmu_flt_adr_rd(const u32 base_address, u32 *addr)
 {
-    long status = RET_OK;
+	hw_status status = RET_OK;
 
-    MMUMMU_CNTLTWLEnableWrite32(baseAddress, HW_CLEAR);
+	/*Check the input Parameters*/
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
+					RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+	/* read values from register */
+	*addr = MMUMMU_FAULT_ADReadRegister32(base_address);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_flt_adr_rd);
 
-long HW_MMU_TLBFlush(const u32 baseAddress, u32 virtualAddr,
-			     u32 pageSize)
+
+hw_status hw_mmu_ttbset(const u32 base_address, u32 TTBPhysAddr)
 {
-    long status = RET_OK;
-    u32 virtualAddrTag;
-    enum HW_MMUPageSize_t pgSizeBits;
+	hw_status status = RET_OK;
+	u32 loadTTB;
 
-    switch (pageSize) {
-    case HW_PAGE_SIZE_4KB:
-	pgSizeBits = HW_MMU_SMALL_PAGE;
+	/*Check the input Parameters*/
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
+					RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+
+	loadTTB = TTBPhysAddr & ~0x7FUL;
+	/* write values to register */
+	MMUMMU_TTBWriteRegister32(base_address, loadTTB);
+
+	return status;
+}
+EXPORT_SYMBOL(hw_mmu_ttbset);
+
+hw_status hw_mmu_twl_enable(const u32 base_address)
+{
+	hw_status status = RET_OK;
+
+	MMUMMU_CNTLTWLEnableWrite32(base_address, HW_SET);
+
+	return status;
+}
+EXPORT_SYMBOL(hw_mmu_twl_enable);
+
+hw_status hw_mmu_twl_disable(const u32 base_address)
+{
+	hw_status status = RET_OK;
+
+	MMUMMU_CNTLTWLEnableWrite32(base_address, HW_CLEAR);
+
+	return status;
+}
+EXPORT_SYMBOL(hw_mmu_twl_disable);
+
+
+hw_status HW_MMU_TWLIsEnabled (const u32 base_address,
+	u32 *twlIsEnabled)
+{
+	hw_status status = RET_OK;
+
+	*twlIsEnabled = MMUMMU_CNTLTWLEnableRead32(base_address);
+
+	return status;
+}
+EXPORT_SYMBOL(HW_MMU_TWLIsEnabled);
+
+
+hw_status HW_MMU_TWLIsRunning(const u32   base_address,
+	u32 *const  twl_is_running)
+{
+	hw_status status = RET_OK;
+
+	/*Check the input Parameters*/
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
+					RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+
+	/* read values from register */
+	*twl_is_running = MMUMMU_WALKING_STTWLRunningRead32(base_address);
+
+	return status;
+
+}
+EXPORT_SYMBOL(HW_MMU_TWLIsRunning);
+
+hw_status hw_mmu_tlb_flush(const u32 base_address,
+	u32 virtual_addr,
+	u32 page_size)
+{
+	hw_status status = RET_OK;
+	u32 virt_addr_tag;
+	enum hw_mmu_pgsiz_t pg_sizeBits;
+
+	switch (page_size) {
+	case HW_PAGE_SIZE_4KB:
+	pg_sizeBits = HW_MMU_SMALL_PAGE;
 	break;
 
-    case HW_PAGE_SIZE_64KB:
-	pgSizeBits = HW_MMU_LARGE_PAGE;
+	case HW_PAGE_SIZE_64KB:
+	pg_sizeBits = HW_MMU_LARGE_PAGE;
 	break;
 
-    case HW_PAGE_SIZE_1MB:
-	pgSizeBits = HW_MMU_SECTION;
+	case HW_PAGE_SIZE_1MB:
+	pg_sizeBits = HW_MMU_SECTION;
 	break;
 
-    case HW_PAGE_SIZE_16MB:
-	pgSizeBits = HW_MMU_SUPERSECTION;
+	case HW_PAGE_SIZE_16MB:
+	pg_sizeBits = HW_MMU_SUPERSECTION;
 	break;
 
-    default:
+	default:
 	return RET_FAIL;
-    }
+	}
 
-    /* Generate the 20-bit tag from virtual address */
-    virtualAddrTag = ((virtualAddr & MMU_ADDR_MASK) >> 12);
+	/* Generate the 20-bit tag from virtual address */
+	virt_addr_tag = ((virtual_addr & MMU_ADDR_MASK) >> 12);
 
-    MMU_SetCAMEntry(baseAddress, pgSizeBits, 0, 0, virtualAddrTag);
+	mme_set_cam_entry (base_address, pg_sizeBits, 0, 0, virt_addr_tag);
 
-    MMU_FlushEntry(baseAddress);
+	mmu_flsh_entry (base_address);
 
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_tlb_flush);
 
-long HW_MMU_TLBAdd(const u32	baseAddress,
-			   u32	      physicalAddr,
-			   u32	      virtualAddr,
-			   u32	      pageSize,
-			   u32	      entryNum,
-			   struct HW_MMUMapAttrs_t    *mapAttrs,
-			   enum HW_SetClear_t       preservedBit,
-			   enum HW_SetClear_t       validBit)
+
+hw_status hw_mmu_tlb_add(const u32        base_address,
+	u32              physical_addr,
+	u32              virtual_addr,
+	u32              page_size,
+	u32              entryNum,
+	struct hw_mmu_map_attrs_t    *map_attrs,
+	enum HW_SetClear_t       preserve_bit,
+	enum HW_SetClear_t       valid_bit)
 {
-    long  status = RET_OK;
-    u32 lockReg;
-    u32 virtualAddrTag;
-    enum HW_MMUPageSize_t mmuPgSize;
+	hw_status  status = RET_OK;
+	u32 lockReg;
+	u32 virt_addr_tag;
+	enum hw_mmu_pgsiz_t mmu_pg_size;
 
-    /*Check the input Parameters*/
-    CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-		      RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-    CHECK_INPUT_RANGE_MIN0(pageSize, MMU_PAGE_MAX, RET_PARAM_OUT_OF_RANGE,
-			   RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-    CHECK_INPUT_RANGE_MIN0(mapAttrs->elementSize, MMU_ELEMENTSIZE_MAX,
-			RET_PARAM_OUT_OF_RANGE, RES_MMU_BASE +
-			RES_INVALID_INPUT_PARAM);
+	/*Check the input Parameters*/
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
+				RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+	CHECK_INPUT_RANGE_MIN0(page_size, MMU_PAGE_MAX, RET_PARAM_OUT_OF_RANGE,
+				RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+	CHECK_INPUT_RANGE_MIN0(map_attrs->element_size,
+			MMU_ELEMENTSIZE_MAX, RET_PARAM_OUT_OF_RANGE,
+				RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
 
-    switch (pageSize) {
-    case HW_PAGE_SIZE_4KB:
-	mmuPgSize = HW_MMU_SMALL_PAGE;
+		switch (page_size) {
+		case HW_PAGE_SIZE_4KB:
+		mmu_pg_size = HW_MMU_SMALL_PAGE;
+		break;
+
+		case HW_PAGE_SIZE_64KB:
+		mmu_pg_size = HW_MMU_LARGE_PAGE;
+		break;
+
+		case HW_PAGE_SIZE_1MB:
+		mmu_pg_size = HW_MMU_SECTION;
+		break;
+
+		case HW_PAGE_SIZE_16MB:
+		mmu_pg_size = HW_MMU_SUPERSECTION;
+		break;
+
+		default:
+		return RET_FAIL;
+		}
+
+	lockReg = mmu_lckread_reg_32(base_address);
+
+	/* Generate the 20-bit tag from virtual address */
+	virt_addr_tag = ((virtual_addr & MMU_ADDR_MASK) >> 12);
+
+	/* Write the fields in the CAM Entry Register */
+	mme_set_cam_entry(base_address,  mmu_pg_size, preserve_bit, valid_bit,
+	virt_addr_tag);
+
+	/* Write the different fields of the RAM Entry Register */
+	/* endianism of the page,Element Size of the page (8, 16, 32, 64 bit) */
+	mmu_set_ram_entry(base_address, physical_addr,
+	map_attrs->endianism, map_attrs->element_size, map_attrs->mixedSize);
+
+	/* Update the MMU Lock Register */
+	/* currentVictim between lockedBaseValue and (MMU_Entries_Number - 1) */
+	mmu_lck_crnt_vctmwite32(base_address, entryNum);
+
+	/* Enable loading of an entry in TLB by writing 1 into LD_TLB_REG register */
+	mmu_ld_tlbwrt_reg32(base_address, MMU_LOAD_TLB);
+
+
+	mmu_lck_write_reg32(base_address, lockReg);
+
+	return status;
+}
+EXPORT_SYMBOL(hw_mmu_tlb_add);
+
+
+
+hw_status hw_mmu_pte_set(const u32        pg_tbl_va,
+	u32              physical_addr,
+	u32              virtual_addr,
+	u32              page_size,
+	struct hw_mmu_map_attrs_t    *map_attrs)
+{
+	hw_status status = RET_OK;
+	u32 pte_addr, pte_val;
+	long int num_entries = 1;
+
+	switch (page_size) {
+
+	case HW_PAGE_SIZE_4KB:
+	pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va, virtual_addr & MMU_SMALL_PAGE_MASK);
+	pte_val = ((physical_addr & MMU_SMALL_PAGE_MASK) |
+	(map_attrs->endianism << 9) |
+	(map_attrs->element_size << 4) |
+	(map_attrs->mixedSize << 11) | 2
+	);
 	break;
 
-    case HW_PAGE_SIZE_64KB:
-	mmuPgSize = HW_MMU_LARGE_PAGE;
+	case HW_PAGE_SIZE_64KB:
+	num_entries = 16;
+	pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va, virtual_addr & MMU_LARGE_PAGE_MASK);
+	pte_val = ((physical_addr & MMU_LARGE_PAGE_MASK) |
+	(map_attrs->endianism << 9) |
+	(map_attrs->element_size << 4) |
+	(map_attrs->mixedSize << 11) | 1
+	);
 	break;
 
-    case HW_PAGE_SIZE_1MB:
-	mmuPgSize = HW_MMU_SECTION;
+	case HW_PAGE_SIZE_1MB:
+	pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va, virtual_addr & MMU_SECTION_ADDR_MASK);
+	pte_val = ((((physical_addr & MMU_SECTION_ADDR_MASK) |
+	(map_attrs->endianism << 15) |
+	(map_attrs->element_size << 10) |
+	(map_attrs->mixedSize << 17)) &
+	~0x40000) | 0x2
+	);
 	break;
 
-    case HW_PAGE_SIZE_16MB:
-	mmuPgSize = HW_MMU_SUPERSECTION;
+	case HW_PAGE_SIZE_16MB:
+	num_entries = 16;
+	pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va, virtual_addr & MMU_SSECTION_ADDR_MASK);
+	pte_val = (((physical_addr & MMU_SSECTION_ADDR_MASK) |
+	(map_attrs->endianism << 15) |
+	(map_attrs->element_size << 10) |
+	(map_attrs->mixedSize << 17)
+	) | 0x40000 | 0x2
+	);
 	break;
 
-    default:
+	case HW_MMU_COARSE_PAGE_SIZE:
+	pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va, virtual_addr & MMU_SECTION_ADDR_MASK);
+	pte_val = (physical_addr & MMU_PAGE_TABLE_MASK) | 1;
+	break;
+
+	default:
 	return RET_FAIL;
-    }
+	}
 
-    lockReg = MMUMMU_LOCKReadRegister32(baseAddress);
-
-    /* Generate the 20-bit tag from virtual address */
-    virtualAddrTag = ((virtualAddr & MMU_ADDR_MASK) >> 12);
-
-    /* Write the fields in the CAM Entry Register */
-    MMU_SetCAMEntry(baseAddress,  mmuPgSize, preservedBit, validBit,
-		    virtualAddrTag);
-
-    /* Write the different fields of the RAM Entry Register */
-    /* endianism of the page,Element Size of the page (8, 16, 32, 64 bit)*/
-    MMU_SetRAMEntry(baseAddress, physicalAddr, mapAttrs->endianism,
-		    mapAttrs->elementSize, mapAttrs->mixedSize);
-
-    /* Update the MMU Lock Register */
-    /* currentVictim between lockedBaseValue and (MMU_Entries_Number - 1)*/
-    MMUMMU_LOCKCurrentVictimWrite32(baseAddress, entryNum);
-
-    /* Enable loading of an entry in TLB by writing 1
-	   into LD_TLB_REG register */
-    MMUMMU_LD_TLBWriteRegister32(baseAddress, MMU_LOAD_TLB);
+	while (--num_entries >= 0)
+	((u32 *)pte_addr)[num_entries] = pte_val;
 
 
-    MMUMMU_LOCKWriteRegister32(baseAddress, lockReg);
-
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_pte_set);
 
-long HW_MMU_PteSet(const u32	pgTblVa,
-			   u32	      physicalAddr,
-			   u32	      virtualAddr,
-			   u32	      pageSize,
-			   struct HW_MMUMapAttrs_t    *mapAttrs)
+hw_status hw_mmu_pt_clear(const u32  pg_tbl_va,
+	u32        virtual_addr,
+	u32        pg_size)
 {
-    long status = RET_OK;
-    u32 pteAddr, pteVal;
-    s32 numEntries = 1;
+	hw_status status = RET_OK;
+	u32 pte_addr;
+	long int num_entries = 1;
 
-    switch (pageSize) {
-    case HW_PAGE_SIZE_4KB:
-	pteAddr = HW_MMU_PteAddrL2(pgTblVa,
-				    virtualAddr & MMU_SMALL_PAGE_MASK);
-	pteVal = ((physicalAddr & MMU_SMALL_PAGE_MASK) |
-		    (mapAttrs->endianism << 9) |
-		    (mapAttrs->elementSize << 4) |
-		    (mapAttrs->mixedSize << 11) | 2
-		  );
-	break;
+		switch (pg_size) {
+		case HW_PAGE_SIZE_4KB:
+		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
+				virtual_addr & MMU_SMALL_PAGE_MASK);
+		break;
 
-    case HW_PAGE_SIZE_64KB:
-	numEntries = 16;
-	pteAddr = HW_MMU_PteAddrL2(pgTblVa,
-				    virtualAddr & MMU_LARGE_PAGE_MASK);
-	pteVal = ((physicalAddr & MMU_LARGE_PAGE_MASK) |
-		    (mapAttrs->endianism << 9) |
-		    (mapAttrs->elementSize << 4) |
-		    (mapAttrs->mixedSize << 11) | 1
-		  );
-	break;
+		case HW_PAGE_SIZE_64KB:
+		num_entries = 16;
+		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
+				virtual_addr & MMU_LARGE_PAGE_MASK);
+		break;
 
-    case HW_PAGE_SIZE_1MB:
-	pteAddr = HW_MMU_PteAddrL1(pgTblVa,
-				    virtualAddr & MMU_SECTION_ADDR_MASK);
-	pteVal = ((((physicalAddr & MMU_SECTION_ADDR_MASK) |
-		     (mapAttrs->endianism << 15) |
-		     (mapAttrs->elementSize << 10) |
-		     (mapAttrs->mixedSize << 17)) &
-		     ~0x40000) | 0x2
-		 );
-	break;
+		case HW_PAGE_SIZE_1MB:
+		case HW_MMU_COARSE_PAGE_SIZE:
+		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
+				virtual_addr & MMU_SECTION_ADDR_MASK);
+		break;
 
-    case HW_PAGE_SIZE_16MB:
-	numEntries = 16;
-	pteAddr = HW_MMU_PteAddrL1(pgTblVa,
-				    virtualAddr & MMU_SSECTION_ADDR_MASK);
-	pteVal = (((physicalAddr & MMU_SSECTION_ADDR_MASK) |
-		      (mapAttrs->endianism << 15) |
-		      (mapAttrs->elementSize << 10) |
-		      (mapAttrs->mixedSize << 17)
-		    ) | 0x40000 | 0x2
-		  );
-	break;
+		case HW_PAGE_SIZE_16MB:
+		num_entries = 16;
+		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
+				virtual_addr & MMU_SSECTION_ADDR_MASK);
+		break;
 
-    case HW_MMU_COARSE_PAGE_SIZE:
-	pteAddr = HW_MMU_PteAddrL1(pgTblVa,
-				    virtualAddr & MMU_SECTION_ADDR_MASK);
-	pteVal = (physicalAddr & MMU_PAGE_TABLE_MASK) | 1;
-	break;
+		default:
+		return RET_FAIL;
+		}
 
-    default:
-	return RET_FAIL;
-    }
+	while (--num_entries >= 0)
+		((u32 *)pte_addr)[num_entries] = 0;
 
-    while (--numEntries >= 0)
-	((u32 *)pteAddr)[numEntries] = pteVal;
-
-    return status;
+	return status;
 }
+EXPORT_SYMBOL(hw_mmu_pt_clear);
 
-long HW_MMU_PteClear(const u32  pgTblVa,
-			     u32	virtualAddr,
-			     u32	pgSize)
+/* ============================================================================
+*  LOCAL FUNCTIONS
+* =============================================================================
+*/
+
+  /*
+-----------------------------------------------------------------------------
+ NAME        : mmu_flsh_entry                                                  -
+-----------------------------------------------------------------------------
+*/
+static hw_status mmu_flsh_entry(const u32 base_address)
 {
-    long status = RET_OK;
-    u32 pteAddr;
-    s32 numEntries = 1;
+	hw_status status = RET_OK;
+	u32 flushEntryData = 0x1;
 
-    switch (pgSize) {
-    case HW_PAGE_SIZE_4KB:
-	pteAddr = HW_MMU_PteAddrL2(pgTblVa,
-				    virtualAddr & MMU_SMALL_PAGE_MASK);
-	break;
+	/*Check the input Parameters*/
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
+				RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
 
-    case HW_PAGE_SIZE_64KB:
-	numEntries = 16;
-	pteAddr = HW_MMU_PteAddrL2(pgTblVa,
-				    virtualAddr & MMU_LARGE_PAGE_MASK);
-	break;
+	/* write values to register */
+	MMUMMU_FLUSH_ENTRYWriteRegister32(base_address, flushEntryData);
 
-    case HW_PAGE_SIZE_1MB:
-    case HW_MMU_COARSE_PAGE_SIZE:
-	pteAddr = HW_MMU_PteAddrL1(pgTblVa,
-				    virtualAddr & MMU_SECTION_ADDR_MASK);
-	break;
-
-    case HW_PAGE_SIZE_16MB:
-	numEntries = 16;
-	pteAddr = HW_MMU_PteAddrL1(pgTblVa,
-				    virtualAddr & MMU_SSECTION_ADDR_MASK);
-	break;
-
-    default:
-	return RET_FAIL;
-    }
-
-    while (--numEntries >= 0)
-	((u32 *)pteAddr)[numEntries] = 0;
-
-    return status;
+	return status;
 }
-
-/* MMU_FlushEntry */
-static long MMU_FlushEntry(const u32 baseAddress)
+EXPORT_SYMBOL(mmu_flsh_entry);
+/*
+-----------------------------------------------------------------------------
+ NAME        : mme_set_cam_entry                                                -
+-----------------------------------------------------
+*/
+static hw_status mme_set_cam_entry(const u32    base_address,
+	const u32    page_size,
+	const u32    preserve_bit,
+	const u32    valid_bit,
+	const u32    virt_addr_tag)
 {
-   long status = RET_OK;
-   u32 flushEntryData = 0x1;
+	hw_status status = RET_OK;
+	u32 mmuCamReg;
 
-   /*Check the input Parameters*/
-   CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-		     RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+	/*Check the input Parameters*/
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
+				RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
 
-   /* write values to register */
-   MMUMMU_FLUSH_ENTRYWriteRegister32(baseAddress, flushEntryData);
+	mmuCamReg = (virt_addr_tag << 12);
+	mmuCamReg = (mmuCamReg) | (page_size) |  (valid_bit << 2) | (preserve_bit << 3);
 
-   return status;
+	/* write values to register */
+	MMUMMU_CAMWriteRegister32(base_address, mmuCamReg);
+
+	return status;
 }
-
-/* MMU_SetCAMEntry */
-static long MMU_SetCAMEntry(const u32    baseAddress,
-				   const u32    pageSize,
-				   const u32    preservedBit,
-				   const u32    validBit,
-				   const u32    virtualAddrTag)
+EXPORT_SYMBOL(mme_set_cam_entry);
+ /*
+-----------------------------------------------------------------------------
+ NAME        : mmu_set_ram_entry                                                -
+-----------------------------------------------------
+*/
+static hw_status mmu_set_ram_entry(const u32       base_address,
+	const u32       physical_addr,
+	enum hw_endianism_t     endianism,
+	enum hw_elemnt_siz_t   element_size,
+	enum hw_mmu_mixed_size_t  mixedSize)
 {
-   long status = RET_OK;
-   u32 mmuCamReg;
+	hw_status status = RET_OK;
+	u32 mmuRamReg;
 
-   /*Check the input Parameters*/
-   CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-		     RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-
-   mmuCamReg = (virtualAddrTag << 12);
-   mmuCamReg = (mmuCamReg) | (pageSize) |  (validBit << 2) |
-	       (preservedBit << 3) ;
-
-   /* write values to register */
-   MMUMMU_CAMWriteRegister32(baseAddress, mmuCamReg);
-
-   return status;
-}
-
-/* MMU_SetRAMEntry */
-static long MMU_SetRAMEntry(const u32       baseAddress,
-				   const u32       physicalAddr,
-				   enum HW_Endianism_t     endianism,
-				   enum HW_ElementSize_t   elementSize,
-				   enum HW_MMUMixedSize_t  mixedSize)
-{
-   long status = RET_OK;
-   u32 mmuRamReg;
-
-   /*Check the input Parameters*/
-   CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-		     RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-   CHECK_INPUT_RANGE_MIN0(elementSize, MMU_ELEMENTSIZE_MAX,
-		   RET_PARAM_OUT_OF_RANGE, RES_MMU_BASE +
-		   RES_INVALID_INPUT_PARAM);
+	/*Check the input Parameters*/
+	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
+					RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
+	CHECK_INPUT_RANGE_MIN0(element_size, MMU_ELEMENTSIZE_MAX, RET_PARAM_OUT_OF_RANGE,
+					RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
 
 
-   mmuRamReg = (physicalAddr & MMU_ADDR_MASK);
-   mmuRamReg = (mmuRamReg) | ((endianism << 9) |  (elementSize << 7) |
-	       (mixedSize << 6));
+	mmuRamReg = (physical_addr & MMU_ADDR_MASK);
+	mmuRamReg = (mmuRamReg) | ((endianism << 9) |  (element_size << 7) | (mixedSize << 6));
 
-   /* write values to register */
-   MMUMMU_RAMWriteRegister32(baseAddress, mmuRamReg);
+	/* write values to register */
+	MMUMMU_RAMWriteRegister32(base_address, mmuRamReg);
 
-   return status;
+	return status;
 
 }
+EXPORT_SYMBOL(mmu_set_ram_entry);
 
-long HW_MMU_TLBDump(const u32 baseAddress, bool showInvEntries)
+long hw_mmi_tlb_dump(const u32 base_address, bool shw_inv_entries)
 {
 	u32                       i;
 	u32                       lockSave;
@@ -617,54 +746,59 @@ long HW_MMU_TLBDump(const u32 baseAddress, bool showInvEntries)
 	u32                       ram;
 
 
-	/*  Save off the lock register contents, we'll restore it when we are done  */
-	lockSave = MMUMMU_LOCKReadRegister32(baseAddress);
+	/*  Save off the lock register contents,
+	we'll restore it when we are done  */
 
-	printk("TLB locked entries = %u, current victim = %u\n",
+	lockSave = mmu_lckread_reg_32(base_address);
+
+	printk(KERN_ALERT "TLB locked entries = %u, current victim = %u\n",
 		((lockSave & MMU_MMU_LOCK_BaseValue_MASK)
 		>> MMU_MMU_LOCK_BaseValue_OFFSET),
 		((lockSave & MMU_MMU_LOCK_CurrentVictim_MASK)
 		>> MMU_MMU_LOCK_CurrentVictim_OFFSET));
 
-	for (i = 0; i < NUM_TLB_ENTRIES; i++)
-	{
-		MMUMMU_LOCKCurrentVictimWrite32(baseAddress, i);
-		cam = MMUMMU_CAMReadRegister32(baseAddress);
-		ram = MMUMMU_RAMReadRegister32(baseAddress);
+	for (i = 0; i < NUM_TLB_ENTRIES; i++) {
 
-		if ((cam & 0x4) != 0)
-		{
-			printk("TLB Entry [0x%x]: VA = 0x%x   PA = 0x%x    Protected =0x%x\n)",
-			               i,
-				(cam & MMU_ADDR_MASK),
-				(ram & MMU_ADDR_MASK),
-				(cam & 0x8) ? 1 : 0);
-		} else if (showInvEntries != FALSE) {
-			printk("TLB Entry [0x%x]: <INVALID>\n", i);
+		mmu_lck_crnt_vctmwite32(base_address, i);
+		cam = MMUMMU_CAMReadRegister32(base_address);
+		ram = MMUMMU_RAMReadRegister32(base_address);
+
+	if ((cam & 0x4) != 0) {
+
+		printk(KERN_ALERT "TLB Entry [0x%x]: VA = 0x%x   PA = 0x%x\
+		Protected = 0x%x\n)",
+						i,
+		(cam & MMU_ADDR_MASK),
+		(ram & MMU_ADDR_MASK),
+		(cam & 0x8) ? 1 : 0);
+
+	} else if (shw_inv_entries != FALSE) {
+			printk(KERN_ALERT "TLB Entry [0x%x]: <INVALID>\n", i);
 		}
 	}
-	MMUMMU_LOCKWriteRegister32(baseAddress, lockSave);
+	mmu_lck_write_reg32(base_address, lockSave);
 	return RET_OK;
 }
+EXPORT_SYMBOL(hw_mmi_tlb_dump);
 
-u32 HW_MMU_PtePhyAddr(u32 pteVal, u32 pteSize)
+u32 hw_mmu_pte_phyaddr(u32 pte_val, u32 pte_size)
 {
-	u32	retVal = 0;
+	u32	ret_val = 0;
 
-	switch (pteSize) {
+	switch (pte_size) {
 
 	case HW_PAGE_SIZE_4KB:
-		retVal = pteVal & MMU_SMALL_PAGE_MASK;
+		ret_val = pte_val & MMU_SMALL_PAGE_MASK;
 		break;
 	case HW_PAGE_SIZE_64KB:
-		retVal = pteVal & MMU_LARGE_PAGE_MASK;
+		ret_val = pte_val & MMU_LARGE_PAGE_MASK;
 		break;
 
 	case HW_PAGE_SIZE_1MB:
-		retVal = pteVal & MMU_SECTION_ADDR_MASK;
+		ret_val = pte_val & MMU_SECTION_ADDR_MASK;
 		break;
 	case HW_PAGE_SIZE_16MB:
-		retVal = pteVal & MMU_SSECTION_ADDR_MASK;
+		ret_val = pte_val & MMU_SSECTION_ADDR_MASK;
 		break;
 	default:
 		/*  Invalid  */
@@ -672,6 +806,16 @@ u32 HW_MMU_PtePhyAddr(u32 pteVal, u32 pteSize)
 
 	}
 
-	return retVal;
+	return ret_val;
 }
+EXPORT_SYMBOL(hw_mmu_pte_phyaddr);
+
+
+
+
+
+
+
+
+
 

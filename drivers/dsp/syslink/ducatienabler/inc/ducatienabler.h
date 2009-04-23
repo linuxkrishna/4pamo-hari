@@ -117,15 +117,15 @@ ducatienabler.h
 
 
 
-struct MMUEntry {
-	u32 ulPhysAddr ;
-	u32 ulVirtAddr ;
+struct mmu_entry {
+	u32 ul_phy_addr ;
+	u32 ul_virt_addr ;
 	u32 ulSize ;
 };
 
 
 
-static const struct MMUEntry L4Map[] = {
+static const struct mmu_entry l4_map[] = {
 
 	/*  Mailbox 4KB*/
 	{L4_PERIPHERAL_MBOX, DSPVA_PERIPHERAL_MBOX, HW_PAGE_SIZE_4KB},
@@ -216,37 +216,37 @@ typedef u32   DSP_STATUS ;
 
 
 /* ===========================================================================
-  name    PageInfo
+  name    page_info
 
   desc    Attributes of L2 page tables for DSP MMU.
   ============================================================================
 */
-struct PageInfo {
-    u32 numEntries;             /* Number of valid PTEs in the L2 PT*/
+struct page_info {
+    u32 num_entries;             /* Number of valid PTEs in the L2 PT*/
 };
 
 
 
 struct pgtbl_initattrb {
-	u32       L1size;           /* Size of the L1 PT*/
+	u32       l1_size;           /* Size of the L1 PT*/
 	int        L1align;          /* Alignment for L1 PT (eg, 12 for 4KB)*/
-	u32       L2NumPages;       /* Number of allocated L2 PT*/
+	u32       l2_num_pages;       /* Number of allocated L2 PT*/
 };
 
 
 /*	........................................................................
-	func	PrintPTEs
+	func	print_ptes
 
 	desc	Print the DSP MMU Table Entries
 
 	ret 	VOID
 	........................................................................
 */
-void PrintPTEs(bool aShowInvEntries, bool aShowRepeatEntries);
+void print_ptes(bool ashow_inv_entries, bool ashow_repeat_entries);
 
-u32 initpage_attributes(u32 L1Size, u32 L1Align, u32 L2NumOfPages);
-u32 MMUInit(u32 aPhysAddr, int aSize);
-u32 MMUDeInit(void);
+u32 initpage_attributes(u32 l1_size, u32 l1_allign, u32 ls_num_of_pages);
+u32 ducati_mmu_init(u32 a_phy_addr, int a_size);
+u32 mmu_de_init(void);
 
 
 #endif /* _DDUCATIMMU_ENABLER_H_*/

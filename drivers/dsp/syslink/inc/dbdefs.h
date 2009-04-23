@@ -73,7 +73,6 @@
 
 #include <dbtype.h>		/* GPP side type definitions           */
 #include <std.h>		/* DSP/BIOS type definitions           */
-#include <rms_sh.h>		/* Types shared between GPP and DSP    */
 
 #define PG_SIZE_4K 4096
 #define PG_MASK(pg_size) (~((pg_size)-1))
@@ -318,7 +317,7 @@
 /* Attributes for STRM connections between nodes */
 	struct DSP_STRMATTR {
 		u32 uSegid;	/* Memory segment on DSP to allocate buffers */
-		u32 uBufsize;	/* Buffer size (DSP words) */
+		u32 u_bufsize;	/* Buffer size (DSP words) */
 		u32 uNumBufs;	/* Number of buffers */
 		u32 uAlignment;	/* Buffer alignment */
 		u32 uTimeout;	/* Timeout for blocking STRM calls */
@@ -344,8 +343,8 @@
 /* The DSP_RESOURCEREQMTS structure for node's resource requirements  */
 	struct DSP_RESOURCEREQMTS {
 		u32 cbStruct;
-		u32 uStaticDataSize;
-		u32 uGlobalDataSize;
+		u32 uStaticData_size;
+		u32 uGlobalData_size;
 		u32 uProgramMemSize;
 		u32 uWCExecutionTime;
 		u32 uWCPeriod;
@@ -387,7 +386,7 @@
 		u32 uNumInputStreams;
 		u32 uNumOutputStreams;
 		u32 uTimeout;
-		u32 uCountProfiles;	/* Number of supported profiles */
+		u32 u_countProfiles;	/* Number of supported profiles */
 		/* Array of profiles */
 		struct DSP_NODEPROFS aProfiles[MAX_PROFILES];
 		u32 uStackSegName; /* Stack Segment Name */

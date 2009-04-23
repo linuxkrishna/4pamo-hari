@@ -17,7 +17,7 @@
  *  ==================================================================
  */
 
-#include <global_var.h>
+#include <dspbridge/global_var.h>
 #if !defined GPPTYPES_H
 #define GPPTYPES_H
 

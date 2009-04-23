@@ -17,8 +17,8 @@
 
   =====================================================================
 */
-#ifndef __HAL_OCP_H
-#define __HAL_OCP_H
+#ifndef __HW_OCP_H
+#define __HW_OCP_H
 
 /* ========================================================================
 * INCLUDE FILES (only if necessary)
@@ -33,7 +33,7 @@ extern "C"
 
 #include <GlobalTypes.h>
 #include <hw_ocp.h>
-#include <hal_defs.h>
+#include <hw_defs.h>
 #include <MBXRegAcM.h>
 #include <MBXAccInt.h>
 
@@ -50,16 +50,16 @@ extern "C"
 */
 
 /* -----------------------------------------------------------------------
-* TYPE:         HAL_IdleMode_t
+* TYPE:         HW_IdleMode_t
 *
 * DESCRIPTION:  Enumerated Type for idle modes in OCP SYSCONFIG register
 *
 * -------------------------------------------------------------------------
 */
-enum HAL_OCPIdleMode_t {
-HAL_OCP_FORCE_IDLE,
-HAL_OCP_NO_IDLE,
-HAL_OCP_SMART_IDLE
+enum hal_ocp_idlemode_t {
+HW_OCP_FORCE_IDLE,
+HW_OCP_NO_IDLE,
+HW_OCP_SMART_IDLE
 };
 
 /* =======================================================================
@@ -73,26 +73,26 @@ HAL_OCP_SMART_IDLE
 * ========================================================================
 */
 
-extern long HW_OCP_SoftReset(const unsigned long baseAddress);
+extern long hw_ocp_soft_reset(const unsigned long base_address);
 
-extern long HW_OCP_SoftResetIsDone(const unsigned long baseAddress,
-				unsigned long *resetIsDone);
+extern long hw_ocp_soft_reset_isdone(const unsigned long base_address,
+				unsigned long *reset_is_done);
 
-extern long HW_OCP_IdleModeSet(const unsigned long baseAddress,
-				enum HAL_OCPIdleMode_t idleMode);
+extern long hw_ocp_idle_modeset(const unsigned long base_address,
+				enum hal_ocp_idlemode_t idle_mode);
 
-extern long HW_OCP_IdleModeGet(const unsigned long baseAddress,
-				enum HAL_OCPIdleMode_t *idleMode);
+extern long hw_ocp_idlemode_get(const unsigned long base_address,
+				enum hal_ocp_idlemode_t *idle_mode);
 
-extern long HW_OCP_AutoIdleSet(const unsigned long baseAddress,
-				enum HAL_SetClear_t autoIdle);
+extern long hw_ocp_autoidle_set(const unsigned long base_address,
+				enum HW_SetClear_t auto_idle);
 
-extern long HW_OCP_AutoIdleGet(const unsigned long baseAddress,
-				enum HAL_SetClear_t *autoIdle);
+extern long hw_ocp_autoidle_get(const unsigned long base_address,
+				enum HW_SetClear_t *auto_idle);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* __HAL_OCP_H */
+#endif  /* __HW_OCP_H */
 
